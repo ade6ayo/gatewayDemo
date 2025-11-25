@@ -204,14 +204,14 @@ const QUESTIONS_DATABASE = {
 };
 
 const GAME_CONFIG = {
-    totalQuestions: 15,
+    totalQuestions: 10,
     timePerQuestion: 30,
-    prizeStructure: [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500],
-    safetyNets: [5, 10, 15],
+    prizeStructure: [50, 100, 200, 300, 500, 750, 850, 900, 950, 1000],
+    safetyNets: [4, 7],
     currency: '₦'
 };
 
-
+// Helper to detect presenter mode via URL parameter
 const isPresenterMode = () => {
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -719,24 +719,6 @@ const QuizIQGame = () => {
 
     };
 
-    const TransitionVideoOverlay = ({ videoRef, onVideoEnded }) => {
-        // You need a specific path defined earlier:
-        // const TRANSITION_VIDEO_PATH = 'src/assets/answer-transition.mp4'; [cite: 908]
-
-        return (
-            <div style={styles.videoOverlay}>
-                <video
-                    ref={videoRef}
-                    src={TRANSITION_VIDEO_PATH}
-                    onEnded={onVideoEnded}
-                    autoPlay
-                    muted={true}
-                    style={styles.videoPlayer}
-                    controls={false}
-                />
-            </div>
-        );
-    };
 
     const onTransitionEnded = () => {
         setShowTransition(false);
@@ -997,23 +979,6 @@ const QuizIQGame = () => {
             fontSize: 'clamp(1.2rem, 2.5vw, 1.5rem)', // Responsive font
             marginBottom: '1vh'
         },
-        videoOverlay: {
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 10000,
-            backgroundColor: 'black',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        videoPlayer: {
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-        },
         optionBtn: (disabled, selected) => ({
             display: 'flex',
             alignItems: 'center',
@@ -1136,7 +1101,7 @@ const QuizIQGame = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginTop: 18 }}>
                         <div style={{ ...styles.card, cursor: 'pointer', display: 'flex', flexDirection: 'column', minHeight: 120 }} onClick={() => selectCategory('default')}>
-                            <div style={{ fontSize: 36 }}>🌍 </div>
+                            <div style={{ fontSize: 36 }}>🌍 + 🇳🇬</div>
                             <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Default</h3>
                             <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Mixed Nigerian + Global question set (default sample).</p>
                             <div style={{ marginTop: 12, color: '#bcd', fontWeight: 600 }}>{getDefaultQuestions().length} questions available</div>
@@ -1753,12 +1718,6 @@ const QuizIQGame = () => {
                         </div>
                     </div>
                 </div>
-                {showTransition && (
-                    <TransitionVideoOverlay
-                    videoRef={transitionVideoRef}
-                    onVideoEnded={onTransitionEnded}
-                    />
-                    )}
                 <AnimatedBanner/>
             </div>
         );
