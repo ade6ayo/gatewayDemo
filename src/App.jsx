@@ -282,11 +282,11 @@ const QuizIQGame = () => {
     }, []);
 
     useEffect(() => {
-        const loadSlideshowImages = async () => {
+        const loadSlideshowImages = () => {
             try {
-                const result = await window.storage.get('slideshow-images');
-                if (result && result.value) {
-                    setSlideshowImages(JSON.parse(result.value));
+                const stored = localStorage.getItem('slideshow-images');
+                if (stored) {
+                    setSlideshowImages(JSON.parse(stored));
                 }
             } catch (error) {
                 console.log('No existing slideshow images');
@@ -296,11 +296,11 @@ const QuizIQGame = () => {
     }, []);
 
     useEffect(() => {
-        const loadImportedQuestions = async () => {
+        const loadImportedQuestions = () => {
             try {
-                const result = await window.storage.get('imported-questions');
-                if (result && result.value) {
-                    setImportedQuestions(JSON.parse(result.value));
+                const stored = localStorage.getItem('imported-questions');
+                if (stored) {
+                    setImportedQuestions(JSON.parse(stored));
                 }
             } catch (error) {
                 console.log('No existing imported questions');
@@ -492,7 +492,10 @@ const QuizIQGame = () => {
     const handleExcelImport = (event) => {
         const file = event.target.files[0];
         if (!file) return;
+
+        // IMPORTANT: Assuming 'file' is a .csv or .txt file using pipe '|' as delimiter
         const reader = new FileReader();
+
         reader.onload = (e) => {
             try {
                 const text = e.target.result;
@@ -513,50 +516,60 @@ const QuizIQGame = () => {
                     // Split by pipe delimiter
                     const cols = line.split('|').map(col => col.trim());
 
+                    // Requires at least 8 columns: Question, 4 Options, Correct Index, Difficulty, Category
                     if (cols.length >= 8) {
                         const q = {
                             id: Date.now() + i + Math.random(),
                             question: cols[0],
                             options: [cols[1], cols[2], cols[3], cols[4]],
-                            correct: Math.max(0, Math.min(3, parseInt(cols[5], 10) - 1)), // Ensure 0-3 range
+                            // Correct: Assumes 1-based index (1-4) in file, converts to 0-based index (0-3)
+                            correct: Math.max(0, Math.min(3, parseInt(cols[5], 10) - 1)),
                             difficulty: (cols[6] || 'medium').toLowerCase(),
                             category: (cols[7] || 'Imported')
                         };
                         questions.push(q);
-                        console.log(`Imported Q${questions.length}:`, q.question); // Debug log
                     }
                 }
 
                 if (questions.length > 0) {
                     const newSet = {
                         id: Date.now(),
-                        name: file.name.replace('.csv', ''),
+                        name: file.name.replace('.csv', '').replace('.txt', ''),
                         questions: questions,
                         createdAt: new Date().toLocaleString()
                     };
 
                     // Update state
                     const updatedSets = [...(importedQuestions.sets || []), newSet];
+                    // Assuming importedQuestions and setImportedQuestions are defined in scope
                     setImportedQuestions({sets: updatedSets});
 
-                    // Save to persistent storage
-                    window.storage.set('imported-questions', JSON.stringify({sets: updatedSets}))
-                        .then(() => {
-                            alert(`Successfully imported ${questions.length} questions as "${newSet.name}"!\n\nFirst question: ${questions[0].question}`);
-                        })
-                        .catch((error) => {
-                            console.error('Failed to save to storage:', error);
-                            alert(`Imported ${questions.length} questions, but failed to save permanently. They may be lost on refresh.`);
-                        });
+                    // Save to persistent storage (localStorage)
+                    try {
+                        localStorage.setItem('imported-questions', JSON.stringify({sets: updatedSets}));
+                        alert(`✅ Successfully imported ${questions.length} questions as "${newSet.name}"!`);
+                    } catch (error) {
+                        console.error('Failed to save to storage:', error);
+                        alert(`Imported ${questions.length} questions, but failed to save permanently. They may be lost on refresh.`);
+                    }
                 } else {
-                    alert('No valid questions found in file. Make sure you are using pipe (|) delimiter.');
+                    alert('⚠️ No valid questions found in the file. Ensure the format is correct (8 pipe-delimited columns).');
                 }
-            } catch (err) {
-                console.error(err);
-                alert('Error importing CSV: ' + err.message);
+            } catch (error) {
+                // Catches any error that happens during the parsing process (e.g., in the loop)
+                console.error('Error during file parsing:', error);
+                alert('An unexpected error occurred while parsing the file content. Please check that the file is correctly delimited by the pipe character (|).');
             }
         };
+
+        // Add error handler for file reading (e.g., file not found, permission issue)
+        reader.onerror = (error) => {
+            console.error('File reading error:', error);
+            alert('❌ Failed to read the file.');
+        };
+
         reader.readAsText(file);
+        // Clear the input value so the same file can be imported again
         event.target.value = '';
     };
 
@@ -599,24 +612,22 @@ const QuizIQGame = () => {
         const updatedImages = [...slideshowImages, ...newImages];
         setSlideshowImages(updatedImages);
 
-
         try {
-            await window.storage.set('slideshow-images', JSON.stringify(updatedImages));
+            localStorage.setItem('slideshow-images', JSON.stringify(updatedImages));
         } catch (error) {
             console.error('Failed to save images to storage:', error);
             alert('Warning: Images saved to session only. They may be lost on refresh.');
         }
-
         event.target.value = '';
     };
 
 
-    const deleteImage = async (imageId) => {
+    const deleteImage = (imageId) => {
         const updatedImages = slideshowImages.filter(img => img.id !== imageId);
         setSlideshowImages(updatedImages);
 
         try {
-            await window.storage.set('slideshow-images', JSON.stringify(updatedImages));
+            localStorage.setItem('slideshow-images', JSON.stringify(updatedImages));
         } catch (error) {
             console.error('Failed to update storage:', error);
         }
@@ -753,27 +764,26 @@ const QuizIQGame = () => {
         setSelectedCategory('');
         setCurrentQuestions([]);
     };
-    const deleteQuestionSet = async (setId) => {
+    const deleteQuestionSet = (setId) => {
         const updatedSets = importedQuestions.sets.filter(set => set.id !== setId);
         setImportedQuestions({ sets: updatedSets });
 
-        // Save to persistent storage
+
         try {
-            await window.storage.set('imported-questions', JSON.stringify({ sets: updatedSets }));
+            localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets }));
         } catch (error) {
             console.error('Failed to update storage:', error);
         }
     };
 
-    const renameQuestionSet = async (setId, newName) => {
+    const renameQuestionSet = (setId, newName) => {
         const updatedSets = importedQuestions.sets.map(set =>
-            set.id === setId ? { ...set, name: newName } : set
+                set.id === setId ? { ...set, name: newName } : set
         );
         setImportedQuestions({ sets: updatedSets });
 
-        // Save to persistent storage
         try {
-            await window.storage.set('imported-questions', JSON.stringify({ sets: updatedSets }));
+            localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets }));
         } catch (error) {
             console.error('Failed to update storage:', error);
         }
@@ -1116,7 +1126,7 @@ const QuizIQGame = () => {
                                     📂 Upload CSV
                                     <input type="file" accept=".csv" onChange={handleExcelImport} style={{ display: 'none' }} />
                                 </label>
-                                <button onClick={async () => {
+                                <button onClick={() => {
                                     const sample = [{
                                         id: Date.now(),
                                         question: 'Sample: Sky color?',
@@ -1136,7 +1146,7 @@ const QuizIQGame = () => {
 
                                     // Save to storage
                                     try {
-                                        await window.storage.set('imported-questions', JSON.stringify({ sets: updatedSets }));
+                                        localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets }));
                                         alert('Sample set imported and saved!');
                                     } catch (error) {
                                         alert('Sample set imported but may not persist.');
