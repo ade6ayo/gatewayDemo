@@ -296,6 +296,20 @@ const QuizIQGame = () => {
     }, []);
 
     useEffect(() => {
+        const loadImportedQuestions = async () => {
+            try {
+                const result = await window.storage.get('imported-questions');
+                if (result && result.value) {
+                    setImportedQuestions(JSON.parse(result.value));
+                }
+            } catch (error) {
+                console.log('No existing imported questions');
+            }
+        };
+        loadImportedQuestions();
+    }, []);
+
+    useEffect(() => {
         if (gameState !== 'slideshow' || !slideshowPlaying || slideshowImages.length === 0) return;
 
         const interval = setInterval(() => {
@@ -520,8 +534,20 @@ const QuizIQGame = () => {
                         questions: questions,
                         createdAt: new Date().toLocaleString()
                     };
-                    setImportedQuestions((p) => ({ ...p, sets: [...(p.sets || []), newSet] }));
-                    alert(`Successfully imported ${questions.length} questions as "${newSet.name}"!\n\nFirst question: ${questions[0].question}`);
+
+                    // Update state
+                    const updatedSets = [...(importedQuestions.sets || []), newSet];
+                    setImportedQuestions({sets: updatedSets});
+
+                    // Save to persistent storage
+                    window.storage.set('imported-questions', JSON.stringify({sets: updatedSets}))
+                        .then(() => {
+                            alert(`Successfully imported ${questions.length} questions as "${newSet.name}"!\n\nFirst question: ${questions[0].question}`);
+                        })
+                        .catch((error) => {
+                            console.error('Failed to save to storage:', error);
+                            alert(`Imported ${questions.length} questions, but failed to save permanently. They may be lost on refresh.`);
+                        });
                 } else {
                     alert('No valid questions found in file. Make sure you are using pipe (|) delimiter.');
                 }
@@ -727,20 +753,30 @@ const QuizIQGame = () => {
         setSelectedCategory('');
         setCurrentQuestions([]);
     };
-    const deleteQuestionSet = (setId) => {
-        setImportedQuestions(prev => ({
-            ...prev,
-            sets: prev.sets.filter(set => set.id !== setId)
-        }));
+    const deleteQuestionSet = async (setId) => {
+        const updatedSets = importedQuestions.sets.filter(set => set.id !== setId);
+        setImportedQuestions({ sets: updatedSets });
+
+        // Save to persistent storage
+        try {
+            await window.storage.set('imported-questions', JSON.stringify({ sets: updatedSets }));
+        } catch (error) {
+            console.error('Failed to update storage:', error);
+        }
     };
 
-    const renameQuestionSet = (setId, newName) => {
-        setImportedQuestions(prev => ({
-            ...prev,
-            sets: prev.sets.map(set =>
-                set.id === setId ? { ...set, name: newName } : set
-            )
-        }));
+    const renameQuestionSet = async (setId, newName) => {
+        const updatedSets = importedQuestions.sets.map(set =>
+            set.id === setId ? { ...set, name: newName } : set
+        );
+        setImportedQuestions({ sets: updatedSets });
+
+        // Save to persistent storage
+        try {
+            await window.storage.set('imported-questions', JSON.stringify({ sets: updatedSets }));
+        } catch (error) {
+            console.error('Failed to update storage:', error);
+        }
     };
 
     const selectCategory = (category) => {
@@ -1080,7 +1116,7 @@ const QuizIQGame = () => {
                                     📂 Upload CSV
                                     <input type="file" accept=".csv" onChange={handleExcelImport} style={{ display: 'none' }} />
                                 </label>
-                                <button onClick={() => {
+                                <button onClick={async () => {
                                     const sample = [{
                                         id: Date.now(),
                                         question: 'Sample: Sky color?',
@@ -1095,8 +1131,16 @@ const QuizIQGame = () => {
                                         questions: sample,
                                         createdAt: new Date().toLocaleString()
                                     };
-                                    setImportedQuestions((p) => ({ ...p, sets: [...(p.sets||[]), newSet] }));
-                                    alert('Sample set imported!');
+                                    const updatedSets = [...(importedQuestions.sets||[]), newSet];
+                                    setImportedQuestions({ sets: updatedSets });
+
+                                    // Save to storage
+                                    try {
+                                        await window.storage.set('imported-questions', JSON.stringify({ sets: updatedSets }));
+                                        alert('Sample set imported and saved!');
+                                    } catch (error) {
+                                        alert('Sample set imported but may not persist.');
+                                    }
                                 }} style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '0.85rem' }}>▶️ Load Sample</button>
                             </div>
                         </div>
