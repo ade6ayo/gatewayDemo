@@ -12,7 +12,7 @@ import {
     Phone,
 } from 'lucide-react';
 
-const TRANSITION_VIDEO_PATH = 'src/assets/answer-transition.mp4';
+const TRANSITION_VIDEO_PATH = './assets/answer-transition.mp4';
 
 const LUXURY_THEME = {
     primary: 'linear-gradient(135deg, #1a1a1a 0%, #2d1810 50%, #1a1a1a 100%)',
@@ -204,10 +204,10 @@ const QUESTIONS_DATABASE = {
 };
 
 const GAME_CONFIG = {
-    totalQuestions: 10,
+    totalQuestions: 15,
     timePerQuestion: 30,
-    prizeStructure: [50, 100, 200, 300, 500, 750, 850, 900, 950, 1000],
-    safetyNets: [4, 7],
+    prizeStructure: [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500],
+    safetyNets: [5, 10, 15],
     currency: '₦'
 };
 
@@ -816,7 +816,6 @@ const QuizIQGame = () => {
     };
 
     const PrizeLadder = React.memo(({ currentQuestion, score, safetyNets, prizeStructure, currency }) => {
-        // Reverse the prize structure for descending display (Q10 at top)
         const reversedPrizeStructure = [...prizeStructure].reverse();
         const safetyNetIndices = safetyNets.map(net => prizeStructure.length - net);
         const currentPrizeIndex = prizeStructure.length - (currentQuestion + 1);
@@ -873,7 +872,7 @@ const QuizIQGame = () => {
                                 <span>{currency}{prize.toLocaleString()}</span>
                             </div>
                         );
-                    })}
+                    })}smaller in size
                 </div>
                 <div style={{
                     padding: '16px 22px',
