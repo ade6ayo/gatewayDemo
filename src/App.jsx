@@ -12,7 +12,7 @@ import {
     Phone,
 } from 'lucide-react';
 
-const TRANSITION_VIDEO_PATH = 'src/assets/answer-transition.mp4';
+const TRANSITION_VIDEO_PATH = '/answer-transition.mp4';
 
 const LUXURY_THEME = {
     primary: 'linear-gradient(135deg, #1a1a1a 0%, #2d1810 50%, #1a1a1a 100%)',
@@ -200,6 +200,46 @@ const QUESTIONS_DATABASE = {
             difficulty: 'easy',
             category: 'Technology'
         },
+        {
+            id: 9,
+            question: "What does 'www' stand for?",
+            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
+            correct: 0,
+            difficulty: 'easy',
+            category: 'Technology'
+        },
+        {
+            id: 10,
+            question: "What does 'www' stand for?",
+            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
+            correct: 0,
+            difficulty: 'easy',
+            category: 'Technology'
+        },
+        {
+            id: 11,
+            question: "What does 'www' stand for?",
+            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
+            correct: 0,
+            difficulty: 'easy',
+            category: 'Technology'
+        },
+        {
+            id: 12,
+            question: "What does 'www' stand for?",
+            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
+            correct: 0,
+            difficulty: 'easy',
+            category: 'Technology'
+        },
+        {
+            id: 13,
+            question: "What does 'www' stand for?",
+            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
+            correct: 0,
+            difficulty: 'easy',
+            category: 'Technology'
+        },
     ]
 };
 
@@ -207,7 +247,7 @@ const GAME_CONFIG = {
     totalQuestions: 15,
     timePerQuestion: 30,
     prizeStructure: [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500],
-    safetyNets: [5, 10, 15],
+    safetyNets: [4, 9, 14],
     currency: '₦'
 };
 
@@ -220,6 +260,7 @@ const isPresenterMode = () => {
         return false;
     }
 };
+
 // Cross-tab synchronization using localStorage
 const broadcastGameState = (state) => {
     if (!isPresenterMode()) return; // Only presenter broadcasts
@@ -237,7 +278,7 @@ const QuizIQGame = () => {
     // presenter view
     const [showCorrectAnswers] = useState(isPresenterMode());
 
-    const [gameState, setGameState] = useState('registration'); // registration -> category-selection -> menu -> playing -> result -> slideshow
+    const [gameState, setGameState] = useState('registration');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [currentQuestions, setCurrentQuestions] = useState([]);
     const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -329,7 +370,7 @@ const QuizIQGame = () => {
 
     // Listen to presenter broadcasts (audience only)
     useEffect(() => {
-        if (isPresenterMode()) return; // Presenter doesn't listen
+        if (isPresenterMode()) return; 
 
         const handleStorageChange = (e) => {
             if (e.key === 'quiziq-sync' && e.newValue) {
@@ -355,13 +396,16 @@ const QuizIQGame = () => {
                         setCurrentQuestions(syncedState.currentQuestions);
                     }
 
-                    // Sync slideshow
+                    // Sync slideshow - ADD THESE LINES
                     if (syncedState.currentSlide !== undefined) {
                         setCurrentSlide(syncedState.currentSlide);
                     }
                     if (syncedState.slideshowPlaying !== undefined) {
                         setSlideshowPlaying(syncedState.slideshowPlaying);
                     }
+                    //if (syncedState.slideshowImages) {
+                        //setSlideshowImages(syncedState.slideshowImages);
+                    //}
                 } catch (error) {
                     console.error('Sync parse error:', error);
                 }
@@ -391,7 +435,8 @@ const QuizIQGame = () => {
             selectedCategory,
             currentQuestions,
             currentSlide,
-            slideshowPlaying
+            slideshowPlaying,
+            //slideshowImages
         });
     }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, slideshowPlaying]);
     useEffect(() => {
@@ -634,6 +679,7 @@ const QuizIQGame = () => {
     };
 
     const startSlideshow = () => {
+        if (!isPresenterMode()) return; // Only presenter can start
         if (slideshowImages.length === 0) {
             alert('Please upload images first before starting slideshow.');
             return;
@@ -659,7 +705,10 @@ const QuizIQGame = () => {
     };
 
     const getScoreAfterWrongAnswer = () => {
-        const lastSafetyNet = GAME_CONFIG.safetyNets.filter((net) => net < currentQuestion).pop();
+        const lastSafetyNet = GAME_CONFIG.safetyNets
+            .filter((net) => net < currentQuestion)
+            .sort((a, b) => b - a)[0]; // Get the highest safety net passed
+
         return lastSafetyNet !== undefined ? GAME_CONFIG.prizeStructure[lastSafetyNet] : 0;
     };
 
@@ -816,13 +865,20 @@ const QuizIQGame = () => {
     };
 
     const PrizeLadder = React.memo(({ currentQuestion, score, safetyNets, prizeStructure, currency }) => {
-        const reversedPrizeStructure = [...prizeStructure].reverse();
-        const safetyNetIndices = safetyNets.map(net => prizeStructure.length - net);
-        const currentPrizeIndex = prizeStructure.length - (currentQuestion + 1);
-        const scoreIndex = prizeStructure.length - prizeStructure.findIndex(p => p === score) - 1;
+        const totalQuestions = prizeStructure.length;
+
+        // Calculate which 10 questions to show (centered around current)
+        let startIndex = Math.max(0, currentQuestion - 4);
+        let endIndex = Math.min(totalQuestions, startIndex + 10);
+
+        if (endIndex - startIndex < 10) {
+            startIndex = Math.max(0, endIndex - 10);
+        }
+
+        const visiblePrizes = prizeStructure.slice(startIndex, endIndex).reverse();
 
         return (
-            <div style={{ ...styles.card, padding: 0, minHeight: 600, overflow: 'hidden' }}>
+            <div style={{ ...styles.card, padding: 0, minHeight: 600, maxHeight: 600, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 <h4 style={{
                     margin: 0,
                     padding: '16px 22px',
@@ -834,58 +890,62 @@ const QuizIQGame = () => {
                 }}>
                     Prize Ladder
                 </h4>
-                <div style={{ padding: '8px 0' }}>
-                    {reversedPrizeStructure.map((prize, index) => {
-                        const questionNumber = prizeStructure.length - index;
-                        const isSafetyNet = safetyNetIndices.includes(index);
-                        const isCurrentQuestion = index === currentPrizeIndex;
-                        const isSecured = index > currentPrizeIndex && safetyNetIndices.includes(index) && index < scoreIndex; // Secured only if passed a safety net
+                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ padding: '8px 0', flex: 1 }}>
+                        {visiblePrizes.map((prize, index) => {
+                            const actualIndex = endIndex - index - 1;
+                            const questionNumber = actualIndex + 1;
+                            const isSafetyNet = safetyNets.includes(actualIndex); // Check actualIndex
+                            const isCurrentQuestion = actualIndex === currentQuestion;
 
-                        // conditional styling
-                        const rowStyle = {
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            padding: '10px 22px',
-                            fontSize: '1.1rem',
-                            fontWeight: isSafetyNet || isCurrentQuestion ? '700' : '500',
-                            // Highlight the current question
-                            background: isCurrentQuestion
-                                ? LUXURY_THEME.accent + '33' // Light accent background
-                                : isSafetyNet
-                                    ? 'rgba(0, 255, 0, 0.08)' // Subtle green for safety nets
-                                    : 'transparent',
-                            // Highlight the final secured amount (if game ended, it would show scoreIndex highlight)
-                            color: isCurrentQuestion
-                                ? LUXURY_THEME.textGold
-                                : isSafetyNet
-                                    ? '#9bffb0'
-                                    : LUXURY_THEME.text,
-                            borderLeft: isCurrentQuestion
-                                ? `4px solid ${LUXURY_THEME.textGold}`
-                                : '4px solid transparent',
-                            transition: 'background 0.3s'
-                        };
+                            const rowStyle = {
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                padding: '10px 22px',
+                                fontSize: '1.1rem',
+                                fontWeight: isSafetyNet || isCurrentQuestion ? '700' : '500',
+                                background: isCurrentQuestion
+                                    ? LUXURY_THEME.accent + '33'
+                                    : isSafetyNet
+                                        ? 'rgba(0, 255, 0, 0.08)'
+                                        : 'transparent',
+                                color: isCurrentQuestion
+                                    ? LUXURY_THEME.textGold
+                                    : isSafetyNet
+                                        ? '#9bffb0'
+                                        : LUXURY_THEME.text,
+                                borderLeft: isCurrentQuestion
+                                    ? `4px solid ${LUXURY_THEME.textGold}`
+                                    : isSafetyNet
+                                        ? `4px solid #9bffb0`
+                                        : '4px solid transparent',
+                                transition: 'all 0.3s ease'
+                            };
 
-                        return (
-                            <div key={index} style={rowStyle}>
-                                <span>Q{questionNumber}</span>
-                                <span>{currency}{prize.toLocaleString()}</span>
-                            </div>
-                        );
-                    })}smaller in size
+                            return (
+                                <div key={actualIndex} style={rowStyle}>
+                                    <span>Q{questionNumber}{isSafetyNet ? ' 🛡️' : ''}</span>
+                                    <span>{currency}{prize.toLocaleString()}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
                 <div style={{
                     padding: '16px 22px',
                     backgroundColor: LUXURY_THEME.backgroundDark,
                     borderTop: `1px solid ${LUXURY_THEME.border}`,
                     textAlign: 'center',
-                    color: LUXURY_THEME.textGold
+                    color: LUXURY_THEME.textGold,
+                    fontSize: '1.1rem',
+                    fontWeight: '700'
                 }}>
                     Current Score: {currency}{score.toLocaleString()}
                 </div>
             </div>
         );
     });
+
 
     // UI styles (no-scroll)
     const styles = {
@@ -898,7 +958,7 @@ const QuizIQGame = () => {
             marginBottom: 12,
             paddingBottom: 65,
             boxSizing: 'border-box',
-            fontFamily: "'Georgia', serif",
+            fontFamily: "'Product Sans', 'Georgia', serif",
             position: 'relative',
             color: LUXURY_THEME.text,
             display: 'flex',
@@ -1100,7 +1160,7 @@ const QuizIQGame = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginTop: 18 }}>
                         <div style={{ ...styles.card, cursor: 'pointer', display: 'flex', flexDirection: 'column', minHeight: 120 }} onClick={() => selectCategory('default')}>
-                            <div style={{ fontSize: 36 }}>🌍 + 🇳🇬</div>
+                            <div style={{ fontSize: 36 }}>🌍 </div>
                             <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Default</h3>
                             <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Mixed Nigerian + Global question set (default sample).</p>
                             <div style={{ marginTop: 12, color: '#bcd', fontWeight: 600 }}>{getDefaultQuestions().length} questions available</div>
@@ -1608,7 +1668,7 @@ const QuizIQGame = () => {
 
     // Result screen
     if (gameState === 'result') {
-        const isWinner = score === 1000; // Change logic here if you want easier winning criteria
+        const isWinner = score === 7500; // Change logic here if you want easier winning criteria
 
         return (
             <div style={styles.container}>
