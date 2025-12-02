@@ -246,7 +246,7 @@ const QUESTIONS_DATABASE = {
 const GAME_CONFIG = {
     totalQuestions: 15,
     timePerQuestion: 30,
-    prizeStructure: [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500],
+    prizeStructure: [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 6000, 7000, 8000, 9000, 10000],
     safetyNets: [4, 9, 14],
     currency: '₦'
 };
@@ -1668,7 +1668,7 @@ const QuizIQGame = () => {
 
     // Result screen
     if (gameState === 'result') {
-        const isWinner = score === 7500; // Change logic here if you want easier winning criteria
+        const isWinner = score === 10000; // Change logic here if you want easier winning criteria
 
         return (
             <div style={styles.container}>
