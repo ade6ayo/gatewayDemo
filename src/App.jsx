@@ -867,42 +867,50 @@ const QuizIQGame = () => {
     const PrizeLadder = React.memo(({ currentQuestion, score, safetyNets, prizeStructure, currency }) => {
         const totalQuestions = prizeStructure.length;
 
-        // Calculate which 10 questions to show (centered around current)
-        let startIndex = Math.max(0, currentQuestion - 4);
-        let endIndex = Math.min(totalQuestions, startIndex + 10);
-
-        if (endIndex - startIndex < 10) {
-            startIndex = Math.max(0, endIndex - 10);
-        }
-
-        const visiblePrizes = prizeStructure.slice(startIndex, endIndex).reverse();
+        const reversedPrizes = [...prizeStructure].reverse();
 
         return (
-            <div style={{ ...styles.card, padding: 0, minHeight: 600, maxHeight: 600, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                <h4 style={{
+            <div style={{
+                ...styles.card,
+                padding: 0,
+                height: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden'
+            }}>
+                {/* Header */}
+                <div style={{
                     margin: 0,
-                    padding: '16px 22px',
+                    padding: '7px 16px',
                     backgroundColor: LUXURY_THEME.backgroundDark,
                     color: LUXURY_THEME.textGold,
                     textAlign: 'center',
-                    fontSize: '1.2rem',
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
                     borderBottom: `2px solid ${LUXURY_THEME.accent}`
                 }}>
                     Prize Ladder
-                </h4>
-                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ padding: '8px 0', flex: 1 }}>
-                        {visiblePrizes.map((prize, index) => {
-                            const actualIndex = endIndex - index - 1;
+                </div>
+
+                {/* Scrollable Prize List */}
+                <div style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    overflowX: 'hidden'
+                }}>
+                    <div style={{ padding: '0px 0' }}>
+                        {reversedPrizes.map((prize, index) => {
+                            const actualIndex = totalQuestions - index - 1;
                             const questionNumber = actualIndex + 1;
-                            const isSafetyNet = safetyNets.includes(actualIndex); // Check actualIndex
+                            const isSafetyNet = safetyNets.includes(actualIndex);
                             const isCurrentQuestion = actualIndex === currentQuestion;
 
                             const rowStyle = {
                                 display: 'flex',
                                 justifyContent: 'space-between',
-                                padding: '10px 22px',
-                                fontSize: '1.1rem',
+                                alignItems: 'center',
+                                padding: '2.3px 16px',
+                                fontSize: '0.95rem',
                                 fontWeight: isSafetyNet || isCurrentQuestion ? '700' : '500',
                                 background: isCurrentQuestion
                                     ? LUXURY_THEME.accent + '33'
@@ -919,25 +927,33 @@ const QuizIQGame = () => {
                                     : isSafetyNet
                                         ? `4px solid #9bffb0`
                                         : '4px solid transparent',
-                                transition: 'all 0.3s ease'
+                                transition: 'all 0.3s ease',
+                                minHeight: '32px'
                             };
 
                             return (
                                 <div key={actualIndex} style={rowStyle}>
-                                    <span>Q{questionNumber}{isSafetyNet ? ' 🛡️' : ''}</span>
-                                    <span>{currency}{prize.toLocaleString()}</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <span style={{ minWidth: '32px' }}>Q{questionNumber}</span>
+                                    {isSafetyNet && <span></span>}
+                                </span>
+                                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                                    {currency}{prize.toLocaleString()}
+                                </span>
                                 </div>
                             );
                         })}
                     </div>
                 </div>
+
+                {/* Footer - Current Score */}
                 <div style={{
-                    padding: '16px 22px',
+                    padding: '7px 16px',
                     backgroundColor: LUXURY_THEME.backgroundDark,
                     borderTop: `1px solid ${LUXURY_THEME.border}`,
                     textAlign: 'center',
                     color: LUXURY_THEME.textGold,
-                    fontSize: '1.1rem',
+                    fontSize: '1rem',
                     fontWeight: '700'
                 }}>
                     Current Score: {currency}{score.toLocaleString()}
