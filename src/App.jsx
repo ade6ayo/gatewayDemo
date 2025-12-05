@@ -74,7 +74,7 @@ const AnimatedBanner = React.memo(() => {
                 <div style={bannerStyles.bannerContent}>
                     <div style={bannerStyles.bannerInner}>
                         <span>  We build intelligent automations, websites, and fully-custom applications for individuals or businesses ready to innovate and scale.  </span>
-                        <span>  Powered by 6 Technologies  </span>
+                        <span>  Powered by 6 Tech Solutions  </span>
                         <span>  Contact/WhatsApp: 0909 725 3310  </span>
                         <span>  Gadget Savers NG ✅ Save 30% on Smartphones, Laptops, Cameras & so much more ( 🇺🇸 USA pre-orders)</span>
                         <span> ✅ Pay 70% now, balance on delivery </span>
@@ -85,7 +85,7 @@ const AnimatedBanner = React.memo(() => {
 
 
                         <span>  We build intelligent automations, websites, and fully-custom applications for individuals or businesses ready to innovate and scale.  </span>
-                        <span>  Powered by 6 Technologies  </span>
+                        <span>  Powered by 6 Tech Solutions  </span>
                         <span>  Contact/WhatsApp: 0909 725 3310  </span>
                         <span>  Gadget Savers NG ✅ Save 30% on Smartphones, Laptops, Cameras & so much more ( 🇺🇸 USA pre-orders)</span>
                         <span> ✅ Pay 70% now, balance on delivery </span>
@@ -1103,7 +1103,7 @@ const QuizIQGame = () => {
                             <h1 style={{ margin: 0, fontSize: '2.2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                                 QuizIQ
                             </h1>
-                            <div style={{ color: 'rgba(255,255,255,0.85)' }}>by 6 Technologies</div>
+                            <div style={{ color: 'rgba(255,255,255,0.85)' }}>by 6 Tech Solutions</div>
                         </div>
                     </div>
 
