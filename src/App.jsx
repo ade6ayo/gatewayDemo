@@ -290,6 +290,7 @@ const QuizIQGame = () => {
     const [playerName, setPlayerName] = useState('');
     const [importedQuestions, setImportedQuestions] = useState({ sets: [] });
     const [slideshowImages, setSlideshowImages] = useState([]);
+    const [showSafetyBanner, setShowSafetyBanner] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [slideshowPlaying, setSlideshowPlaying] = useState(true);
 
@@ -534,88 +535,80 @@ const QuizIQGame = () => {
         document.body.removeChild(link);
     };
 
-    const handleExcelImport = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
+    const handleExcelImport = async (event) => {
+        const files = Array.from(event.target.files);
+        if (!files.length) return;
 
-        // IMPORTANT: Assuming 'file' is a .csv or .txt file using pipe '|' as delimiter
-        const reader = new FileReader();
+        const newSets = [];
+        let totalQuestionsCount = 0;
 
-        reader.onload = (e) => {
+        // Process files sequentially
+        for (const file of files) {
             try {
-                const text = e.target.result;
+                // Read file content wrapped in a Promise
+                const text = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsText(file);
+                });
+
                 const lines = text.split(/\r?\n/);
 
-                // Check if first line looks like a header
+                // Check header
                 const firstLine = lines[0].toLowerCase();
                 const hasHeader = firstLine.includes('question') && (firstLine.includes('option') || firstLine.includes('correct'));
-
-                // Skip header only if it exists
                 const startIndex = hasHeader ? 1 : 0;
 
                 const questions = [];
                 for (let i = startIndex; i < lines.length; i++) {
                     const line = lines[i].trim();
-                    if (!line) continue; // Skip empty lines
+                    if (!line) continue;
 
-                    // Split by pipe delimiter
                     const cols = line.split('|').map(col => col.trim());
-
-                    // Requires at least 8 columns: Question, 4 Options, Correct Index, Difficulty, Category
+                    // 8 columns required
                     if (cols.length >= 8) {
-                        const q = {
-                            id: Date.now() + i + Math.random(),
+                        questions.push({
+                            id: Date.now() + Math.random() + i, // Ensure unique ID
                             question: cols[0],
                             options: [cols[1], cols[2], cols[3], cols[4]],
-                            // Correct: Assumes 1-based index (1-4) in file, converts to 0-based index (0-3)
                             correct: Math.max(0, Math.min(3, parseInt(cols[5], 10) - 1)),
                             difficulty: (cols[6] || 'medium').toLowerCase(),
                             category: (cols[7] || 'Imported')
-                        };
-                        questions.push(q);
+                        });
                     }
                 }
 
                 if (questions.length > 0) {
-                    const newSet = {
-                        id: Date.now(),
+                    newSets.push({
+                        id: Date.now() + Math.random(), // Unique ID for the set
                         name: file.name.replace('.csv', '').replace('.txt', ''),
                         questions: questions,
                         createdAt: new Date().toLocaleString()
-                    };
-
-                    // Update state
-                    const updatedSets = [...(importedQuestions.sets || []), newSet];
-                    // Assuming importedQuestions and setImportedQuestions are defined in scope
-                    setImportedQuestions({sets: updatedSets});
-
-                    // Save to persistent storage (localStorage)
-                    try {
-                        localStorage.setItem('imported-questions', JSON.stringify({sets: updatedSets}));
-                        alert(`✅ Successfully imported ${questions.length} questions as "${newSet.name}"!`);
-                    } catch (error) {
-                        console.error('Failed to save to storage:', error);
-                        alert(`Imported ${questions.length} questions, but failed to save permanently. They may be lost on refresh.`);
-                    }
-                } else {
-                    alert('⚠️ No valid questions found in the file. Ensure the format is correct (8 pipe-delimited columns).');
+                    });
+                    totalQuestionsCount += questions.length;
                 }
             } catch (error) {
-                // Catches any error that happens during the parsing process (e.g., in the loop)
-                console.error('Error during file parsing:', error);
-                alert('An unexpected error occurred while parsing the file content. Please check that the file is correctly delimited by the pipe character (|).');
+                console.error(`Error parsing file ${file.name}:`, error);
             }
-        };
+        }
 
-        // Add error handler for file reading (e.g., file not found, permission issue)
-        reader.onerror = (error) => {
-            console.error('File reading error:', error);
-            alert('❌ Failed to read the file.');
-        };
+        if (newSets.length > 0) {
+            const updatedSets = [...(importedQuestions.sets || []), ...newSets];
+            setImportedQuestions({ sets: updatedSets });
 
-        reader.readAsText(file);
-        // Clear the input value so the same file can be imported again
-        event.target.value = '';
+            try {
+                localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets }));
+                alert(`✅ Successfully imported ${newSets.length} file(s) with ${totalQuestionsCount} total questions!`);
+            } catch (error) {
+                console.error('Failed to save to storage:', error);
+                alert(`Imported questions, but failed to save permanently.`);
+            }
+        } else {
+            alert('⚠️ No valid questions found in the selected files.');
+        }
+
+        event.target.value = ''; // Reset input to allow re-uploading same files
     };
 
     const handleImageUpload = async (event) => {
@@ -771,7 +764,6 @@ const QuizIQGame = () => {
 
     const onTransitionEnded = () => {
         setShowTransition(false);
-
         const q = currentQuestions[currentQuestion];
         const isCorrect = q && selectedAnswer === q.correct;
 
@@ -781,7 +773,15 @@ const QuizIQGame = () => {
 
             // move to next or finish
             if (currentQuestion < currentQuestions.length - 1) {
-                setCurrentQuestion((c) => c + 1);
+                const nextQuestionIdx = currentQuestion + 1; // Calculate next index
+
+                // Check if next question is a safety net
+                if (GAME_CONFIG.safetyNets.includes(nextQuestionIdx)) {
+                    setShowSafetyBanner(true);
+                    setTimeout(() => setShowSafetyBanner(false), 5000); // Hide after 5 seconds
+                }
+
+                setCurrentQuestion(nextQuestionIdx);
                 setSelectedAnswer(null);
                 setShowResult(false);
                 setTimeLeft(GAME_CONFIG.timePerQuestion);
@@ -824,7 +824,25 @@ const QuizIQGame = () => {
             console.error('Failed to update storage:', error);
         }
     };
+    const deleteAllImportedSets = () => {
+        if (!importedQuestions.sets || importedQuestions.sets.length === 0) {
+            alert("No imported question sets to delete.");
+            return;
+        }
 
+        if (window.confirm("⚠️ ARE YOU SURE? \nThis will permanently delete ALL imported question sets. This action cannot be undone.")) {
+            // Clear state
+            setImportedQuestions({ sets: [] });
+
+            // Clear local storage
+            try {
+                localStorage.removeItem('imported-questions');
+                alert("All imported sets have been deleted.");
+            } catch (error) {
+                console.error('Failed to clear storage:', error);
+            }
+        }
+    };
     const renameQuestionSet = (setId, newName) => {
         const updatedSets = importedQuestions.sets.map(set =>
                 set.id === setId ? { ...set, name: newName } : set
@@ -1169,6 +1187,7 @@ const QuizIQGame = () => {
                             <h1 style={{ margin: 0, fontSize: '2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Choose Category</h1>
                             <div style={{ color: 'rgba(255,255,255,0.9)' }}>Welcome {playerName}</div>
                         </div>
+
                         <div>
                             <button onClick={() => setGameState('registration')} style={{ padding: '8px 12px', borderRadius: 8 }}>Back</button>
                         </div>
@@ -1199,7 +1218,7 @@ const QuizIQGame = () => {
                                 <button onClick={downloadExcelTemplate} style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(0,128,0,0.15)', border: '1px solid rgba(0,255,0,0.3)', color: '#9bffb0', fontSize: '0.85rem' }}>📥 Download Template</button>
                                 <label style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', fontSize: '0.85rem' }}>
                                     📂 Upload CSV
-                                    <input type="file" accept=".csv" onChange={handleExcelImport} style={{ display: 'none' }} />
+                                    <input type="file" accept=".csv,.txt" multiple onChange={handleExcelImport} style={{ display: 'none' }} />
                                 </label>
                                 <button onClick={() => {
                                     const sample = [{
@@ -1296,7 +1315,15 @@ const QuizIQGame = () => {
                             <div style={{ color: 'rgba(255,255,255,0.9)' }}>Welcome {playerName}</div>
                         </div>
                         <div>
-                            <button onClick={() => setGameState('category-selection')} style={{ padding: '8px 12px', borderRadius: 8 }}>Back</button>
+                            <button
+                                onClick={deleteAllImportedSets} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}
+                            >
+                                Delete All Question Sets!
+                            </button>
+                            <button onClick={() => setGameState('category-selection')} style={{ padding: '8px 12px', borderRadius: 8 }}
+                            >
+                                Back
+                            </button>
                         </div>
                     </div>
 
@@ -1334,13 +1361,13 @@ const QuizIQGame = () => {
                                     overflowY: 'auto'
                                 }}>
                                     <div style={{ marginBottom: 8, fontStyle: 'italic', color: '#bbb' }}>Preview:</div>
-                                    {getDefaultQuestions().slice(0, 3).map((q, i) => (
+                                    {getDefaultQuestions().slice (0, 3).map((q, i) => (
                                         <div key={i} style={{
                                             marginBottom: 6,
                                             paddingLeft: 8,
-                                            borderLeft: '2px solid rgba(212,175,55,0.3)'
+                                            borderLeft: '2px solid rgba(255,255,255,0.2)'
                                         }}>
-                                            • {q.question}
+                                            • {q.question.length > 10 ? q.question.substring(0, 10) + '...' : q.question}
                                         </div>
                                     ))}
                                     {getDefaultQuestions().length > 3 && (
@@ -1412,7 +1439,7 @@ const QuizIQGame = () => {
                                                 paddingLeft: 8,
                                                 borderLeft: '2px solid rgba(255,255,255,0.2)'
                                             }}>
-                                                • {q.question}
+                                                • {q.question.length > 10 ? q.question.substring(0, 10) + '...' : q.question}
                                             </div>
                                         ))}
                                         {set.questions.length > 3 && (
@@ -1554,6 +1581,10 @@ const QuizIQGame = () => {
             </div>
         );
 
+        const isSafetyNet = GAME_CONFIG.safetyNets.includes(currentQuestion);
+        const potentialSecure = GAME_CONFIG.prizeStructure[currentQuestion];
+        const dropAmount = getScoreAfterWrongAnswer();
+
         // transition screen
         return (
             <div style={styles.container}>
@@ -1565,6 +1596,53 @@ const QuizIQGame = () => {
                 )}
 
                 <div style={styles.centerArea}>
+
+                    {/* Transition video overlay */}
+                    {showTransition && (
+                        <div style={{ position: 'absolute', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)',  paddingBottom: '80px' }}>
+                            <video ref={transitionVideoRef} src={TRANSITION_VIDEO_PATH} style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: 12 }} autoPlay muted={!isPresenterMode()} onEnded={() => onTransitionEnded()} />
+                        </div>
+                    )}
+
+                    {/* NEW: Transparent Overlay Safety Banner */}
+                    {showSafetyBanner && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 9998, // Below video, above game
+                            width: '80%',
+                            maxWidth: '600px',
+                            background: 'rgba(0, 0, 0, 0.85)', // Dark transparent background
+                            backdropFilter: 'blur(10px)',
+                            border: `2px solid ${LUXURY_THEME.textGold}`,
+                            borderRadius: '20px',
+                            padding: '40px',
+                            textAlign: 'center',
+                            boxShadow: '0 0 50px rgba(212, 175, 55, 0.5)',
+                            animation: 'bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                        }}>
+                            <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🔒</div>
+                            <h2 style={{
+                                color: LUXURY_THEME.textGold,
+                                textTransform: 'uppercase',
+                                fontSize: '2rem',
+                                margin: '0 0 15px 0',
+                                letterSpacing: '2px'
+                            }}>
+                                Safety Net Announcement
+                            </h2>
+                            <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: 4 }}>
+                            Right answer secures <strong>{GAME_CONFIG.currency}{potentialSecure.toLocaleString()}</strong>.
+                                <span style={{ fontSize: '0.85rem', fontStyle: 'italic', marginLeft: 8 }}>
+                            (Wrong answer drops you to {GAME_CONFIG.currency}{dropAmount.toLocaleString()})
+                                </span>
+
+                            </div>
+                        </div>
+                    )}
+
                     <div style={styles.header}>
                         <div>
                             <h1 style={{ margin: 0, fontSize: '1.6rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
