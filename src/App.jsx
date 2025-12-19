@@ -1172,6 +1172,8 @@ const QuizIQGame = () => {
 
                 </div>
 
+                <video src={TRANSITION_VIDEO_PATH} preload="auto" style={{ display: 'none' }} />
+
                 <AnimatedBanner />
             </div>
         );
@@ -1588,12 +1590,7 @@ const QuizIQGame = () => {
         // transition screen
         return (
             <div style={styles.container}>
-                {/* Transition video overlay */}
-                {showTransition && (
-                    <div style={{ position: 'absolute', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)',  paddingBottom: '80px' }}>
-                        <video ref={transitionVideoRef} src={TRANSITION_VIDEO_PATH} style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: 12 }} autoPlay onEnded={() => onTransitionEnded()} />
-                    </div>
-                )}
+
 
                 <div style={styles.centerArea}>
 
