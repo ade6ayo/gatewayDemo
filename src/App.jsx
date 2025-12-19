@@ -437,9 +437,10 @@ const QuizIQGame = () => {
             currentQuestions,
             currentSlide,
             slideshowPlaying,
+            showSafetyBanner,
             //slideshowImages
         });
-    }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, slideshowPlaying]);
+    }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, slideshowPlaying, showSafetyBanner]);
     useEffect(() => {
         let interval;
         // Only presenter controls the timer
