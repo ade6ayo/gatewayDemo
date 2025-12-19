@@ -276,6 +276,9 @@ const broadcastGameState = (state) => {
 
 const QuizIQGame = () => {
     // presenter view
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [passwordInput, setPasswordInput] = useState('');
+    const ADMIN_PASSWORD = "h256t";
     const [showCorrectAnswers] = useState(isPresenterMode());
 
     const [gameState, setGameState] = useState('registration');
@@ -293,6 +296,7 @@ const QuizIQGame = () => {
     const [showSafetyBanner, setShowSafetyBanner] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [slideshowPlaying, setSlideshowPlaying] = useState(true);
+    const [playedSetIds, setPlayedSetIds] = useState([]);
 
     const [gameSettings, setGameSettings] = useState({
         soundEnabled: true,
@@ -321,6 +325,17 @@ const QuizIQGame = () => {
         return () => {
             document.body.style.overflow = prev;
         };
+    }, []);
+
+    useEffect(() => {
+        try {
+            const cachedImages = localStorage.getItem('QUIZ_SLIDESHOW_DATA');
+            if (cachedImages) {
+                setSlideshowImages(JSON.parse(cachedImages));
+            }
+        } catch (e) {
+            console.error("Failed to load slideshow images", e);
+        }
     }, []);
 
     useEffect(() => {
@@ -404,9 +419,10 @@ const QuizIQGame = () => {
                     if (syncedState.slideshowPlaying !== undefined) {
                         setSlideshowPlaying(syncedState.slideshowPlaying);
                     }
-                    //if (syncedState.slideshowImages) {
-                        //setSlideshowImages(syncedState.slideshowImages);
-                    //}
+                    if (syncedState.slideshowImages) {
+                        setSlideshowImages(syncedState.slideshowImages);
+                    }
+
                 } catch (error) {
                     console.error('Sync parse error:', error);
                 }
@@ -436,11 +452,11 @@ const QuizIQGame = () => {
             selectedCategory,
             currentQuestions,
             currentSlide,
-            slideshowPlaying,
             showSafetyBanner,
-            //slideshowImages
+            slideshowPlaying,
+            slideshowImages
         });
-    }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, slideshowPlaying, showSafetyBanner]);
+    }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, showSafetyBanner, slideshowPlaying, slideshowImages]);
     useEffect(() => {
         let interval;
         // Only presenter controls the timer
@@ -612,10 +628,11 @@ const QuizIQGame = () => {
         event.target.value = ''; // Reset input to allow re-uploading same files
     };
 
+
     const handleImageUpload = async (event) => {
         const files = Array.from(event.target.files);
-        if (!files.length) return;
 
+        if (!files.length) return;
 
         if (slideshowImages.length >= 10) {
             alert('Maximum 10 images allowed. Please delete some images first.');
@@ -630,36 +647,41 @@ const QuizIQGame = () => {
             alert(`Only ${remainingSlots} slots remaining. Uploading first ${remainingSlots} images.`);
         }
 
-        const newImages = [];
-        for (const file of filesToProcess) {
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                await new Promise((resolve) => {
+        const imagePromises = filesToProcess
+            .filter(file => file.type.startsWith('image/'))
+            .map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
                     reader.onload = (e) => {
-                        newImages.push({
+                        resolve({
                             id: Date.now() + Math.random(),
                             src: e.target.result,
                             name: file.name
                         });
-                        resolve();
                     };
                     reader.readAsDataURL(file);
                 });
-            }
-        }
-
-        const updatedImages = [...slideshowImages, ...newImages];
-        setSlideshowImages(updatedImages);
+            });
 
         try {
-            localStorage.setItem('slideshow-images', JSON.stringify(updatedImages));
-        } catch (error) {
-            console.error('Failed to save images to storage:', error);
-            alert('Warning: Images saved to session only. They may be lost on refresh.');
-        }
-        event.target.value = '';
-    };
+            const processedImages = await Promise.all(imagePromises);
 
+            setSlideshowImages(prev => {
+                const updatedList = [...prev, ...processedImages];
+
+                // Save to localStorage
+                localStorage.setItem('QUIZ_SLIDESHOW_DATA', JSON.stringify(updatedList));
+                localStorage.setItem('slideshow-images', JSON.stringify(updatedList));
+
+                return updatedList;
+            });
+
+            event.target.value = ''; // Reset input
+        } catch (error) {
+            console.error("Error processing images:", error);
+            alert('Failed to upload images. Please try again.');
+        }
+    };
 
     const deleteImage = (imageId) => {
         const updatedImages = slideshowImages.filter(img => img.id !== imageId);
@@ -796,6 +818,50 @@ const QuizIQGame = () => {
             setScore(getScoreAfterWrongAnswer());
             setGameState('result');
         }
+    };
+
+    const playNextUnplayedSet = () => {
+        if (!isPresenterMode()) return;
+
+        // 1. Get all available custom sets
+        const allSets = importedQuestions.sets || [];
+        if (allSets.length === 0) {
+            alert("No custom question sets found! Import some CSVs first.");
+            return;
+        }
+
+        // 2. Filter out sets we have already played
+        const unplayedSets = allSets.filter(set => !playedSetIds.includes(set.id));
+
+        // 3. Check availability
+        if (unplayedSets.length === 0) {
+            if (window.confirm("You've played all available sets! \n\nClear history and start over?")) {
+                setPlayedSetIds([]); // Reset history
+                // Recursively call to pick one from the fresh batch
+                setTimeout(() => playNextUnplayedSet(), 100);
+            }
+            return;
+        }
+
+        // 4. Shuffle: Pick a random one from the remaining unplayed sets
+        const randomSet = unplayedSets[Math.floor(Math.random() * unplayedSets.length)];
+
+        // 5. Load it and Start
+        setPlayedSetIds(prev => [...prev, randomSet.id]); // Mark as played
+        setCurrentQuestions(randomSet.questions.slice(0, GAME_CONFIG.totalQuestions));
+        setSelectedCategory(`custom: ${randomSet.name}`);
+        setPlayerName(prev => prev); // Keep same player name
+
+        // Reset Game State immediately
+        setCurrentQuestion(0);
+        setScore(0);
+        setSelectedAnswer(null);
+        setShowResult(false);
+        setTimeLeft(GAME_CONFIG.timePerQuestion);
+        setIsTimerRunning(false);
+        setLifelinesUsed({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
+        setEliminatedOptions([]);
+        setGameState('playing');
     };
 
     // reset & select category
@@ -1100,6 +1166,47 @@ const QuizIQGame = () => {
         }),
     };
 
+    if (isPresenterMode() && !isAuthenticated) {
+        return (
+            <div style={{ ...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ ...styles.card, width: '400px', textAlign: 'center', padding: '40px' }}>
+                    <img src={xxvLogo} alt="Logo" style={{ width: 150, marginBottom: 0 }} />
+                    <h2 style={{ color: LUXURY_THEME.textGold, marginBottom: 20 }}>Admin Access</h2>
+                    <input
+                        type="password"
+                        placeholder="Enter Password"
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && (passwordInput === ADMIN_PASSWORD ? setIsAuthenticated(true) : alert('Wrong Password'))}
+                        style={{
+                            width: '90%',
+                            padding: '15px',
+                            borderRadius: '8px',
+                            background: 'rgba(0,0,0,0.5)',
+                            color: '#fff',
+                            border: `1px solid ${LUXURY_THEME.border}`,
+                            marginBottom: '20px'
+                        }}
+                    />
+                    <button
+                        onClick={() => passwordInput === ADMIN_PASSWORD ? setIsAuthenticated(true) : alert('Wrong Password')}
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            background: LUXURY_THEME.secondary,
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Get Access
+                    </button>
+                </div>
+                <AnimatedBanner />
+            </div>
+        );
+    }
 
     // Render: Registration
     if (gameState === 'registration') {
@@ -1126,7 +1233,7 @@ const QuizIQGame = () => {
                         </div>
                     </div>
 
-                    <div style={{ ...styles.card, marginTop: 120, maxWidth: 1500, marginLeft: 'auto', marginRight: 'auto' }}>
+                    <div style={{ ...styles.card, maxWidth: 1500, marginBottom: 'auto', marginTop: 120, marginLeft: 'auto', marginRight: 'auto' }}>
                         <h3 style={{ color: LUXURY_THEME.textGold }}>Enter Player Name</h3>
                         <input
                             autoFocus
@@ -1201,14 +1308,14 @@ const QuizIQGame = () => {
                             <div style={{ fontSize: 36 }}>🌍 </div>
                             <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Default</h3>
                             <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Mixed Nigerian + Global question set (default sample).</p>
-                            <div style={{ marginTop: 12, color: '#bcd', fontWeight: 600 }}>{getDefaultQuestions().length} questions available</div>
+                            <div style={{ marginTop: 12, color: '#bcd', fontWeight: 600 }}>{getDefaultQuestions().length} default questions, {(importedQuestions.sets || []).length} custom question sets </div>
                         </div>
 
                         <div style={{ ...styles.card, cursor: 'pointer', display: 'flex', flexDirection: 'column', minHeight: 120 }} onClick={() => selectCategory('custom')}>
                             <div style={{ fontSize: 36 }}>📁</div>
                             <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Custom Questions (CSV)</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Gallery of your Question files.</p>
-                            <div style={{ marginTop: 12, color: '#bcd', fontWeight: 600 }}>{(importedQuestions.sets || []).length} question sets </div>
+                            <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Gallery of your CSV files.</p>
+                            <div style={{ marginTop: 12, color: '#bcd', fontWeight: 600 }}>{(importedQuestions.sets || []).length} custom question sets </div>
                         </div>
 
                         <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', minHeight: 120 }}>
@@ -1457,6 +1564,10 @@ const QuizIQGame = () => {
                                             onClick={() => {
                                                 setCurrentQuestions(set.questions.slice(0, GAME_CONFIG.totalQuestions));
                                                 setSelectedCategory(`custom: ${set.name}`);
+
+                                                // mark as played
+                                                setPlayedSetIds(prev => [...prev, set.id]);
+
                                                 setTimeout(() => startGame(), 100);
                                             }}
                                             style={{
@@ -1532,19 +1643,26 @@ const QuizIQGame = () => {
                                     <div style={{ color: '#888', fontSize: '0.95rem', textAlign: 'center', marginBottom: 12 }}>
                                         No custom question sets yet
                                     </div>
-                                    <button
-                                        onClick={() => setGameState('category-selection')}
+                                    <label
                                         style={{
                                             padding: '8px 16px',
                                             borderRadius: 8,
                                             background: 'rgba(255,255,255,0.05)',
                                             border: '1px solid rgba(255,255,255,0.2)',
                                             color: '#bbb',
-                                            cursor: 'pointer'
+                                            cursor: 'pointer',
+                                            display: 'inline-block'
                                         }}
                                     >
-                                        Import Questions
-                                    </button>
+                                        Upload CSV
+                                        <input
+                                            type="file"
+                                            accept=".csv,.txt"
+                                            multiple
+                                            onChange={handleExcelImport}
+                                            style={{ display: 'none' }}
+                                        />
+                                    </label>
                                 </div>
                             )}
                         </div>
@@ -1771,12 +1889,16 @@ const QuizIQGame = () => {
                             <h1 style={{ margin: 0, fontSize: '2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}></h1>
                         </div>
                         <div>
+                            <button onClick={playNextUnplayedSet} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}
+                            >
+                                Play Next Game
+                            </button>
                             <button
                                 onClick={() => resetGame()} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}
                             >
                                 Restart Game
                             </button>
-                            <button onClick={() => startSlideshow()} style={{ padding: '8px 12px', borderRadius: 8 }}
+                            <button onClick={() => startSlideshow()} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}
                             >
                                 Start Slideshow
                             </button>
@@ -1785,7 +1907,6 @@ const QuizIQGame = () => {
 
                     <div style={{ ...styles.card, marginTop: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 40, paddingBottom: 40 }}>
 
-                        {/* Animated Emoji Section */}
                         <div style={{
                             fontSize: '6rem',
                             marginBottom: 20,
@@ -1828,48 +1949,49 @@ const QuizIQGame = () => {
     // Slideshow screen
     if (gameState === 'slideshow') {
         return (
-            <div style={styles.container}>
-                <div style={{ ...styles.centerArea, overflowY: 'auto'}}>
-                    <div style={{ ...styles.card, flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: 18 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, padding: '0 28px' }}>
-                            <h2 style={{ margin: -20, color: LUXURY_THEME.textGold }}>
-                                {currentSlide + 1} / {slideshowImages.length}
-                            </h2>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                                <button onClick={() => setGameState('category-selection')} style={{ padding: '8px 16px', borderRadius: 8, background: 'rgba(255,0,0,0.2)' }}>
-                                    Exit
-                                </button>
-                            </div>
-                        </div>
+            <div style={{ ...styles.container, padding: 0, background: '#000' }}>
+                <div style={{ position: 'relative', width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 
-                        <div style={{
-                            flex: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'rgba(0,0,0,0.5)',
-                            borderRadius: 12,
-                            overflow: 'hidden',
-                            position: 'relative',
-                            minHeight: 0
-                        }}>
-                            {slideshowImages.length > 0 && (
-                                <img
-                                    src={slideshowImages[currentSlide].src}
-                                    alt={slideshowImages[currentSlide].name}
-                                    style={{
-                                        maxWidth: '100%',
-                                        maxHeight: '100%',
-                                        width: 'auto',
-                                        height: 'auto',
-                                        objectFit: 'contain'
-                                    }}
-                                />
-                            )}
-                        </div>
-                    </div>
+
+                    {isPresenterMode() && (
+                        <button
+                            onClick={() => setGameState('registration')}
+                            style={{
+                                position: 'absolute',
+                                top: '30px',
+                                right: '30px',
+                                zIndex: 10000,
+                                padding: '14px 30px',
+                                background: 'rgba(255,255,255,0.1)',
+                                backdropFilter: 'blur(10px)',
+                                border: `1px solid ${LUXURY_THEME.accent}`,
+                                color: LUXURY_THEME.textGold,
+                                borderRadius: '30px',
+                                cursor: 'pointer',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            ✕ Exit Slideshow
+                        </button>
+                    )}
+
+
+
+                    {slideshowImages.length > 0 && (
+                        <img
+                            src={slideshowImages[currentSlide].src}
+                            alt="Slideshow"
+                            style={{
+                                maxWidth: '100%',
+                                maxHeight: '100%',
+                                objectFit: 'contain',
+                                transition: 'opacity 0.5s ease-in-out'
+                            }}
+                        />
+                    )}
                 </div>
-                <AnimatedBanner/>
+
+                <AnimatedBanner />
             </div>
         );
     }
