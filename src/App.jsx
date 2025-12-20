@@ -137,28 +137,12 @@ const QUESTIONS_DATABASE = {
     ],
     worldwide: [
         {
-            id: 1,
+            id: 3,
             question: 'Which planet is closest to the Sun?',
             options: ['Venus', 'Mercury', 'Earth', 'Mars'],
             correct: 1,
             difficulty: 'easy',
             category: 'Science'
-        },
-        {
-            id: 2,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
-            difficulty: 'easy',
-            category: 'Technology'
-        },
-        {
-            id: 3,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
-            difficulty: 'easy',
-            category: 'Technology'
         },
         {
             id: 4,
@@ -170,75 +154,91 @@ const QUESTIONS_DATABASE = {
         },
         {
             id: 5,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
+            question: "Which Nigerian city is commonly referred to as the 'Centre of Excellence'?",
+            options: ['Abuja', 'Ibadan', 'Lagos', 'Benin City'],
+            correct: 2,
             difficulty: 'easy',
-            category: 'Technology'
+            category: 'Nigeria'
         },
         {
             id: 6,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
+            question: "Who was the first woman to win a Nobel Prize?",
+            options: ['Marie Curie', 'Rosalind Franklin', 'Jane Goodall', 'Ada Lovelace'],
             correct: 0,
-            difficulty: 'easy',
-            category: 'Technology'
+            difficulty: 'medium',
+            category: 'History'
         },
         {
             id: 7,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
+            question: "What is the official currency of Nigeria?",
+            options: ['Cedi', 'Naira', 'Shilling', 'Franc'],
+            correct: 1,
             difficulty: 'easy',
-            category: 'Technology'
+            category: 'Nigeria'
         },
         {
             id: 8,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
-            difficulty: 'easy',
-            category: 'Technology'
+            question: "Which planet in our solar system has the most moons?",
+            options: ['Jupiter', 'Saturn', 'Uranus', 'Neptune'],
+            correct: 1,
+            difficulty: 'medium',
+            category: 'Science'
         },
         {
             id: 9,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
+            question: "Which Nigerian author wrote the novel 'Things Fall Apart'?",
+            options: ['Wole Soyinka', 'Chimamanda Ngozi Adichie', 'Chinua Achebe', 'Buchi Emecheta'],
+            correct: 2,
             difficulty: 'easy',
-            category: 'Technology'
+            category: 'Literature'
         },
         {
             id: 10,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
-            difficulty: 'easy',
-            category: 'Technology'
+            question: "What year did Nigeria gain independence from Britain?",
+            options: ['1957', '1960', '1963', '1966'],
+            correct: 1,
+            difficulty: 'medium',
+            category: 'Nigeria'
         },
         {
             id: 11,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
+            question: "Which company developed the Android operating system?",
+            options: ['Apple', 'Microsoft', 'Google', 'IBM'],
+            correct: 2,
             difficulty: 'easy',
             category: 'Technology'
         },
         {
             id: 12,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
+            question: "Which African country has the largest population?",
+            options: ['Ethiopia', 'Egypt', 'South Africa', 'Nigeria'],
+            correct: 3,
             difficulty: 'easy',
-            category: 'Technology'
+            category: 'Geography'
         },
         {
             id: 13,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
-            difficulty: 'easy',
+            question: "What is the name of the longest river in Nigeria?",
+            options: ['River Benue', 'River Ogun', 'River Niger', 'River Osun'],
+            correct: 2,
+            difficulty: 'medium',
+            category: 'Nigeria'
+        },
+        {
+            id: 14,
+            question: "Who is credited with inventing the World Wide Web?",
+            options: ['Bill Gates', 'Steve Jobs', 'Tim Berners-Lee', 'Mark Zuckerberg'],
+            correct: 2,
+            difficulty: 'medium',
             category: 'Technology'
+        },
+        {
+            id: 15,
+            question: "Which Nigerian music genre blends traditional Yoruba music with jazz and funk?",
+            options: ['Highlife', 'Afrobeats', 'Fuji', 'Afrobeat'],
+            correct: 3,
+            difficulty: 'hard',
+            category: 'Nigeria'
         },
     ]
 };
