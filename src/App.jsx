@@ -404,7 +404,7 @@ const QuizIQGame = () => {
                     setShowTransition(syncedState.showTransition);
                     setEliminatedOptions(syncedState.eliminatedOptions || []);
                     setLifelinesUsed(syncedState.lifelinesUsed || { fiftyFifty: false, askAudience: false, phoneAFriend: false });
-                    setPlayerName(syncedState.playerName || 'Player');
+                    setPlayerName(syncedState.playerName || '');
                     setSelectedCategory(syncedState.selectedCategory || '');
 
                     // Sync questions if available
@@ -1277,8 +1277,32 @@ const QuizIQGame = () => {
                             </button>
                         </div>
                     </div>
-
                 </div>
+
+                {/* floating audience label, only for Audience screen*/}
+                {!isPresenterMode() && (gameState === 'registration') && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 1000,
+                        pointerEvents: 'none',
+                        textAlign: 'center'
+                    }}>
+                        <h2 style={{
+                            fontSize: '3rem',      // Very large for the lounge screen
+                            color: '#d4af37',        // Using the gold accent
+                            textTransform: 'uppercase',
+                            fontWeight: '900',
+                            letterSpacing: '15px',   // Spaced out for a premium feel
+                            opacity: 0.25,           // Subtle watermark effect
+                            margin: 0
+                        }}>
+                            Audience
+                        </h2>
+                    </div>
+                )}
 
                 <video src={TRANSITION_VIDEO_PATH} preload="auto" style={{ display: 'none' }} />
 
@@ -1409,6 +1433,31 @@ const QuizIQGame = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* floating audience label, only for Audience screen*/}
+                {!isPresenterMode() && (gameState === 'category-selection') && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 1000,
+                        pointerEvents: 'none',
+                        textAlign: 'center'
+                    }}>
+                        <h2 style={{
+                            fontSize: '3rem',      // Very large for the lounge screen
+                            color: '#d4af37',        // Using the gold accent
+                            textTransform: 'uppercase',
+                            fontWeight: '900',
+                            letterSpacing: '15px',   // Spaced out for a premium feel
+                            opacity: 0.25,           // Subtle watermark effect
+                            margin: 0
+                        }}>
+                            Audience
+                        </h2>
+                    </div>
+                )}
 
                 <AnimatedBanner />
             </div>
@@ -1669,6 +1718,30 @@ const QuizIQGame = () => {
                     </div>
                 </div>
 
+                {/* floating audience label, only for Audience screen*/}
+                {!isPresenterMode() && (gameState === 'menu') && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 1000,
+                        pointerEvents: 'none',
+                        textAlign: 'center'
+                    }}>
+                        <h2 style={{
+                            fontSize: '3rem',      // Very large for the lounge screen
+                            color: '#d4af37',        // Using the gold accent
+                            textTransform: 'uppercase',
+                            fontWeight: '900',
+                            letterSpacing: '15px',   // Spaced out for a premium feel
+                            opacity: 0.25,           // Subtle watermark effect
+                            margin: 0
+                        }}>
+                            Audience
+                        </h2>
+                    </div>
+                )}
                 <AnimatedBanner />
             </div>
         );
@@ -1713,14 +1786,13 @@ const QuizIQGame = () => {
 
                 <div style={styles.centerArea}>
 
-                    {/* Transition video overlay */}
+                    {/*transition video overlay */}
                     {showTransition && (
                         <div style={{ position: 'absolute', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)',  paddingBottom: '80px' }}>
                             <video ref={transitionVideoRef} src={TRANSITION_VIDEO_PATH} style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: 12 }} autoPlay muted={!isPresenterMode()} onEnded={() => onTransitionEnded()} />
                         </div>
                     )}
 
-                    {/* NEW: Transparent Overlay Safety Banner */}
                     {showSafetyBanner && (
                         <div style={{
                             position: 'absolute',
@@ -1729,7 +1801,9 @@ const QuizIQGame = () => {
                             transform: 'translate(-50%, -50%)',
                             zIndex: 9998, // Below video, above game
                             width: '80%',
-                            maxWidth: '600px',
+                            maxWidth: '1000px',
+                            height: '80%',
+                            maxHeight: '500px',
                             background: 'rgba(0, 0, 0, 0.85)', // Dark transparent background
                             backdropFilter: 'blur(10px)',
                             border: `2px solid ${LUXURY_THEME.textGold}`,
@@ -1737,24 +1811,24 @@ const QuizIQGame = () => {
                             padding: '40px',
                             textAlign: 'center',
                             boxShadow: '0 0 50px rgba(212, 175, 55, 0.5)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
                             animation: 'bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                         }}>
-                            <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🔒</div>
+                            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔒</div>
                             <h2 style={{
                                 color: LUXURY_THEME.textGold,
                                 textTransform: 'uppercase',
-                                fontSize: '2rem',
-                                margin: '0 0 15px 0',
-                                letterSpacing: '2px'
+                                fontSize: '2.5rem',
+                                margin: '0 0 20px 0',
+                                letterSpacing: '4px'
                             }}>
                                 Safety Net Announcement
                             </h2>
-                            <div style={{ fontSize: '0.9rem', opacity: 0.9, marginTop: 4 }}>
-                            Right answer secures <strong>{GAME_CONFIG.currency}{potentialSecure.toLocaleString()}</strong>.
-                                <span style={{ fontSize: '0.85rem', fontStyle: 'italic', marginLeft: 8 }}>
-                            (Wrong answer drops you to {GAME_CONFIG.currency}{dropAmount.toLocaleString()})
-                                </span>
-
+                            <div style={{fontSize: '1.6rem', opacity: 0.9, lineHeight: 1.4}}>
+                            Right answer secures <strong>{GAME_CONFIG.currency}{potentialSecure.toLocaleString()}</strong>. (Wrong answer drops you to {GAME_CONFIG.currency}{dropAmount.toLocaleString()})
                             </div>
                         </div>
                     )}
@@ -1878,7 +1952,7 @@ const QuizIQGame = () => {
 
     // Result screen
     if (gameState === 'result') {
-        const isWinner = score === 10000; // Change logic here if you want easier winning criteria
+        const isWinner = score === 10000; //change logic here if you want easier winning criteria
 
         return (
             <div style={styles.container}>
@@ -1889,7 +1963,8 @@ const QuizIQGame = () => {
                             <h1 style={{ margin: 0, fontSize: '2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}></h1>
                         </div>
                         <div>
-                            <button onClick={playNextUnplayedSet} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}
+                            <button
+                                onClick={() => setGameState('play_next')} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10,}}
                             >
                                 Play Next Game
                             </button>
@@ -1945,6 +2020,83 @@ const QuizIQGame = () => {
             </div>
         );
     }
+
+//new "Next Player" transition screen
+    if (gameState === 'play_next') {
+        return (
+            <div style={styles.container}>
+                <div style={{ ...styles.centerArea }}>
+                    <div style={styles.header}>
+                        <div>
+                            <img
+                                src={xxvLogo}
+                                alt="XXV Logo"
+                                style={{
+                                    width: 150,
+                                    height: 150,
+                                    objectFit: 'contain'
+                                }}
+                            />
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <h1 style={{ margin: 0, fontSize: '2.2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                                QuizIQ
+                            </h1>
+                            <div style={{ color: 'rgba(255,255,255,0.85)' }}>by 6 Tech Solutions</div>
+                        </div>
+                    </div>
+
+                    <div style={{ ...styles.card, maxWidth: 1500, marginBottom: 'auto', marginTop: 120, marginLeft: 'auto', marginRight: 'auto' }}>
+                        <h3 style={{ color: LUXURY_THEME.textGold }}>Enter Player Name</h3>
+                        <input
+                            autoFocus
+                            type="text"
+                            placeholder="Player name..."
+                            value={playerName}
+                            onChange={(e) => setPlayerName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && playNextUnplayedSet()}
+                            style={{
+                                width: 'auto',
+                                padding: '20px 30px',
+                                borderRadius: 10,
+                                border: `1px solid ${LUXURY_THEME.border}`,
+                                backgroundColor: 'rgba(0,0,0,0.45)',
+                                color: LUXURY_THEME.text,
+                                fontSize: 16,
+                                marginTop: -2,
+                                marginBottom: 12
+                            }}
+                        />
+                        <div style={{ display: 'flex', gap: 12 }}>
+                            <button
+                                onClick={() => {
+                                    if (!isPresenterMode()) return;
+                                    setPlayerName('');
+                                    playNextUnplayedSet();
+                                }}
+                                style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}
+                            >
+                                Proceed to Next Game
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!isPresenterMode()) return;
+                                    setPlayerName('');
+                                    playNextUnplayedSet();
+                                }}
+                                style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${LUXURY_THEME.border}` }}
+                            >
+                                Guest
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <AnimatedBanner />
+            </div>
+        );
+    }
+
+
 
     // Slideshow screen
     if (gameState === 'slideshow') {
