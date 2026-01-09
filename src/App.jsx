@@ -476,6 +476,16 @@ const QuizIQGame = () => {
         return () => clearInterval(interval);
     }, [isTimerRunning, timeLeft, gameSettings.timerEnabled, gameState]);
 
+    useEffect(() => {
+        const authTime = localStorage.getItem('adminAuthTime');
+        if (authTime) {
+            const twelveHoursInMs = 12 * 60 * 60 * 1000;
+            const timePassed = Date.now() - parseInt(authTime);
+            if (timePassed < twelveHoursInMs) {
+                setIsAuthenticated(true);
+            }
+        }
+    }, []);
 
     // keyboard controls
     useEffect(() => {
@@ -683,6 +693,16 @@ const QuizIQGame = () => {
         }
     };
 
+    //auth handler
+    const handleAuthentication = () => {
+        if (passwordInput === ADMIN_PASSWORD) {
+            setIsAuthenticated(true);
+            localStorage.setItem('adminAuthTime', Date.now().toString());
+        } else {
+            alert('Wrong Password');
+        }
+    };
+
     const deleteImage = (imageId) => {
         const updatedImages = slideshowImages.filter(img => img.id !== imageId);
         setSlideshowImages(updatedImages);
@@ -850,7 +870,7 @@ const QuizIQGame = () => {
         setPlayedSetIds(prev => [...prev, randomSet.id]); // Mark as played
         setCurrentQuestions(randomSet.questions.slice(0, GAME_CONFIG.totalQuestions));
         setSelectedCategory(`custom: ${randomSet.name}`);
-        setPlayerName(prev => prev); // Keep same player name
+        setPlayerName('');
 
         // Reset Game State immediately
         setCurrentQuestion(0);
@@ -1174,10 +1194,10 @@ const QuizIQGame = () => {
                     <h2 style={{ color: LUXURY_THEME.textGold, marginBottom: 20 }}>Admin Access</h2>
                     <input
                         type="password"
-                        placeholder="Enter Password"
+                        placeholder="Enter Passkey"
                         value={passwordInput}
                         onChange={(e) => setPasswordInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && (passwordInput === ADMIN_PASSWORD ? setIsAuthenticated(true) : alert('Wrong Password'))}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAuthentication()}
                         style={{
                             width: '90%',
                             padding: '15px',
@@ -1189,7 +1209,7 @@ const QuizIQGame = () => {
                         }}
                     />
                     <button
-                        onClick={() => passwordInput === ADMIN_PASSWORD ? setIsAuthenticated(true) : alert('Wrong Password')}
+                        onClick={handleAuthentication}
                         style={{
                             width: '100%',
                             padding: '12px',
@@ -1563,17 +1583,15 @@ const QuizIQGame = () => {
 
                             {/* 2. Imported Question Sets */}
                             {(importedQuestions.sets || []).map((set) => (
-                                <div key={set.id} style={{
+                                <div style={{
                                     ...styles.card,
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    border: `1px solid ${LUXURY_THEME.border}`,
+                                    border: `2px solid ${LUXURY_THEME.accent}`,
                                     minHeight: 280
                                 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#fff', flex: 1 }}>
-                                            📚 {set.name}
-                                        </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: LUXURY_THEME.textGold }}>📚 {set.name}</div>
                                     </div>
 
                                     <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 12 }}>
@@ -1602,7 +1620,7 @@ const QuizIQGame = () => {
                                             </div>
                                         ))}
                                         {set.questions.length > 3 && (
-                                            <div style={{ marginTop: 8, color: '#bbb', fontSize: '0.8rem' }}>
+                                            <div style={{ marginTop: 8, color: LUXURY_THEME.accent, fontSize: '0.8rem' }}>
                                                 + {set.questions.length - 3} more questions
                                             </div>
                                         )}
@@ -1623,11 +1641,12 @@ const QuizIQGame = () => {
                                                 flex: 1,
                                                 padding: '10px',
                                                 borderRadius: 8,
-                                                background: 'rgba(0,128,0,0.15)',
-                                                border: `1px solid rgba(0,255,0,0.3)`,
+                                                background: 'linear-gradient(90deg,#ffd700,#ffb347)',
+                                                border: 'none',
                                                 fontWeight: 'bold',
                                                 cursor: 'pointer',
-                                                color: '#9bffb0',
+                                                color: '#1a1a1a',
+                                                fontSize: '1rem',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
