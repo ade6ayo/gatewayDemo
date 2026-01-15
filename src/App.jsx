@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import xxvLogo from './assets/xxv.png';
+import Imagegif from './assets/6ts.gif';
 import {
     Play,
     Trophy,
@@ -843,6 +844,12 @@ const QuizIQGame = () => {
     const playNextUnplayedSet = () => {
         if (!isPresenterMode()) return;
 
+        // Validate player name first
+        if (!playerName.trim()) {
+            alert("Please enter a player name first!");
+            return;
+        }
+
         // 1. Get all available custom sets
         const allSets = importedQuestions.sets || [];
         if (allSets.length === 0) {
@@ -866,11 +873,10 @@ const QuizIQGame = () => {
         // 4. Shuffle: Pick a random one from the remaining unplayed sets
         const randomSet = unplayedSets[Math.floor(Math.random() * unplayedSets.length)];
 
-        // 5. Load it and Start
+        // 5. Load it and Start (DON'T clear playerName here!)
         setPlayedSetIds(prev => [...prev, randomSet.id]); // Mark as played
         setCurrentQuestions(randomSet.questions.slice(0, GAME_CONFIG.totalQuestions));
         setSelectedCategory(`custom: ${randomSet.name}`);
-        setPlayerName('');
 
         // Reset Game State immediately
         setCurrentQuestion(0);
@@ -1245,12 +1251,15 @@ const QuizIQGame = () => {
                                 }}
                             />
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <h1 style={{ margin: 0, fontSize: '2.2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                QuizIQ
-                            </h1>
-                            <div style={{ color: 'rgba(255,255,255,0.85)' }}>by 6 Tech Solutions</div>
-                        </div>
+                        <img
+                            src={Imagegif}
+                            alt="6ts"
+                            style={{
+                                width: 150,
+                                height: 150,
+                                objectFit: 'contain'
+                            }}
+                        />
                     </div>
 
                     <div style={{ ...styles.card, maxWidth: 1500, marginBottom: 'auto', marginTop: 120, marginLeft: 'auto', marginRight: 'auto' }}>
@@ -1278,7 +1287,9 @@ const QuizIQGame = () => {
                             <button
                                 onClick={() => {
                                     if (!isPresenterMode()) return; // Audience can't click
-                                    if (playerName.trim()) setGameState('category-selection');
+                                    if (playerName.trim()) {
+                                        setGameState('category-selection');
+                                    }
                                 }}
                                 disabled={!playerName.trim()}
                                 style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}
@@ -1983,7 +1994,14 @@ const QuizIQGame = () => {
                         </div>
                         <div>
                             <button
-                                onClick={() => setGameState('play_next')} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10,}}
+                                onClick={() => {
+                                    if (!isPresenterMode()) return;
+                                    // 1. CLEAR the name right now so the next screen starts fresh
+                                    setPlayerName('');
+                                    // 2. MOVE to the name input screen
+                                    setGameState('play_next');
+                                }}
+                                style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10,}}
                             >
                                 Play Next Game
                             </button>
@@ -2057,12 +2075,15 @@ const QuizIQGame = () => {
                                 }}
                             />
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <h1 style={{ margin: 0, fontSize: '2.2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                                QuizIQ
-                            </h1>
-                            <div style={{ color: 'rgba(255,255,255,0.85)' }}>by 6 Tech Solutions</div>
-                        </div>
+                        <img
+                            src={Imagegif}
+                            alt="6ts"
+                            style={{
+                                width: 150,
+                                height: 150,
+                                objectFit: 'contain'
+                            }}
+                        />
                     </div>
 
                     <div style={{ ...styles.card, maxWidth: 1500, marginBottom: 'auto', marginTop: 120, marginLeft: 'auto', marginRight: 'auto' }}>
@@ -2073,7 +2094,7 @@ const QuizIQGame = () => {
                             placeholder="Player name..."
                             value={playerName}
                             onChange={(e) => setPlayerName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && playNextUnplayedSet()}
+                            onKeyDown={(e) => e.key === 'Enter' && playerName.trim() && playNextUnplayedSet()}
                             style={{
                                 width: 'auto',
                                 padding: '20px 30px',
@@ -2090,9 +2111,9 @@ const QuizIQGame = () => {
                             <button
                                 onClick={() => {
                                     if (!isPresenterMode()) return;
-                                    setPlayerName('');
-                                    playNextUnplayedSet();
+                                    if (playerName.trim()) playNextUnplayedSet();
                                 }}
+                                disabled={!playerName.trim()}
                                 style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}
                             >
                                 Proceed to Next Game
@@ -2100,7 +2121,7 @@ const QuizIQGame = () => {
                             <button
                                 onClick={() => {
                                     if (!isPresenterMode()) return;
-                                    setPlayerName('');
+                                    setPlayerName('Guest'); // Sets it to Guest instead of clearing it
                                     playNextUnplayedSet();
                                 }}
                                 style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${LUXURY_THEME.border}` }}
