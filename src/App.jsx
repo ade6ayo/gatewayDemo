@@ -1294,7 +1294,7 @@ const QuizIQGame = () => {
                                 disabled={!playerName.trim()}
                                 style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}
                             >
-                                Continue
+                                Start Game
                             </button>
                             <button
                                 onClick={() => {
