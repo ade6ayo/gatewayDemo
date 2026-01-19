@@ -114,8 +114,81 @@ const BounceKeyframes = React.memo(() => (
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
+        @keyframes slideInBonus {
+            0% {
+                transform: translateX(-100px);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
     `}</style>
 ));
+
+const Confetti = () => {
+    const confettiPieces = Array.from({ length: 150 }, (_, i) => ({
+        id: i,
+        left: `${Math.random() * 100}%`,
+        animationDelay: `${Math.random() * 3}s`,
+        backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'][Math.floor(Math.random() * 6)],
+        width: `${Math.random() * 10 + 5}px`,
+        height: `${Math.random() * 10 + 5}px`
+    }));
+
+    return (
+        <>
+            <style>{`
+                @keyframes confetti-fall {
+                    0% {
+                        transform: translateY(-100vh) rotate(0deg);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(100vh) rotate(720deg);
+                        opacity: 0;
+                    }
+                }
+            `}</style>
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100vw',
+                height: '100vh',
+                pointerEvents: 'none',
+                zIndex: 9999,
+                overflow: 'hidden'
+            }}>
+                {confettiPieces.map((piece) => (
+                    <div
+                        key={piece.id}
+                        style={{
+                            position: 'absolute',
+                            left: piece.left,
+                            top: '-20px',
+                            width: piece.width,
+                            height: piece.height,
+                            backgroundColor: piece.backgroundColor,
+                            animation: `confetti-fall ${3 + Math.random() * 2}s linear infinite`,
+                            animationDelay: piece.animationDelay,
+                            borderRadius: '2px'
+                        }}
+                    />
+                ))}
+            </div>
+        </>
+    );
+};
+
 
 const QUESTIONS_DATABASE = {
     nigerian: [
@@ -298,6 +371,11 @@ const QuizIQGame = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [slideshowPlaying, setSlideshowPlaying] = useState(true);
     const [playedSetIds, setPlayedSetIds] = useState([]);
+    const [showTimeBonus, setShowTimeBonus] = useState(false);
+    const [timeBonusAmount, setTimeBonusAmount] = useState(0);
+    const [audiencePoll, setAudiencePoll] = useState(null);
+    const [showGuide, setShowGuide] = useState(false);
+
 
     const [gameSettings, setGameSettings] = useState({
         soundEnabled: true,
@@ -423,7 +501,18 @@ const QuizIQGame = () => {
                     if (syncedState.slideshowImages) {
                         setSlideshowImages(syncedState.slideshowImages);
                     }
-
+                    if (syncedState.showTimeBonus !== undefined) {
+                        setShowTimeBonus(syncedState.showTimeBonus);
+                    }
+                    if (syncedState.timeBonusAmount !== undefined) {
+                        setTimeBonusAmount(syncedState.timeBonusAmount);
+                    }
+                    if (syncedState.audiencePoll !== undefined) {
+                        setAudiencePoll(syncedState.audiencePoll);
+                    }
+                    if (syncedState.showGuide !== undefined) {
+                        setShowGuide(syncedState.showGuide);
+                    }
                 } catch (error) {
                     console.error('Sync parse error:', error);
                 }
@@ -455,9 +544,13 @@ const QuizIQGame = () => {
             currentSlide,
             showSafetyBanner,
             slideshowPlaying,
-            slideshowImages
+            slideshowImages,
+            showTimeBonus,
+            timeBonusAmount,
+            audiencePoll,
+            showGuide
         });
-    }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, showSafetyBanner, slideshowPlaying, slideshowImages]);
+    }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, showSafetyBanner, slideshowPlaying, slideshowImages, showTimeBonus, timeBonusAmount, audiencePoll, showGuide]);
     useEffect(() => {
         let interval;
         // Only presenter controls the timer
@@ -561,6 +654,274 @@ const QuizIQGame = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const GameGuide = ({ onClose }) => {
+        return (
+            <>
+                <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 100; }
+                }
+                .guide-scrollbar::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .guide-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(255,255,255,0.05);
+                    border-radius: 4px;
+                }
+                .guide-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255,255,255,0.3);
+                    border-radius: 4px;
+                }
+                .guide-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255,255,255,0.5);
+                }
+            `}</style>
+
+                <div
+                    onClick={onClose}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0, 0, 0, 0.5)',
+                        backdropFilter: 'blur(10px)',
+                        zIndex: 10000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '20px',
+                        animation: 'fadeIn 0.3s ease-out'
+                    }}>
+                    <div style={{
+                        background: LUXURY_THEME.background,
+                        border: `2px solid ${LUXURY_THEME.accent}`,
+                        borderRadius: '20px',
+                        maxWidth: '900px',
+                        width: '100%',
+                        maxHeight: '90vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+                    }}>
+                        {/* Header */}
+                        <div style={{
+                            padding: '24px',
+                            borderBottom: `1px solid ${LUXURY_THEME.border}`,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <h2 style={{
+                                margin: 0,
+                                fontSize: '1.8rem',
+                                background: LUXURY_THEME.secondary,
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent'
+                            }}>
+                                📖 Game Guide & Shortcuts
+                            </h2>
+                            <button
+                                onClick={onClose}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    fontSize: '2rem',
+                                    color: LUXURY_THEME.textGold,
+                                    cursor: 'pointer',
+                                    padding: '0 8px',
+                                    lineHeight: 1
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div className="guide-scrollbar" style={{
+                            flex: 1,
+                            overflowY: 'auto',
+                            padding: '24px',
+                            color: LUXURY_THEME.text
+                        }}>
+                            {/* Game Modes */}
+                            <section style={{ marginBottom: '32px' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Game Modes</h3>
+                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                    <p><strong>Presenter Mode:</strong> Control the game, see correct answers, use keyboard shortcuts</p>
+                                    <p style={{ color: '#888', fontSize: '0.9rem' }}>Access via: <code style={{ fontFamily: 'JetBrainsMonoNL-Bold', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>?mode=presenter</code></p>
+
+                                    <p style={{ marginTop: '12px' }}><strong>Audience Mode:</strong> View-only mode that syncs with presenter in real-time</p>
+                                    <p style={{ color: '#888', fontSize: '0.9rem' }}>Access via: <code style={{ fontFamily: 'JetBrainsMonoNL-Bold', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>?mode=audience</code></p>
+
+                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: On PC PROJECTIONS (Win + P) should ALWAYS be set to "EXTEND MODE" with the Presenter Mode on the PC and the Audience Session dragged to the Extended Screen.</p>
+                                </div>
+                            </section>
+
+                            {/* Question Management */}
+                            <section style={{ marginBottom: '32px' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Question Management</h3>
+                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                    <p><strong>1. Default Questions:</strong> Built-in Nigerian + Global question set</p>
+
+                                    <p style={{ marginTop: '12px' }}><strong>2. Custom Questions (CSV Import):</strong></p>
+                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
+                                        <li>Upload unlimited question sets via CSV/TXT files</li>
+                                        <li>Format: <code style={{ fontFamily: 'JetBrainsMonoNL-Bold', fontSize: '0.85rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '3px' }}>Question | Option A | B | C | D | Correct (1-4) | Difficulty | Category</code></li>
+                                        <li>Download template available in-app</li>
+                                        <li>Rename, delete, or preview question sets</li>
+                                        <li>Play Next Game feature auto-selects unplayed sets</li>
+                                    </ul>
+                                </div>
+                            </section>
+
+                            {/* Lifelines */}
+                            <section style={{ marginBottom: '32px' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Lifelines</h3>
+                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                    <p><strong>1. 50/50:</strong> Eliminates 2 wrong answers + adds <span style={{ color: '#00ff00' }}>10 seconds</span> to timer</p>
+
+                                    <p style={{ marginTop: '12px' }}><strong>2. Ask the Audience:</strong> Shows audience poll with visual bar graph + adds <span style={{ color: '#00ff00' }}>10 seconds</span> to timer</p>
+                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
+                                        <li>Green bars indicate top 2 likely answers</li>
+                                        <li>White bars indicate less likely answers</li>
+                                        <li>Displays percentage for each option</li>
+                                    </ul>
+
+                                    <p style={{ marginTop: '12px' }}><strong>3. Phone a Friend:</strong> Adds <span style={{ color: '#00ff00' }}>30 seconds</span> to timer</p>
+
+                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: Time bonuses shows a "+10s" or "+30s" animation and timer continues without stopping</p>
+                                </div>
+                            </section>
+
+                            {/* Timer & Scoring */}
+                            <section style={{ marginBottom: '32px' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Timer & Scoring</h3>
+                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
+                                        <li>Default: 30 seconds per question (configurable)</li>
+                                        <li>Timer can be paused/resumed (presenter only)</li>
+                                        <li>Prize structure: ₦500 → ₦10,000 (15 questions)</li>
+                                        <li><strong>Safety Nets</strong> at Questions 5, 10, and 15
+                                            <ul style={{ marginTop: '4px' }}>
+                                                <li>Banner announces when reaching safety net questions</li>
+                                                <li>Wrong answer drops you to last safety net amount</li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </section>
+
+                            {/* Results */}
+                            <section style={{ marginBottom: '32px' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Results & Celebrations</h3>
+                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                    <p>😔 <strong>₦0:</strong> "Game Over" message</p>
+                                    <p>😉 <strong>₦2,500 - ₦9,000:</strong> "Good Job!" with encouragement</p>
+                                    <p>🤑 <strong>₦10,000:</strong> "Congratulations!" + Full-screen confetti celebration</p>
+                                </div>
+                            </section>
+
+                            {/* Slideshow */}
+                            <section style={{ marginBottom: '32px' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Slideshow Feature</h3>
+                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
+                                        <li>Upload up to 10 images for slideshow display</li>
+                                        <li>Auto-advances every 5 seconds</li>
+                                        <li>Perfect for sponsor logos, advertisements, or break screens</li>
+                                        <li>Delete individual images or start slideshow anytime</li>
+                                    </ul>
+                                </div>
+                            </section>
+
+                            {/* Keyboard Shortcuts */}
+                            <section style={{ marginBottom: '32px' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Keyboard Shortcuts</h3>
+                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                    <p><strong>Answer Selection:</strong></p>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginTop: '8px', marginBottom: '16px' }}>
+                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>A</kbd> Select Option A</p>
+                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>B</kbd> Select Option B</p>
+                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>C</kbd> Select Option C</p>
+                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>D</kbd> Select Option D</p>
+                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>Enter</kbd> Submit selected answer</p>
+                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>↑↓←→</kbd> Navigate through options</p>
+                                    </div>
+
+                                    <p><strong>Timer Control:</strong></p>
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginTop: '8px' }}>
+                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>Space</kbd> Pause/Resume timer</p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Presenter Workflow */}
+                            <section style={{ marginBottom: '32px' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Presenter Workflow</h3>
+                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                    <p><strong>Setup:</strong></p>
+                                    <ol style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
+                                        <li>Enter player name</li>
+                                        <li>Choose question category or import custom CSV</li>
+                                        <li>Select specific question set to play</li>
+                                    </ol>
+
+                                    <p style={{ marginTop: '16px' }}><strong>During Game:</strong></p>
+                                    <ol style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
+                                        <li>Press Space to start timer</li>
+                                        <li>Use A/B/C/D keys to select answer</li>
+                                        <li>Use lifelines as needed (adds time automatically)</li>
+                                        <li>Press Enter or click "Submit Answer"</li>
+                                        <li>Watch transition video</li>
+                                        <li>Proceed to next question</li>
+                                    </ol>
+
+                                    <p style={{ marginTop: '16px' }}><strong>After Game:</strong></p>
+                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
+                                        <li><strong>Play Next Game:</strong> Auto-loads next unplayed question set</li>
+                                        <li><strong>Restart Game:</strong> Go back to player registration</li>
+                                        <li><strong>Start Slideshow:</strong> Display uploaded images</li>
+                                    </ul>
+                                </div>
+                            </section>
+
+                            {/* Tips */}
+                            <section style={{ marginBottom: '32px' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Tips & Best Practices</h3>
+                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
+                                        <li><strong>For Hosts:</strong> Keep timer running for excitement, pause only if needed</li>
+                                        <li><strong>Question Sets:</strong> Organize by difficulty or topic for better flow</li>
+                                        <li><strong>Lifelines:</strong> Strategic use, time bonuses can be crucial</li>
+                                        <li><strong>Audience Poll:</strong> Most helpful when 2+ answers seem correct</li>
+                                        <li><strong>Safety Nets:</strong> Remind players before safety net questions for added tension</li>
+                                        <li><strong>Slideshow:</strong> Upload sponsor logos before event starts</li>
+                                    </ul>
+                                </div>
+                            </section>
+
+                            {/* Footer */}
+                            <div style={{
+                                marginTop: '40px',
+                                paddingTop: '20px',
+                                borderTop: `1px solid ${LUXURY_THEME.border}`,
+                                textAlign: 'center',
+                                color: '#888',
+                                fontSize: '0.9rem'
+                            }}>
+                                    <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>Powered by 6TechSolutions</code></p>
+                                    <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>Contact/WhatsApp: 0909 725 3310</code></p>
+                                    <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>EMail: 6techsolutions@gmail.com</code></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
     };
 
     const handleExcelImport = async (event) => {
@@ -766,20 +1127,64 @@ const QuizIQGame = () => {
         const toEliminate = wrongs.slice(0, 2);
         setEliminatedOptions(toEliminate);
         setLifelinesUsed((p) => ({ ...p, fiftyFifty: true }));
+        //+10secs
+        setTimeLeft((prev) => prev + 10);
+        setTimeBonusAmount(10);
+        setShowTimeBonus(true);
+        setTimeout(() => setShowTimeBonus(false), 2000);
     };
 
-    // placeholders for other lifelines
+
     const handleAskAudience = () => {
         if (lifelinesUsed.askAudience) return;
         setLifelinesUsed((p) => ({ ...p, askAudience: true }));
-        // add simulated percentages here
+        //+20secs
+        setTimeLeft((prev) => prev + 10);
+        setTimeBonusAmount(10);
+        setShowTimeBonus(true);
+        setTimeout(() => setShowTimeBonus(false), 2000);
+
+        //generate audience poll
+        const q = currentQuestions[currentQuestion];
+        if (!q) return;
+
+        const correctAnswer = q.correct;
+        const allOptions = [0, 1, 2, 3];
+        const wrongOptions = allOptions.filter(i => i !== correctAnswer);
+
+        //pick one random wrong option to be the second highest
+        const secondHighest = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
+        const remainingOptions = wrongOptions.filter(i => i !== secondHighest);
+
+        //generate %
+        const correctPercentage = 45 + Math.floor(Math.random() * 30); // 45-75%
+        const secondPercentage = 15 + Math.floor(Math.random() * 20); // 15-35%
+        const remaining = 100 - correctPercentage - secondPercentage;
+
+        //distribute remaining percentage between other 2
+        const thirdPercentage = Math.floor(remaining / 2) + Math.floor(Math.random() * (remaining / 2));
+        const fourthPercentage = remaining - thirdPercentage;
+
+        //create poll results obj
+        const pollResults = {
+            [correctAnswer]: correctPercentage,
+            [secondHighest]: secondPercentage,
+            [remainingOptions[0]]: thirdPercentage,
+            [remainingOptions[1]]: fourthPercentage
+        };
+        setAudiencePoll(pollResults);
     };
+
     const handlePhoneAFriend = () => {
         if (lifelinesUsed.phoneAFriend) return;
         setLifelinesUsed((p) => ({ ...p, phoneAFriend: true }));
         //can add a suggestion popup here
+        //+20secs
+        setTimeLeft((prev) => prev + 30);
+        setTimeBonusAmount(30);
+        setShowTimeBonus(true);
+        setTimeout(() => setShowTimeBonus(false), 2000);
     };
-
 
     const handleTimeUp = () => {
 
@@ -831,6 +1236,7 @@ const QuizIQGame = () => {
                 setTimeLeft(GAME_CONFIG.timePerQuestion);
                 setIsTimerRunning(false);
                 setEliminatedOptions([]);
+                setAudiencePoll(null);
             } else {
                 setGameState('result');
             }
@@ -972,6 +1378,7 @@ const QuizIQGame = () => {
         setIsTimerRunning(false);
         setLifelinesUsed({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
         setEliminatedOptions([]);
+        setAudiencePoll(null);
         setGameState('playing');
     };
 
@@ -1034,6 +1441,11 @@ const QuizIQGame = () => {
                                         ? '#9bffb0'
                                         : LUXURY_THEME.text,
                                 borderLeft: isCurrentQuestion
+                                    ? `4px solid ${LUXURY_THEME.textGold}`
+                                    : isSafetyNet
+                                        ? `4px solid #9bffb0`
+                                        : '4px solid transparent',
+                                borderRight: isCurrentQuestion
                                     ? `4px solid ${LUXURY_THEME.textGold}`
                                     : isSafetyNet
                                         ? `4px solid #9bffb0`
@@ -1360,17 +1772,19 @@ const QuizIQGame = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginTop: 18 }}>
                         <div style={{ ...styles.card, cursor: 'pointer', display: 'flex', flexDirection: 'column', minHeight: 120 }} onClick={() => selectCategory('default')}>
-                            <div style={{ fontSize: 36 }}>🌍 </div>
-                            <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Default</h3>
+                            <div style={{ fontSize: 36 }}>🌍 + 📁</div>
+                            <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Default Sample + Custom Questions (CSV/txt)</h3>
                             <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Mixed Nigerian + Global question set (default sample).</p>
                             <div style={{ marginTop: 12, color: '#bcd', fontWeight: 600 }}>{getDefaultQuestions().length} default questions, {(importedQuestions.sets || []).length} custom question sets </div>
                         </div>
 
-                        <div style={{ ...styles.card, cursor: 'pointer', display: 'flex', flexDirection: 'column', minHeight: 120 }} onClick={() => selectCategory('custom')}>
-                            <div style={{ fontSize: 36 }}>📁</div>
-                            <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Custom Questions (CSV)</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Gallery of your CSV files.</p>
-                            <div style={{ marginTop: 12, color: '#bcd', fontWeight: 600 }}>{(importedQuestions.sets || []).length} custom question sets </div>
+                        <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', minHeight: 120 }}>
+                            <div style={{ fontSize: 36 }}>️️ℹ️</div>
+                            <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Info Tab</h3>
+                            <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Game Guide & Shortcuts</p>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                                <button onClick={() => setShowGuide(true)}  style={{ padding: '8px 12px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }}>📖 View Game Guide & Shortcuts</button>
+                            </div>
                         </div>
 
                         <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', minHeight: 120 }}>
@@ -1489,7 +1903,7 @@ const QuizIQGame = () => {
                         </h2>
                     </div>
                 )}
-
+                {showGuide && <GameGuide onClose={() => setShowGuide(false)} />}
                 <AnimatedBanner />
             </div>
         );
@@ -1760,12 +2174,12 @@ const QuizIQGame = () => {
                         textAlign: 'center'
                     }}>
                         <h2 style={{
-                            fontSize: '3rem',      // Very large for the lounge screen
-                            color: '#d4af37',        // Using the gold accent
+                            fontSize: '3rem',
+                            color: '#d4af37',
                             textTransform: 'uppercase',
                             fontWeight: '900',
-                            letterSpacing: '15px',   // Spaced out for a premium feel
-                            opacity: 0.25,           // Subtle watermark effect
+                            letterSpacing: '15px',
+                            opacity: 0.25,
                             margin: 0
                         }}>
                             Audience
@@ -1782,7 +2196,7 @@ const QuizIQGame = () => {
         const q = currentQuestions[currentQuestion] || { question: 'Question not found', options: ['', '', '', ''], correct: 0 };
 
         // 1. Logic for the "Big Clock" animation
-        const isUrgent = timeLeft <= 5;
+        const isUrgent = timeLeft <= 10;
         const clockStyle = {
             fontSize: isUrgent ? '5rem' : '3rem',
             fontWeight: '800',
@@ -1924,13 +2338,56 @@ const QuizIQGame = () => {
                                         const showCorrect = showCorrectAnswers && idx === q.correct && !showResult && !showTransition;
                                         const showCheck = showResult && idx === q.correct;
                                         const showCross = showResult && selectedAnswer === idx && idx !== q.correct;
+                                        const hasAudiencePoll = audiencePoll !== null;
+                                        const pollPercentage = hasAudiencePoll ? audiencePoll[idx] : 0;
+                                        //determine if this is a top 2 option
+                                        const isTopOption = hasAudiencePoll && pollPercentage >= 15;
+                                        const pollColor = isTopOption ? 'rgba(0, 255, 0, 0.15)' : 'rgba(255, 255, 255, 0.08)';
+
                                         return (
-                                            <div key={idx} onClick={() => { if (isElim || showResult || showTransition) return; setSelectedAnswer(idx); }} style={styles.optionBtn(isElim, isSelected)}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                                    <div style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.03)' }}>{['A', 'B', 'C', 'D'][idx]}</div>
+                                            <div
+                                                key={idx}
+                                                onClick={() => { if (isElim || showResult || showTransition) return; setSelectedAnswer(idx); }}
+                                                style={{
+                                                    ...styles.optionBtn(isElim, isSelected),
+                                                    position: 'relative',
+                                                    overflow: 'hidden'
+                                                }}
+                                            >
+                                                {/* Audience Poll Background */}
+                                                {hasAudiencePoll && (
+                                                    <div style={{
+                                                        position: 'absolute',
+                                                        right: 0,
+                                                        top: 0,
+                                                        bottom: 0,
+                                                        width: `${pollPercentage}%`,
+                                                        background: pollColor,
+                                                        transition: 'width 1.5s ease-out',
+                                                        zIndex: 0,
+                                                        borderRadius: '0 12px 12px 0'
+                                                    }} />
+                                                )}
+
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
+                                                    <div style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.03)' }}>
+                                                        {['A', 'B', 'C', 'D'][idx]}
+                                                    </div>
                                                     <div style={{ opacity: isElim ? 0.5 : 1 }}>{opt}</div>
                                                 </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
+                                                    {hasAudiencePoll && (
+                                                        <span style={{
+                                                            fontSize: '0.9rem',
+                                                            fontWeight: '700',
+                                                            color: isTopOption ? '#00ff00' : 'rgba(255,255,255,0.5)',
+                                                            minWidth: '45px',
+                                                            textAlign: 'right'
+                                                        }}>
+                                                            {pollPercentage}%
+                                                        </span>
+                                                    )}
                                                     {showCorrect && <Crown size={18} color={LUXURY_THEME.textGold} />}
                                                     {showResult && showCheck && <CheckCircle size={20} color="#28a745" />}
                                                     {showResult && showCross && <XCircle size={20} color="#ff4d4d" />}
@@ -1944,28 +2401,51 @@ const QuizIQGame = () => {
                                 <div style={{ marginTop: 20, padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <div style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '2px', color: '#888', marginBottom: 10 }}>Time Remaining</div>
 
-                                    <div style={clockStyle}>
-                                        {timeLeft}
+                                    {/* Clock and Button Row */}
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', position: 'relative' }}>
+                                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                                            <div style={clockStyle}>
+                                                {timeLeft}
+                                            </div>
+
+                                            {/* Time Bonus Animation */}
+                                            {showTimeBonus && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    top: '50%',
+                                                    left: '-80px',
+                                                    transform: 'translateY(-50%)',
+                                                    fontSize: '2rem',
+                                                    fontWeight: '800',
+                                                    color: '#00ff00',
+                                                    textShadow: '0 0 20px rgba(0,255,0,0.8)',
+                                                    animation: 'slideInBonus 0.8s ease-out, fadeOut 0.5s ease-out 1.5s',
+                                                    zIndex: 10
+                                                }}>
+                                                    +{timeBonusAmount}s
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {isPresenterMode() && (
+                                            <button onClick={() => triggerSubmitAnswer()} disabled={selectedAnswer === null || showTransition}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        right: 0,
+                                                        padding: '12px 18px', borderRadius: 10,
+                                                        background: selectedAnswer === null ? 'rgba(255,255,255,0.04)' : `${LUXURY_THEME.secondary}`,
+                                                        border: 'none', cursor: selectedAnswer === null ? 'not-allowed' : 'pointer', fontWeight: 700, color: selectedAnswer === null ? '#aaa' : '#000'
+                                                    }}
+                                            >
+                                                Submit Answer
+                                            </button>
+                                        )}
                                     </div>
 
                                     <div style={{ color: isUrgent ? '#ff4d4d' : 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: 8 }}>
                                         {timeLeft === 0 ? "TIME'S UP!" : "SECONDS"}
                                     </div>
                                 </div>
-
-                                {isPresenterMode() && (
-                                    <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
-                                        <button onClick={() => triggerSubmitAnswer()} disabled={selectedAnswer === null || showTransition}
-                                                style={{
-                                                    padding: '12px 18px', borderRadius: 10,
-                                                    background: selectedAnswer === null ? 'rgba(255,255,255,0.04)' : 'linear-gradient(90deg,#ffd700,#ffb347)',
-                                                    border: 'none', cursor: selectedAnswer === null ? 'not-allowed' : 'pointer', fontWeight: 700, color: selectedAnswer === null ? '#aaa' : '#000'
-                                                }}
-                                        >
-                                            Submit Answer
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         </div>
 
@@ -1982,11 +2462,13 @@ const QuizIQGame = () => {
 
     // Result screen
     if (gameState === 'result') {
-        const isWinner = score === 10000; //change logic here if you want easier winning criteria
+        const isWinner = score === 10000;
+        const isGoodScore = score >= 2500 && score < 10000;
 
         return (
             <div style={styles.container}>
                 <BounceKeyframes />
+                {isWinner && <Confetti />}
                 <div style={styles.centerArea}>
                     <div style={styles.header}>
                         <div>
@@ -2024,24 +2506,26 @@ const QuizIQGame = () => {
                             marginBottom: 20,
                             animation: 'bounceIn 1s ease-out forwards, float 3s ease-in-out infinite 1s'
                         }}>
-                            {isWinner ? '🤑' : '😔'}
+                            {score === 10000 ? '🤑' : score >= 2500 ? '😉' : '😔'}
                         </div>
 
                         <h3 style={{ color: LUXURY_THEME.textGold, fontSize: '2rem', margin: '10px 0' }}>
-                            {isWinner ? 'Congratulations!' : 'Game Over'}
+                            {score === 10000 ? 'Congratulations!' : score >= 2500 ? 'Great Job!' : 'Game Over'}
                         </h3>
 
                         <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.2rem', maxWidth: 600, lineHeight: 1.5 }}>
-                            {isWinner
+                            {score === 10000
                                 ? `Incredible job, ${playerName}! You've secured the top prize!`
-                                : `Don't give up, ${playerName}. You gave it a good shot! Try again next time.`
+                                : score >= 2500
+                                    ? `Great work, ${playerName}! You're taking home ${GAME_CONFIG.currency}${score.toLocaleString()}`
+                                    : `Good effort, ${playerName}. Try again next time.`
                             }
                         </p>
 
                         <div style={{
                             marginTop: 20,
                             padding: '15px 30px',
-                            background: 'rgba(212, 175, 55, 0.1)',
+                            background: `${LUXURY_THEME.bgGray}`,
                             border: `1px solid ${LUXURY_THEME.accent}`,
                             borderRadius: 12
                         }}>
@@ -2111,22 +2595,13 @@ const QuizIQGame = () => {
                             <button
                                 onClick={() => {
                                     if (!isPresenterMode()) return;
-                                    if (playerName.trim()) playNextUnplayedSet();
+                                    setPlayerName('');
+                                    playNextUnplayedSet();
                                 }}
                                 disabled={!playerName.trim()}
                                 style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}
                             >
                                 Proceed to Next Game
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (!isPresenterMode()) return;
-                                    setPlayerName('Guest'); // Sets it to Guest instead of clearing it
-                                    playNextUnplayedSet();
-                                }}
-                                style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${LUXURY_THEME.border}` }}
-                            >
-                                Guest
                             </button>
                         </div>
                     </div>

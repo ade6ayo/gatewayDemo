@@ -12,8 +12,22 @@
   font-style: normal;
 }
 
+@font-face {
+  font-family: 'JetBrains Mono Medium';
+  src: url('/fonts/JetBrainsMono-Medium.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JetBrainsMonoNL-Bold';
+  src: url('/fonts/JetBrainsMonoNL-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
 :root {
-  font-family: 'Product Sans', 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Product Sans',  'JetBrains Mono Medium', 'JetBrainsMonoNL-Bold', 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
