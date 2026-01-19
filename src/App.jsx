@@ -914,7 +914,7 @@ const QuizIQGame = () => {
                                 fontSize: '0.9rem'
                             }}>
                                     <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>Powered by 6TechSolutions</code></p>
-                                    <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>Contact/WhatsApp: 0909 725 3310</code></p>
+                                    <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>Contact/WhatsApp: +234 909 725 3310</code></p>
                                     <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>EMail: 6techsolutions@gmail.com</code></p>
                             </div>
                         </div>
