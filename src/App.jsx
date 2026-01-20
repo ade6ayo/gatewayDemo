@@ -679,7 +679,6 @@ const QuizIQGame = () => {
                     background: rgba(255,255,255,0.5);
                 }
             `}</style>
-
                 <div
                     onClick={onClose}
                     style={{
@@ -1180,8 +1179,8 @@ const QuizIQGame = () => {
         setLifelinesUsed((p) => ({ ...p, phoneAFriend: true }));
         //can add a suggestion popup here
         //+20secs
-        setTimeLeft((prev) => prev + 30);
-        setTimeBonusAmount(30);
+        setTimeLeft((prev) => prev + 15);
+        setTimeBonusAmount(15);
         setShowTimeBonus(true);
         setTimeout(() => setShowTimeBonus(false), 2000);
     };
