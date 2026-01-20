@@ -790,9 +790,9 @@ const QuizIQGame = () => {
                                         <li>Displays percentage for each option</li>
                                     </ul>
 
-                                    <p style={{ marginTop: '12px' }}><strong>3. Phone a Friend:</strong> Adds <span style={{ color: '#00ff00' }}>30 seconds</span> to timer</p>
+                                    <p style={{ marginTop: '12px' }}><strong>3. Phone a Friend:</strong> Adds <span style={{ color: '#00ff00' }}>15 seconds</span> to timer</p>
 
-                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: Time bonuses shows a "+10s" or "+30s" animation and timer continues without stopping</p>
+                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: Time bonuses shows a "+10s" or "+15s" animation and timer continues without stopping</p>
                                 </div>
                             </section>
 
