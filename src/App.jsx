@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import xxvLogo from './assets/xxv.png';
-import Imagegif from './assets/6ts.gif';
+import Image6ts from './assets/6ts.png';
 import {
     Play,
     Trophy,
@@ -757,6 +757,7 @@ const QuizIQGame = () => {
                                     <p style={{ color: '#888', fontSize: '0.9rem' }}>Access via: <code style={{ fontFamily: 'JetBrainsMonoNL-Bold', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>?mode=audience</code></p>
 
                                     <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: On PC PROJECTIONS (Win + P) should ALWAYS be set to "EXTEND MODE" with the Presenter Mode on the PC and the Audience Session dragged to the Extended Screen.</p>
+                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Set Browser Zoom 🔎 to 120/125 for best viewing experience.</p>
                                 </div>
                             </section>
 
@@ -1663,8 +1664,8 @@ const QuizIQGame = () => {
                             />
                         </div>
                         <img
-                            src={Imagegif}
-                            alt="6ts"
+                            src={Image6ts}
+                            alt="6tsTNC"
                             style={{
                                 width: 150,
                                 height: 150,
