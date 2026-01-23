@@ -2560,7 +2560,7 @@ const QuizIQGame = () => {
                             />
                         </div>
                         <img
-                            src={Imagegif}
+                            src={Image6ts}
                             alt="6ts"
                             style={{
                                 width: 150,
