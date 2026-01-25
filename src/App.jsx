@@ -103,12 +103,6 @@ const AnimatedBanner = React.memo(() => {
 
 const BounceKeyframes = React.memo(() => (
     <style>{`
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); opacity: 1; }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); }
-        }
         @keyframes float {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
@@ -130,6 +124,19 @@ const BounceKeyframes = React.memo(() => (
         @keyframes fadeOut {
             0% { opacity: 1; }
             100% { opacity: 0; }
+        }
+        @keyframes blinkOption {
+            0% { background-color: #1a1a1a; color: #fff; }
+            50% {
+            background-color: #ffd700;;
+            color: #000; 
+            box-shadow: 0 0 15px #ffffff; 
+            }
+            100% { background-color: #1a1a1a; color: #fff; }
+        }    
+        @keyframes typewriterEffect {
+            from { width: 0; }
+            to { width: 100%; }
         }
     `}</style>
 ));
@@ -325,7 +332,7 @@ const GAME_CONFIG = {
     currency: '₦'
 };
 
-// Helper to detect presenter mode via URL parameter
+//helper to detect presenter mode via URL parameter
 const isPresenterMode = () => {
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -391,6 +398,7 @@ const QuizIQGame = () => {
         phoneAFriend: false
     });
 
+    const [isValidating, setIsValidating] = useState(false);
     const [eliminatedOptions, setEliminatedOptions] = useState([]);
 
     // transition video overlay state
@@ -513,6 +521,9 @@ const QuizIQGame = () => {
                     if (syncedState.showGuide !== undefined) {
                         setShowGuide(syncedState.showGuide);
                     }
+                    if (syncedState.isValidating !== undefined) {
+                        setIsValidating(syncedState.isValidating);
+                    }
                 } catch (error) {
                     console.error('Sync parse error:', error);
                 }
@@ -548,9 +559,10 @@ const QuizIQGame = () => {
             showTimeBonus,
             timeBonusAmount,
             audiencePoll,
-            showGuide
+            showGuide,
+            isValidating
         });
-    }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, showSafetyBanner, slideshowPlaying, slideshowImages, showTimeBonus, timeBonusAmount, audiencePoll, showGuide]);
+    }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, showSafetyBanner, slideshowPlaying, slideshowImages, showTimeBonus, timeBonusAmount, audiencePoll, showGuide, isValidating]);
     useEffect(() => {
         let interval;
         // Only presenter controls the timer
@@ -757,7 +769,8 @@ const QuizIQGame = () => {
                                     <p style={{ color: '#888', fontSize: '0.9rem' }}>Access via: <code style={{ fontFamily: 'JetBrainsMonoNL-Bold', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>?mode=audience</code></p>
 
                                     <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: On PC PROJECTIONS (Win + P) should ALWAYS be set to "EXTEND MODE" with the Presenter Mode on the PC and the Audience Session dragged to the Extended Screen.</p>
-                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Set Browser Zoom 🔎 to 120/125 for best viewing experience.</p>
+                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Set Your Browser Zoom 🔎 to 120/125 for best viewing experience.</p>
+                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Simply REFRESH the App if you urgently need to restart or go back to the homepage.</p>
                                 </div>
                             </section>
 
@@ -1187,27 +1200,39 @@ const QuizIQGame = () => {
     };
 
     const handleTimeUp = () => {
-
         if (selectedAnswer !== null) {
             triggerSubmitAnswer();
             return;
         }
-        setShowResult(true);
-        setShowTransition(true);
-
-
+        //if no answer selected, just go straight to result
         setIsTimerRunning(false);
+        setShowResult(true);
+
+        //add a small delay so they see "Game Over" or Red before transition
+        setTimeout(() => {
+            setShowTransition(true);
+        }, 2000);
     };
 
 
     const triggerSubmitAnswer = () => {
-        if (showTransition) return;
+        if (showTransition || isValidating) return; //prevent double clicks
         if (gameState !== 'playing') return;
 
         setIsTimerRunning(false);
-        setShowResult(true);
-        setShowTransition(true);
 
+        setIsValidating(true);
+
+        setTimeout(() => {
+            setIsValidating(false); //stop blinking
+            setShowResult(true);   //show green/red colors
+
+            //+2 more secs (to see the colors before video cuts in)
+            setTimeout(() => {
+                setShowTransition(true);
+            }, 3000);
+
+        }, 3000);
     };
 
 
@@ -2226,8 +2251,7 @@ const QuizIQGame = () => {
         // transition screen
         return (
             <div style={styles.container}>
-
-
+                <BounceKeyframes />
                 <div style={styles.centerArea}>
 
                     {/*transition video overlay */}
@@ -2258,8 +2282,7 @@ const QuizIQGame = () => {
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'center',
-                            alignItems: 'center',
-                            animation: 'bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                            alignItems: 'center'
                         }}>
                             <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔒</div>
                             <h2 style={{
@@ -2335,24 +2358,60 @@ const QuizIQGame = () => {
                                     {(q.options || []).map((opt, idx) => {
                                         const isElim = eliminatedOptions.includes(idx);
                                         const isSelected = selectedAnswer === idx;
-                                        const showCorrect = showCorrectAnswers && idx === q.correct && !showResult && !showTransition;
-                                        const showCheck = showResult && idx === q.correct;
-                                        const showCross = showResult && selectedAnswer === idx && idx !== q.correct;
+                                        const isCorrect = idx === q.correct;
                                         const hasAudiencePoll = audiencePoll !== null;
                                         const pollPercentage = hasAudiencePoll ? audiencePoll[idx] : 0;
-                                        //determine if this is a top 2 option
                                         const isTopOption = hasAudiencePoll && pollPercentage >= 15;
                                         const pollColor = isTopOption ? 'rgba(0, 255, 0, 0.15)' : 'rgba(255, 255, 255, 0.08)';
 
+                                        let backgroundStyle = isSelected ? `${LUXURY_THEME.border}` : 'rgba(0,0,0,0.3)';
+                                        let borderStyle = isSelected ? `2px solid ${LUXURY_THEME.textGold}` : 'rgba(0,0,0,0.45)';
+                                        let animStyle = 'none';
+
+                                        // suspense phase (blinking)
+                                        if (isValidating && isSelected) {
+                                            animStyle = 'blinkOption 1s linear infinite';
+                                            borderStyle = '2px solid #fff';
+                                        }
+
+                                        // result phase
+                                        if (showResult) {
+                                            if (isCorrect) {
+                                                //always highlight correct answer in green (whether they picked it or not)
+                                                backgroundStyle = 'linear-gradient(90deg, #004d00, #006400)'; //dark Green
+                                                borderStyle = '2px solid #00ff00';
+                                            } else if (isSelected && !isCorrect) {
+                                                //highlight wrong selection in red
+                                                backgroundStyle = 'linear-gradient(90deg, #8b0000, #a00000)'; // Dark Red
+                                                borderStyle = '2px solid #ff0000';
+                                            } else {
+                                                //dim other options
+                                                backgroundStyle = 'rgba(0,0,0,0.3)';
+                                                borderStyle = '1px solid rgba(255,255,255,0.05)';
+                                            }
+                                        }
+
                                         return (
                                             <div
-                                                key={idx}
-                                                onClick={() => { if (isElim || showResult || showTransition) return; setSelectedAnswer(idx); }}
+                                                key={`question-${currentQuestion}-option-${idx}`}
+                                                onClick={() => {
+                                                    //prevent changing answer during validation or result
+                                                    if (isElim || showResult || showTransition || isValidating) return;
+                                                    setSelectedAnswer(idx);
+                                                }}
                                                 style={{
                                                     ...styles.optionBtn(isElim, isSelected),
                                                     position: 'relative',
-                                                    overflow: 'hidden'
+                                                    overflow: 'hidden',
+                                                    background: backgroundStyle,
+                                                    border: borderStyle,
+                                                    animation: animStyle,
+                                                    animationFillMode: 'both',
+                                                    transition: 'background 0.3s',
+                                                    transform: 'none',
+                                                    margin: '0 0 1vh 0'
                                                 }}
+
                                             >
                                                 {/* Audience Poll Background */}
                                                 {hasAudiencePoll && (
@@ -2370,27 +2429,40 @@ const QuizIQGame = () => {
                                                 )}
 
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
-                                                    <div style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.03)' }}>
+                                                    <div style={{
+                                                        width: 36, height: 36, borderRadius: 8,
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        background: 'rgba(255,255,255,0.03)',
+                                                        flexShrink: 0,
+                                                        color: (isValidating && isSelected) ? '#000' : 'inherit' // Invert text color during blink
+                                                    }}>
                                                         {['A', 'B', 'C', 'D'][idx]}
                                                     </div>
-                                                    <div style={{ opacity: isElim ? 0.5 : 1 }}>{opt}</div>
+
+                                                    <div style={{
+                                                        overflow: 'hidden',
+                                                        whiteSpace: 'nowrap',
+                                                        width: (showResult || isValidating) ? '100%' : '0',
+                                                        animation: (showResult || isValidating) ? 'none' : 'typewriterEffect 1.5s steps(30) forwards',
+                                                        animationDelay: `${idx * 3}s`, // This creates the "one after another" effect
+                                                        animationFillMode: 'forwards',
+                                                        color: (isValidating && isSelected) ? '#000' : 'inherit'
+                                                    }}>
+                                                        {opt}
+                                                    </div>
                                                 </div>
 
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
                                                     {hasAudiencePoll && (
                                                         <span style={{
-                                                            fontSize: '0.9rem',
-                                                            fontWeight: '700',
+                                                            fontSize: '0.9rem', fontWeight: '700',
                                                             color: isTopOption ? '#00ff00' : 'rgba(255,255,255,0.5)',
-                                                            minWidth: '45px',
-                                                            textAlign: 'right'
+                                                            minWidth: '45px', textAlign: 'right'
                                                         }}>
                                                             {pollPercentage}%
                                                         </span>
                                                     )}
-                                                    {showCorrect && <Crown size={18} color={LUXURY_THEME.textGold} />}
-                                                    {showResult && showCheck && <CheckCircle size={20} color="#28a745" />}
-                                                    {showResult && showCross && <XCircle size={20} color="#ff4d4d" />}
+                                                    {isCorrect && isPresenterMode() && <Crown size={18} color={LUXURY_THEME.textGold} />}
                                                 </div>
                                             </div>
                                         );
@@ -2412,9 +2484,8 @@ const QuizIQGame = () => {
                                             {showTimeBonus && (
                                                 <div style={{
                                                     position: 'absolute',
-                                                    top: '50%',
+                                                    top: '15%',
                                                     left: '-80px',
-                                                    transform: 'translateY(-50%)',
                                                     fontSize: '2rem',
                                                     fontWeight: '800',
                                                     color: '#00ff00',
