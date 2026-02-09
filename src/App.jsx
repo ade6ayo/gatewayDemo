@@ -405,6 +405,15 @@ const QuizIQGame = () => {
     const [showTransition, setShowTransition] = useState(false);
     const transitionVideoRef = useRef(null);
 
+    // [NEW] Mobile detection state
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Prevent page scroll while component mounted (one-screen app)
     useEffect(() => {
         const prev = document.body.style.overflow;
@@ -1416,7 +1425,7 @@ const QuizIQGame = () => {
             <div style={{
                 ...styles.card,
                 padding: 0,
-                height: 'auto',
+                height: isMobile ? '300px' : 'auto', // Limit height on mobile so page isn't too long
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden'
@@ -1515,22 +1524,23 @@ const QuizIQGame = () => {
     const styles = {
         container: {
             width: '100vw',
-            height: '100vh',
+            height: isMobile ? 'auto' : '100vh',
             overflow: 'hidden',
+            overflowY: isMobile ? 'auto' : 'hidden',
             background: LUXURY_THEME.primary,
-            padding: '2vh 2vw',
+            padding: isMobile ? '10px' : '2vh 2vw',
             marginBottom: 12,
-            paddingBottom: 65,
+            paddingBottom: isMobile ? '80px' : '65px',
             boxSizing: 'border-box',
             fontFamily: "'Product Sans', 'Georgia', serif",
             position: 'relative',
             color: LUXURY_THEME.text,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between'
+            justifyContent: isMobile ? 'flex-start' : 'space-between'
         },
         centerArea: {
-            maxWidth: '90vw',
+            maxWidth: isMobile ? '100%' : '90vw',
             margin: '0 auto',
             width: '100%',
             display: 'flex',
@@ -1542,7 +1552,8 @@ const QuizIQGame = () => {
         header: {
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            flexDirection: isMobile ? 'column' : 'row', // Stack header on mobile
             gap: 12,
             flexWrap: 'wrap'
         },
@@ -1557,17 +1568,17 @@ const QuizIQGame = () => {
         lifelineBtn: (used) => ({
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            padding: '10px 12px',
+            gap: 6,
+            padding: isMobile ? '8px 10px' : '10px 12px',
             borderRadius: 10,
             cursor: used ? 'not-allowed' : 'pointer',
             background: used ? 'rgba(255, 0, 0, 0.08)' : 'rgba(0, 128, 0, 0.08)',
             border: `1px solid ${used ? 'rgba(255,0,0,0.35)' : 'rgba(0,128,0,0.35)'}`,
             color: used ? '#ff9999' : '#b7ffb7',
-            minWidth: 140,
+            minWidth: isMobile ? '30%' : 140, // Smaller buttons on mobile
             justifyContent: 'center',
             fontWeight: 700,
-            fontSize: 'clamp(0.75rem, 1.5vw, 1rem)'
+            fontSize: 'clamp(0.7rem, 1.5vw, 1rem)'
         }),
         mainFlex: {
             display: 'flex',
@@ -1575,7 +1586,8 @@ const QuizIQGame = () => {
             alignItems: 'stretch',
             flex: 1,
             marginTop: '2vh',
-            minHeight: 0
+            minHeight: 0,
+            flexDirection: isMobile ? 'column' : 'row' // Stack game a
         },
         leftMain: {
             flex: 3,
@@ -1585,35 +1597,37 @@ const QuizIQGame = () => {
         },
         rightSide: {
             flex: 1,
-            minWidth: '20vw',
-            minHeight: 0
+            minWidth: isMobile ? '100%' : '20vw',
+            minHeight: 0,
+            marginTop: isMobile ? '20px' : '0'
         },
         card: {
             backgroundColor: LUXURY_THEME.background,
             backdropFilter: 'blur(12px)',
             borderRadius: 16,
-            padding: '2vh 2vw',
+            padding: isMobile ? '15px' : '2vh 2vw',
             marginBottom: '1vh',
             border: `2px solid ${LUXURY_THEME.border}`,
             boxShadow: LUXURY_THEME.shadow,
             overflow: 'auto'
         },
         questionText: {
-            fontSize: 'clamp(1.2rem, 2.5vw, 1.5rem)', // Responsive font
-            marginBottom: '1vh'
+            fontSize: isMobile ? '1.2rem' : 'clamp(1.2rem, 2.5vw, 1.5rem)',
+            marginBottom: '1vh',
+            lineHeight: 1.4
         },
         optionBtn: (disabled, selected) => ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '1.5vh 2vw',
+            padding: isMobile ? '12px' : '1.5vh 2vw',
             borderRadius: 12,
             marginBottom: '1vh',
             cursor: disabled ? 'not-allowed' : 'pointer',
             background: selected ? 'rgba(212,175,55,0.12)' : 'rgba(0,0,0,0.35)',
             border: selected ? `2px solid ${LUXURY_THEME.textGold}` : `1px solid rgba(255,255,255,0.06)`,
             opacity: disabled ? 0.5 : 1,
-            fontSize: 'clamp(0.9rem, 1.8vw, 1.1rem)'
+            fontSize: isMobile ? '0.95rem' : 'clamp(0.9rem, 1.8vw, 1.1rem)'
         }),
         timerBar: {
             height: '1.2vh',
@@ -1633,7 +1647,7 @@ const QuizIQGame = () => {
         return (
             <div style={{ ...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div style={{ ...styles.card, width: '400px', textAlign: 'center', padding: '40px' }}>
-                    <img src={xxvLogo} alt="Logo" style={{ width: 150, marginBottom: 0 }} />
+                    <img src={xxvLogo} alt="Logo" style={{ width: isMobile ? 100 : 150, marginBottom: 0 }} />
                     <h2 style={{ color: LUXURY_THEME.textGold, marginBottom: 20 }}>Admin Access</h2>
                     <input
                         type="password"
@@ -1795,7 +1809,7 @@ const QuizIQGame = () => {
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, marginTop: 18 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 20, marginTop: 18 }}>
                         <div style={{ ...styles.card, cursor: 'pointer', display: 'flex', flexDirection: 'column', minHeight: 120 }} onClick={() => selectCategory('default')}>
                             <div style={{ fontSize: 36 }}>🌍 + 📁</div>
                             <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Default Sample + Custom Questions (CSV/txt)</h3>
@@ -2624,8 +2638,8 @@ const QuizIQGame = () => {
                                 src={xxvLogo}
                                 alt="XXV Logo"
                                 style={{
-                                    width: 150,
-                                    height: 150,
+                                    width: isMobile ? 100 : 150,
+                                    height: isMobile ? 100 : 150,
                                     objectFit: 'contain'
                                 }}
                             />
@@ -2634,8 +2648,8 @@ const QuizIQGame = () => {
                             src={Image6ts}
                             alt="6ts"
                             style={{
-                                width: 150,
-                                height: 150,
+                                width: isMobile ? 100 : 150,
+                                height: isMobile ? 100 : 150,
                                 objectFit: 'contain'
                             }}
                         />
