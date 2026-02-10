@@ -844,6 +844,10 @@ const QuizIQGame = () => {
                                     <p>😔 <strong>₦0:</strong> "Game Over" message</p>
                                     <p>😉 <strong>₦2,500 - ₦9,000:</strong> "Good Job!" with encouragement</p>
                                     <p>🤑 <strong>₦10,000:</strong> "Congratulations!" + Full-screen confetti celebration</p>
+                                    <h3 style={{ color: LUXURY_THEME.textGold, margin: '0 0 10px 0' }}>Claim Your Winnings!</h3>
+                                    <p style={{ fontSize: '0.9rem', marginBottom: '15px' }}>
+                                        To process your prize and verify your score, please complete the official claim form.
+                                    </p>
                                 </div>
                             </section>
 
@@ -1217,29 +1221,28 @@ const QuizIQGame = () => {
         setIsTimerRunning(false);
         setShowResult(true);
 
-        //add a small delay so they see "Game Over" or Red before transition
+        // Proceed immediately after showing result
         setTimeout(() => {
-            setShowTransition(true);
+            onTransitionEnded();
         }, 2000);
     };
 
 
     const triggerSubmitAnswer = () => {
-        if (showTransition || isValidating) return; //prevent double clicks
+        if (isValidating) return; //prevent double clicks
         if (gameState !== 'playing') return;
 
         setIsTimerRunning(false);
-
         setIsValidating(true);
 
         setTimeout(() => {
             setIsValidating(false); //stop blinking
             setShowResult(true);   //show green/red colors
 
-            //+2 more secs (to see the colors before video cuts in)
+            // Proceed immediately after showing result
             setTimeout(() => {
-                setShowTransition(true);
-            }, 3000);
+                onTransitionEnded();
+            }, 2000); // 2 seconds to see the correct/wrong answer
 
         }, 3000);
     };
@@ -1251,8 +1254,11 @@ const QuizIQGame = () => {
         const isCorrect = q && selectedAnswer === q.correct;
 
         if (isCorrect) {
+            //const transitionTime = isMobile ? 500 : 3500;
             const newScore = GAME_CONFIG.prizeStructure[Math.min(currentQuestion, GAME_CONFIG.prizeStructure.length - 1)];
             setScore(newScore);
+
+            //setShowTransition(true);
 
             // move to next or finish
             if (currentQuestion < currentQuestions.length - 1) {
@@ -2268,13 +2274,6 @@ const QuizIQGame = () => {
                 <BounceKeyframes />
                 <div style={styles.centerArea}>
 
-                    {/*transition video overlay */}
-                    {showTransition && (
-                        <div style={{ position: 'absolute', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)',  paddingBottom: '80px' }}>
-                            <video ref={transitionVideoRef} src={TRANSITION_VIDEO_PATH} style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: 12 }} autoPlay muted={!isPresenterMode()} onEnded={() => onTransitionEnded()} />
-                        </div>
-                    )}
-
                     {showSafetyBanner && (
                         <div style={{
                             position: 'absolute',
@@ -2605,6 +2604,10 @@ const QuizIQGame = () => {
                                     ? `Great work, ${playerName}! You're taking home ${GAME_CONFIG.currency}${score.toLocaleString()}`
                                     : `Good effort, ${playerName}. Try again next time.`
                             }
+                        </p>
+
+                        <p style={{ color: LUXURY_THEME.textGold, fontSize: '1.4rem', fontWeight: 'bold', marginTop: '20px', textTransform: 'uppercase', letterSpacing: '2px' }}>
+                            Fill form below to claim prize
                         </p>
 
                         <div style={{
