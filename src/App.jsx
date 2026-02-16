@@ -13,7 +13,7 @@ import {
     Phone,
 } from 'lucide-react';
 
-//const TRANSITION_VIDEO_PATH = '/answer-transition.mp4';
+const TRANSITION_VIDEO_PATH = '/answer-transition.mp4';
 
 const LUXURY_THEME = {
     primary: 'linear-gradient(135deg, #1a1a1a 0%, #2d1810 50%, #1a1a1a 100%)',
@@ -417,7 +417,7 @@ const QuizIQGame = () => {
     // Prevent page scroll while component mounted (one-screen app)
     useEffect(() => {
         const prev = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow = 'auto';
         return () => {
             document.body.style.overflow = prev;
         };
@@ -1792,7 +1792,7 @@ const QuizIQGame = () => {
                     </div>
                 )}
 
-                //<video src={TRANSITION_VIDEO_PATH} preload="auto" style={{ display: 'none' }} />
+                <video src={TRANSITION_VIDEO_PATH} preload="auto" style={{ display: 'none' }} />
 
                 <AnimatedBanner />
             </div>
