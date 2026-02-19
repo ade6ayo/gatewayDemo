@@ -27,6 +27,192 @@ const LUXURY_THEME = {
     shadow: '0 8px 32px rgba(212, 175, 55, 0.2)'
 };
 
+const globalMobileStyles = `
+    .status-bar-safe {
+        height: env(safe-area-inset-top, 20px);
+        background: #000;
+        width: 100%;
+        position: sticky;
+        top: 0;
+        z-index: 10001;
+    }
+    @media (max-width: 768px) {
+        .player-photo-container { width: 120px !important; height: 120px !important; }
+        .header-icon { width: 30px !important; height: 30px !important; }
+        .app-logo { height: 40px !important; }
+    }
+`;
+
+// [ADDITION 1] Nigeria news headlines for 3D card stack widget
+const NIGERIA_NEWS_HEADLINES = [
+    "Ogun APC caucus endorses Tinubu, Abiodun & Adeola for 2027 governorship",
+    "Senate Leader rallies Ogun West professionals for Tinubu & Adeola",
+    "2027: Ogun West professionals adopt Tinubu, Senator Adeola at Abeokuta rally",
+    "Senator Adeola, NIS host grassroots soccer clinic for Ogun youth",
+    "Senate launches public hearing on 2026 budget — 'from budget to impact'",
+    "Ogun 2027: Beyond power rotation to Adeola's economic vision",
+    "Super Eagles make bold transfer moves ahead of AFCON 2026",
+    "Naira strengthens against dollar in official FX market — CBN data",
+    "NELFUND records 1.6M student loan applications, 983K beneficiaries so far",
+    "FG launches Nigeria Industrial Policy 2025 to diversify beyond oil",
+    "Troops neutralise kidnappers, rescue abducted woman in Plateau State",
+    "2027: Cross River APC pledges 1.5M votes for President Tinubu",
+];
+
+// [ADDITION 1] 3D stacked card widget — mimics the card fan/deck UI from the design reference
+const NewsCardWidget = React.memo(() => {
+    const [activeIndex, setActiveIndex] = useState(0);
+    const [expanded, setExpanded] = useState(false);
+    const [animatingOut, setAnimatingOut] = useState(false);
+    const VISIBLE = 4; // how many cards show in the stack
+
+    // Auto-cycle the top card every 4.5s
+    useEffect(() => {
+        const t = setInterval(() => {
+            setAnimatingOut(true);
+            setTimeout(() => {
+                setActiveIndex(prev => (prev + 1) % NIGERIA_NEWS_HEADLINES.length);
+                setAnimatingOut(false);
+            }, 480);
+        }, 4500);
+        return () => clearInterval(t);
+    }, []);
+
+    const toggleExpand = () => setExpanded(prev => !prev);
+
+    // Cards to display: active + next VISIBLE-1 in queue
+    const cardQueue = Array.from({ length: VISIBLE }, (_, i) =>
+        (activeIndex + i) % NIGERIA_NEWS_HEADLINES.length
+    );
+
+    return (
+        <div style={{ width: '100%', marginBottom: 16 }}>
+            <style>{`
+                @keyframes cardFlyOff {
+                    0%   { transform: perspective(800px) rotateX(0deg) translateY(0) scale(1); opacity: 1; }
+                    100% { transform: perspective(800px) rotateX(-25deg) translateY(-60px) scale(0.85); opacity: 0; }
+                }
+                @keyframes cardRiseUp {
+                    0%   { transform: perspective(800px) rotateX(8deg) translateY(12px) scale(0.96); opacity: 0.7; }
+                    100% { transform: perspective(800px) rotateX(0deg) translateY(0px) scale(1); opacity: 1; }
+                }
+                @keyframes stackExpand {
+                    0%   { transform: perspective(800px) rotateX(0deg) translateY(0px); }
+                    100% { transform: perspective(800px) rotateX(0deg) translateY(var(--expand-y)); }
+                }
+            `}</style>
+
+            {/* Breaking badge row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <div style={{
+                    background: 'linear-gradient(45deg,#ffd700,#ffb347)', color: '#1a1a1a',
+                    fontWeight: '900', fontSize: '0.6rem', padding: '3px 10px',
+                    borderRadius: '20px', letterSpacing: '1.5px', textTransform: 'uppercase',
+                }}>🇳🇬 Latest News</div>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(212,175,55,0.2)' }} />
+                <button onClick={toggleExpand} style={{
+                    background: 'none', border: `1px solid rgba(212,175,55,0.3)`, borderRadius: 20,
+                    color: '#d4af37', fontSize: '0.7rem', padding: '2px 10px', cursor: 'pointer', fontWeight: 700
+                }}>{expanded ? 'Collapse ▲' : 'Expand ▼'}</button>
+            </div>
+
+            {/* 3D Card Stack */}
+            <div
+                onClick={toggleExpand}
+                style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: expanded ? `${VISIBLE * 72 + 8}px` : '88px',
+                    cursor: 'pointer',
+                    perspective: '800px',
+                    transition: 'height 0.45s cubic-bezier(0.4,0,0.2,1)',
+                    marginBottom: expanded ? '8px' : 0,
+                }}
+            >
+                {[...cardQueue].reverse().map((headlineIdx, stackPos) => {
+                    // stackPos 0 = furthest back, VISIBLE-1 = front card
+                    const reversedPos = (VISIBLE - 1) - stackPos; // front=0, back=VISIBLE-1
+                    const isFront = reversedPos === 0;
+                    const depthFactor = reversedPos; // 0=front
+
+                    const collapsedStyle = {
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        top: `${depthFactor * 6}px`,
+                        height: '72px',
+                        borderRadius: '16px',
+                        padding: '0 18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        boxSizing: 'border-box',
+                        background: isFront
+                            ? 'linear-gradient(135deg, rgba(45,24,16,0.98) 0%, rgba(20,10,0,0.99) 100%)'
+                            : `rgba(${10 + depthFactor * 12}, ${6 + depthFactor * 6}, 0, ${0.92 - depthFactor * 0.15})`,
+                        border: isFront
+                            ? '1.5px solid #d4af37'
+                            : `1px solid rgba(212,175,55,${0.25 - depthFactor * 0.06})`,
+                        boxShadow: isFront
+                            ? '0 8px 32px rgba(212,175,55,0.18), 0 2px 8px rgba(0,0,0,0.5)'
+                            : `0 ${4 + depthFactor * 4}px ${12 + depthFactor * 8}px rgba(0,0,0,0.4)`,
+                        transform: isFront && animatingOut
+                            ? undefined
+                            : `perspective(800px) rotateX(${depthFactor * 3}deg) translateY(${depthFactor * 3}px) scale(${1 - depthFactor * 0.03})`,
+                        animation: isFront && animatingOut ? 'cardFlyOff 0.48s ease-in forwards' :
+                            isFront && !animatingOut ? 'cardRiseUp 0.48s ease-out' : 'none',
+                        transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s ease',
+                        zIndex: VISIBLE - depthFactor,
+                        transformOrigin: 'center bottom',
+                    };
+
+                    const expandedStyle = {
+                        ...collapsedStyle,
+                        position: 'absolute',
+                        top: `${reversedPos * 76}px`,
+                        transform: 'none',
+                        animation: 'none',
+                    };
+
+                    return (
+                        <div key={headlineIdx} style={expanded ? expandedStyle : collapsedStyle}>
+                            {(isFront || expanded) && (
+                                <div style={{ width: '100%' }}>
+                                    {isFront && (
+                                        <div style={{ fontSize: '0.6rem', color: '#ffd700', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 4, opacity: 0.7 }}>
+                                            {expanded ? `Card ${reversedPos + 1} of ${VISIBLE}` : 'TOP STORY'}
+                                        </div>
+                                    )}
+                                    {expanded && !isFront && (
+                                        <div style={{ fontSize: '0.6rem', color: 'rgba(212,175,55,0.6)', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 4 }}>
+                                            STORY {reversedPos + 1}
+                                        </div>
+                                    )}
+                                    <div style={{
+                                        color: isFront ? '#fff' : 'rgba(255,255,255,0.7)',
+                                        fontSize: window.innerWidth <= 768 ? '0.78rem' : '0.85rem',
+                                        fontWeight: isFront ? 600 : 400,
+                                        lineHeight: 1.35,
+                                        overflow: 'hidden',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                    }}>
+                                        {NIGERIA_NEWS_HEADLINES[headlineIdx]}
+                                    </div>
+                                </div>
+                            )}
+                            {!isFront && !expanded && (
+                                // placeholder stripe for depth cards
+                                <div style={{ width: '60%', height: '10px', borderRadius: 4, background: `rgba(212,175,55,${0.12 - depthFactor * 0.02})` }} />
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+});
+
 const bannerStyles = {
     animatedBanner: {
         position: 'absolute',
@@ -57,13 +243,13 @@ const bannerStyles = {
     }
 };
 
-
 const BannerKeyframes = React.memo(() => (
     <style>{`
         @keyframes smoothScroll {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
         }
+        ${globalMobileStyles}
     `}</style>
 ));
 
@@ -74,26 +260,15 @@ const AnimatedBanner = React.memo(() => {
             <div style={bannerStyles.animatedBanner}>
                 <div style={bannerStyles.bannerContent}>
                     <div style={bannerStyles.bannerInner}>
-                        <span>  We build intelligent automations, websites, and fully-custom applications for individuals or businesses ready to innovate and scale.  </span>
-                        <span>  Powered by 6 Tech Solutions  </span>
-                        <span>  Contact/WhatsApp: 0909 725 3310  </span>
-                        <span>  Gadget Savers NG ✅ Save 30% on Smartphones, Laptops, Cameras & so much more ( 🇺🇸 USA pre-orders)</span>
-                        <span> ✅ Pay 70% now, balance on delivery </span>
-                        <span> ✅ Business bulk deals + financing </span>
-                        <span> ✅ We Ship Anything 🇺🇸 USA → 🇳🇬 Ibadan </span>
-                        <span>  "Tech You Love, Prices You Deserve." </span>
-                        <span>  Contact/WhatsApp: 0909 725 3310  </span>
+                        <span>  Powered by Ogun Ma YaYi Strategic Group " YaYI 2027 </span>
+                        <span>  Powered by Ogun Ma YaYi Strategic Group " YaYI 2027 </span>
+                        <span>  Powered by Ogun Ma YaYi Strategic Group " YaYI 2027 </span>
+                        <span>  Powered by Ogun Ma YaYi Strategic Group " YaYI 2027 </span>
 
-
-                        <span>  We build intelligent automations, websites, and fully-custom applications for individuals or businesses ready to innovate and scale.  </span>
-                        <span>  Powered by 6 Tech Solutions  </span>
-                        <span>  Contact/WhatsApp: 0909 725 3310  </span>
-                        <span>  Gadget Savers NG ✅ Save 30% on Smartphones, Laptops, Cameras & so much more ( 🇺🇸 USA pre-orders)</span>
-                        <span> ✅ Pay 70% now, balance on delivery </span>
-                        <span> ✅ Business bulk deals + financing </span>
-                        <span> ✅ We Ship Anything 🇺🇸 USA → 🇳🇬 Ibadan </span>
-                        <span>  "Tech You Love, Prices You Deserve." </span>
-                        <span>  Contact/WhatsApp: 0909 725 3310  </span>
+                        <span>  Powered by Ogun Ma YaYi Strategic Group " YaYI 2027 </span>
+                        <span>  Powered by Ogun Ma YaYi Strategic Group " YaYI 2027 </span>
+                        <span>  Powered by Ogun Ma YaYi Strategic Group " YaYI 2027 </span>
+                        <span>  Powered by Ogun Ma YaYi Strategic Group " YaYI 2027 </span>
                     </div>
                 </div>
             </div>
@@ -109,17 +284,9 @@ const BounceKeyframes = React.memo(() => (
             100% { transform: translateY(0px); }
         }
         @keyframes slideInBonus {
-            0% {
-                transform: translateX(-100px);
-                opacity: 0;
-            }
-            50% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            0% { transform: translateX(-100px); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(0); opacity: 1; }
         }
         @keyframes fadeOut {
             0% { opacity: 1; }
@@ -127,13 +294,9 @@ const BounceKeyframes = React.memo(() => (
         }
         @keyframes blinkOption {
             0% { background-color: #1a1a1a; color: #fff; }
-            50% {
-            background-color: #ffd700;;
-            color: #000; 
-            box-shadow: 0 0 15px #ffffff; 
-            }
+            50% { background-color: #ffd700; color: #000; box-shadow: 0 0 15px #ffffff; }
             100% { background-color: #1a1a1a; color: #fff; }
-        }    
+        }
         @keyframes typewriterEffect {
             from { width: 0; }
             to { width: 100%; }
@@ -150,218 +313,76 @@ const Confetti = () => {
         width: `${Math.random() * 10 + 5}px`,
         height: `${Math.random() * 10 + 5}px`
     }));
-
     return (
         <>
             <style>{`
                 @keyframes confetti-fall {
-                    0% {
-                        transform: translateY(-100vh) rotate(0deg);
-                        opacity: 1;
-                    }
-                    100% {
-                        transform: translateY(100vh) rotate(720deg);
-                        opacity: 0;
-                    }
+                    0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+                    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
                 }
             `}</style>
-            <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100vw',
-                height: '100vh',
-                pointerEvents: 'none',
-                zIndex: 9999,
-                overflow: 'hidden'
-            }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999, overflow: 'hidden' }}>
                 {confettiPieces.map((piece) => (
-                    <div
-                        key={piece.id}
-                        style={{
-                            position: 'absolute',
-                            left: piece.left,
-                            top: '-20px',
-                            width: piece.width,
-                            height: piece.height,
-                            backgroundColor: piece.backgroundColor,
-                            animation: `confetti-fall ${3 + Math.random() * 2}s linear infinite`,
-                            animationDelay: piece.animationDelay,
-                            borderRadius: '2px'
-                        }}
-                    />
+                    <div key={piece.id} style={{
+                        position: 'absolute', left: piece.left, top: '-20px',
+                        width: piece.width, height: piece.height, backgroundColor: piece.backgroundColor,
+                        animation: `confetti-fall ${3 + Math.random() * 2}s linear infinite`,
+                        animationDelay: piece.animationDelay, borderRadius: '2px'
+                    }} />
                 ))}
             </div>
         </>
     );
 };
 
-
 const QUESTIONS_DATABASE = {
     nigerian: [
-        {
-            id: 1,
-            question: 'What is the capital of Nigeria?',
-            options: ['Lagos', 'Abuja', 'Kano', 'Port Harcourt'],
-            correct: 1,
-            difficulty: 'easy',
-            category: 'Geography'
-        },
-        {
-            id: 2,
-            question: "Who wrote 'Things Fall Apart'?",
-            options: ['Wole Soyinka', 'Chinua Achebe', 'Ken Saro-Wiwa', 'Buchi Emecheta'],
-            correct: 1,
-            difficulty: 'medium',
-            category: 'Literature'
-        }
+        { id: 1, question: "Ogun State is famously known as the 'Gateway State' because:", options: ['It has the largest airport in West Africa.', 'It is the primary land route connecting Lagos to the rest of Nigeria and West Africa.', 'It was the first state to be created in Nigeria.', 'It is the only state with a sea port in the Southwest.'], correct: 1, difficulty: 'easy', category: '.' },
+        { id: 2, question: "Which iconic natural landmark in Abeokuta served as a fortress for the Egba people during the 19th-century wars?", options: ['Idanre Hills', 'Zuma Rock', 'Olumo Rock', 'Aso Rock'], correct: 2, difficulty: 'medium', category: '.' }
     ],
     worldwide: [
-        {
-            id: 3,
-            question: 'Which planet is closest to the Sun?',
-            options: ['Venus', 'Mercury', 'Earth', 'Mars'],
-            correct: 1,
-            difficulty: 'easy',
-            category: 'Science'
-        },
-        {
-            id: 4,
-            question: "What does 'www' stand for?",
-            options: ['World Wide Web', 'World Wide Wire', 'Web Wide World', 'Wide World Web'],
-            correct: 0,
-            difficulty: 'easy',
-            category: 'Technology'
-        },
-        {
-            id: 5,
-            question: "Which Nigerian city is commonly referred to as the 'Centre of Excellence'?",
-            options: ['Abuja', 'Ibadan', 'Lagos', 'Benin City'],
-            correct: 2,
-            difficulty: 'easy',
-            category: 'Nigeria'
-        },
-        {
-            id: 6,
-            question: "Who was the first woman to win a Nobel Prize?",
-            options: ['Marie Curie', 'Rosalind Franklin', 'Jane Goodall', 'Ada Lovelace'],
-            correct: 0,
-            difficulty: 'medium',
-            category: 'History'
-        },
-        {
-            id: 7,
-            question: "What is the official currency of Nigeria?",
-            options: ['Cedi', 'Naira', 'Shilling', 'Franc'],
-            correct: 1,
-            difficulty: 'easy',
-            category: 'Nigeria'
-        },
-        {
-            id: 8,
-            question: "Which planet in our solar system has the most moons?",
-            options: ['Jupiter', 'Saturn', 'Uranus', 'Neptune'],
-            correct: 1,
-            difficulty: 'medium',
-            category: 'Science'
-        },
-        {
-            id: 9,
-            question: "Which Nigerian author wrote the novel 'Things Fall Apart'?",
-            options: ['Wole Soyinka', 'Chimamanda Ngozi Adichie', 'Chinua Achebe', 'Buchi Emecheta'],
-            correct: 2,
-            difficulty: 'easy',
-            category: 'Literature'
-        },
-        {
-            id: 10,
-            question: "What year did Nigeria gain independence from Britain?",
-            options: ['1957', '1960', '1963', '1966'],
-            correct: 1,
-            difficulty: 'medium',
-            category: 'Nigeria'
-        },
-        {
-            id: 11,
-            question: "Which company developed the Android operating system?",
-            options: ['Apple', 'Microsoft', 'Google', 'IBM'],
-            correct: 2,
-            difficulty: 'easy',
-            category: 'Technology'
-        },
-        {
-            id: 12,
-            question: "Which African country has the largest population?",
-            options: ['Ethiopia', 'Egypt', 'South Africa', 'Nigeria'],
-            correct: 3,
-            difficulty: 'easy',
-            category: 'Geography'
-        },
-        {
-            id: 13,
-            question: "What is the name of the longest river in Nigeria?",
-            options: ['River Benue', 'River Ogun', 'River Niger', 'River Osun'],
-            correct: 2,
-            difficulty: 'medium',
-            category: 'Nigeria'
-        },
-        {
-            id: 14,
-            question: "Who is credited with inventing the World Wide Web?",
-            options: ['Bill Gates', 'Steve Jobs', 'Tim Berners-Lee', 'Mark Zuckerberg'],
-            correct: 2,
-            difficulty: 'medium',
-            category: 'Technology'
-        },
-        {
-            id: 15,
-            question: "Which Nigerian music genre blends traditional Yoruba music with jazz and funk?",
-            options: ['Highlife', 'Afrobeats', 'Fuji', 'Afrobeat'],
-            correct: 3,
-            difficulty: 'hard',
-            category: 'Nigeria'
-        },
+        { id: 3, question: "Senator Solomon Olamilekan Adeola (YAYI) currently serves as the Chairman of which influential Senate Committee?", options: ['Committee on Finance', 'Committee on Appropriations', 'Committee on Public Accounts', 'Committee on Works'], correct: 1, difficulty: 'easy', category: 'Science' },
+        { id: 4, question: "Ogun State holds a unique educational record in Nigeria as the only state to:", options: ['Offer free education at all levels.', 'Have a university in every Local Government Area.', 'Operate two state-owned universities (OOU and TASUED).', 'Have the highest number of primary schools.'], correct: 2, difficulty: 'easy', category: '.' },
+        { id: 5, question: "Senator Yayi represented which district for 8 years (2015–2023) before becoming the Senator for Ogun West?", options: ['Ogun Central', 'Lagos West', 'Oyo South', 'Lagos Island'], correct: 1, difficulty: 'easy', category: '.' },
+        { id: 6, question: "The famous 'Ofada Rice' is named after a community located in which Ogun State Local Government Area (LGA)?", options: ['Abeokuta North', 'Ikenne', 'Obafemi Owode', 'Yewa South'], correct: 2, difficulty: 'medium', category: '.' },
+        { id: 7, question: "In 2022, Senator Adeola was conferred with which National Honour for his service to the country?", options: ['Member of the Order of the Federal Republic (MFR)', 'Officer of the Order of the Niger (OON)', 'Commander of the Order of the Niger (CON)', 'Grand Commander of the Order of the Niger (GCON)'], correct: 2, difficulty: 'easy', category: 'Nigeria' },
+        { id: 8, question: "Which planet in our solar system has the most moons?", options: ['Jupiter', 'Saturn', 'Uranus', 'Neptune'], correct: 1, difficulty: 'medium', category: 'Science' },
+        { id: 9, question: "Which Nigerian author wrote the novel 'Things Fall Apart'?", options: ['Wole Soyinka', 'Chimamanda Ngozi Adichie', 'Chinua Achebe', 'Buchi Emecheta'], correct: 2, difficulty: 'easy', category: 'Literature' },
+        { id: 10, question: "What year did Nigeria gain independence from Britain?", options: ['1957', '1960', '1963', '1966'], correct: 1, difficulty: 'medium', category: 'Nigeria' },
+        { id: 11, question: "Which company developed the Android operating system?", options: ['Apple', 'Microsoft', 'Google', 'IBM'], correct: 2, difficulty: 'easy', category: 'Technology' },
+        { id: 12, question: "Which African country has the largest population?", options: ['Ethiopia', 'Egypt', 'South Africa', 'Nigeria'], correct: 3, difficulty: 'easy', category: 'Geography' },
+        { id: 13, question: "What is the name of the longest river in Nigeria?", options: ['River Benue', 'River Ogun', 'River Niger', 'River Osun'], correct: 2, difficulty: 'medium', category: 'Nigeria' },
+        { id: 14, question: "Who is credited with inventing the World Wide Web?", options: ['Bill Gates', 'Steve Jobs', 'Tim Berners-Lee', 'Mark Zuckerberg'], correct: 2, difficulty: 'medium', category: 'Technology' },
+        { id: 15, question: "Which Nigerian music genre blends traditional Yoruba music with jazz and funk?", options: ['Highlife', 'Afrobeats', 'Fuji', 'Afrobeat'], correct: 3, difficulty: 'hard', category: 'Nigeria' },
     ]
 };
 
 const GAME_CONFIG = {
     totalQuestions: 15,
     timePerQuestion: 30,
-    prizeStructure: [500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 6000, 7000, 8000, 9000, 10000],
-    safetyNets: [4, 9, 14],
+    prizeStructure: [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000],
+    safetyNets: [2, 9, 14],
     currency: '₦'
 };
 
-//helper to detect presenter mode via URL parameter
 const isPresenterMode = () => {
     try {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get('mode') === 'presenter';
-    } catch (e) {
-        return false;
-    }
+    } catch (e) { return false; }
 };
 
-// Cross-tab synchronization using localStorage
 const broadcastGameState = (state) => {
-    if (!isPresenterMode()) return; // Only presenter broadcasts
+    if (!isPresenterMode()) return;
     try {
-        localStorage.setItem('quiziq-sync', JSON.stringify({
-            ...state,
-            timestamp: Date.now()
-        }));
-    } catch (error) {
-        console.error('Broadcast failed:', error);
-    }
+        localStorage.setItem('quiziq-sync', JSON.stringify({ ...state, timestamp: Date.now() }));
+    } catch (error) { console.error('Broadcast failed:', error); }
 };
 
 const QuizIQGame = () => {
-    // presenter view
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [passwordInput, setPasswordInput] = useState('');
-    const ADMIN_PASSWORD = "h256t";
     const [showCorrectAnswers] = useState(isPresenterMode());
-
     const [gameState, setGameState] = useState('registration');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [currentQuestions, setCurrentQuestions] = useState([]);
@@ -382,31 +403,21 @@ const QuizIQGame = () => {
     const [timeBonusAmount, setTimeBonusAmount] = useState(0);
     const [audiencePoll, setAudiencePoll] = useState(null);
     const [showGuide, setShowGuide] = useState(false);
-
-
-    const [gameSettings, setGameSettings] = useState({
-        soundEnabled: true,
-        timerEnabled: true,
-        showCategories: true,
-        currency: '₦',
-        contactName: 'Your Name',
-    });
-
-    const [lifelinesUsed, setLifelinesUsed] = useState({
-        fiftyFifty: false,
-        askAudience: false,
-        phoneAFriend: false
-    });
-
+    const [nin, setNin] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [gameSettings, setGameSettings] = useState({ soundEnabled: true, timerEnabled: true, showCategories: true, currency: '₦', contactName: 'Your Name' });
+    const [lifelinesUsed, setLifelinesUsed] = useState({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
     const [isValidating, setIsValidating] = useState(false);
     const [eliminatedOptions, setEliminatedOptions] = useState([]);
-
-    // transition video overlay state
     const [showTransition, setShowTransition] = useState(false);
     const transitionVideoRef = useRef(null);
-
-    // [NEW] Mobile detection state
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    // [ADDITION 2] Paystack claim form state
+    const [claimNIN,   setClaimNIN]   = useState('');
+    const [claimPhone, setClaimPhone] = useState('');
+    const [paystackLoading, setPaystackLoading] = useState(false);
+    const [paystackSuccess, setPaystackSuccess] = useState(false);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -414,176 +425,90 @@ const QuizIQGame = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Prevent page scroll while component mounted (one-screen app)
     useEffect(() => {
         const prev = document.body.style.overflow;
         document.body.style.overflow = 'auto';
-        return () => {
-            document.body.style.overflow = prev;
-        };
+        return () => { document.body.style.overflow = prev; };
     }, []);
 
     useEffect(() => {
         try {
             const cachedImages = localStorage.getItem('QUIZ_SLIDESHOW_DATA');
-            if (cachedImages) {
-                setSlideshowImages(JSON.parse(cachedImages));
-            }
-        } catch (e) {
-            console.error("Failed to load slideshow images", e);
-        }
+            if (cachedImages) setSlideshowImages(JSON.parse(cachedImages));
+        } catch (e) { console.error("Failed to load slideshow images", e); }
     }, []);
 
     useEffect(() => {
-        const loadSlideshowImages = () => {
-            try {
-                const stored = localStorage.getItem('slideshow-images');
-                if (stored) {
-                    setSlideshowImages(JSON.parse(stored));
-                }
-            } catch (error) {
-                console.log('No existing slideshow images');
-            }
-        };
-        loadSlideshowImages();
+        try {
+            const stored = localStorage.getItem('slideshow-images');
+            if (stored) setSlideshowImages(JSON.parse(stored));
+        } catch (error) { console.log('No existing slideshow images'); }
     }, []);
 
     useEffect(() => {
-        const loadImportedQuestions = () => {
-            try {
-                const stored = localStorage.getItem('imported-questions');
-                if (stored) {
-                    setImportedQuestions(JSON.parse(stored));
-                }
-            } catch (error) {
-                console.log('No existing imported questions');
-            }
-        };
-        loadImportedQuestions();
+        try {
+            const stored = localStorage.getItem('imported-questions');
+            if (stored) setImportedQuestions(JSON.parse(stored));
+        } catch (error) { console.log('No existing imported questions'); }
     }, []);
 
     useEffect(() => {
         if (gameState !== 'slideshow' || !slideshowPlaying || slideshowImages.length === 0) return;
-
         const interval = setInterval(() => {
             setCurrentSlide(prev => (prev + 1) % slideshowImages.length);
-        }, 5000); // 5 seconds per image
-
+        }, 5000);
         return () => clearInterval(interval);
     }, [gameState, slideshowPlaying, slideshowImages.length]);
 
-
     useEffect(() => {
-        if (gameState === 'slideshow') {
-            setCurrentSlide(0);
-            setSlideshowPlaying(true);
-        }
+        if (gameState === 'slideshow') { setCurrentSlide(0); setSlideshowPlaying(true); }
     }, [gameState]);
 
-    // Listen to presenter broadcasts (audience only)
     useEffect(() => {
-        if (isPresenterMode()) return; 
-
+        if (isPresenterMode()) return;
         const handleStorageChange = (e) => {
             if (e.key === 'quiziq-sync' && e.newValue) {
                 try {
-                    const syncedState = JSON.parse(e.newValue);
-
-                    // Update all state from presenter
-                    setGameState(syncedState.gameState);
-                    setCurrentQuestion(syncedState.currentQuestion);
-                    setSelectedAnswer(syncedState.selectedAnswer);
-                    setShowResult(syncedState.showResult);
-                    setTimeLeft(syncedState.timeLeft);
-                    setIsTimerRunning(syncedState.isTimerRunning);
-                    setScore(syncedState.score);
-                    setShowTransition(syncedState.showTransition);
-                    setEliminatedOptions(syncedState.eliminatedOptions || []);
-                    setLifelinesUsed(syncedState.lifelinesUsed || { fiftyFifty: false, askAudience: false, phoneAFriend: false });
-                    setPlayerName(syncedState.playerName || '');
-                    setSelectedCategory(syncedState.selectedCategory || '');
-
-                    // Sync questions if available
-                    if (syncedState.currentQuestions) {
-                        setCurrentQuestions(syncedState.currentQuestions);
-                    }
-
-                    // Sync slideshow - ADD THESE LINES
-                    if (syncedState.currentSlide !== undefined) {
-                        setCurrentSlide(syncedState.currentSlide);
-                    }
-                    if (syncedState.slideshowPlaying !== undefined) {
-                        setSlideshowPlaying(syncedState.slideshowPlaying);
-                    }
-                    if (syncedState.slideshowImages) {
-                        setSlideshowImages(syncedState.slideshowImages);
-                    }
-                    if (syncedState.showTimeBonus !== undefined) {
-                        setShowTimeBonus(syncedState.showTimeBonus);
-                    }
-                    if (syncedState.timeBonusAmount !== undefined) {
-                        setTimeBonusAmount(syncedState.timeBonusAmount);
-                    }
-                    if (syncedState.audiencePoll !== undefined) {
-                        setAudiencePoll(syncedState.audiencePoll);
-                    }
-                    if (syncedState.showGuide !== undefined) {
-                        setShowGuide(syncedState.showGuide);
-                    }
-                    if (syncedState.isValidating !== undefined) {
-                        setIsValidating(syncedState.isValidating);
-                    }
-                } catch (error) {
-                    console.error('Sync parse error:', error);
-                }
+                    const s = JSON.parse(e.newValue);
+                    setGameState(s.gameState);
+                    setCurrentQuestion(s.currentQuestion);
+                    setSelectedAnswer(s.selectedAnswer);
+                    setShowResult(s.showResult);
+                    setTimeLeft(s.timeLeft);
+                    setIsTimerRunning(s.isTimerRunning);
+                    setScore(s.score);
+                    setShowTransition(s.showTransition);
+                    setEliminatedOptions(s.eliminatedOptions || []);
+                    setLifelinesUsed(s.lifelinesUsed || { fiftyFifty: false, askAudience: false, phoneAFriend: false });
+                    setPlayerName(s.playerName || '');
+                    setSelectedCategory(s.selectedCategory || '');
+                    if (s.currentQuestions) setCurrentQuestions(s.currentQuestions);
+                    if (s.currentSlide !== undefined) setCurrentSlide(s.currentSlide);
+                    if (s.slideshowPlaying !== undefined) setSlideshowPlaying(s.slideshowPlaying);
+                    if (s.slideshowImages) setSlideshowImages(s.slideshowImages);
+                    if (s.showTimeBonus !== undefined) setShowTimeBonus(s.showTimeBonus);
+                    if (s.timeBonusAmount !== undefined) setTimeBonusAmount(s.timeBonusAmount);
+                    if (s.audiencePoll !== undefined) setAudiencePoll(s.audiencePoll);
+                    if (s.showGuide !== undefined) setShowGuide(s.showGuide);
+                    if (s.isValidating !== undefined) setIsValidating(s.isValidating);
+                } catch (error) { console.error('Sync parse error:', error); }
             }
         };
-
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
-// Broadcast state changes (presenter only)
     useEffect(() => {
         if (!isPresenterMode()) return;
-
-        broadcastGameState({
-            gameState,
-            currentQuestion,
-            selectedAnswer,
-            showResult,
-            timeLeft,
-            isTimerRunning,
-            score,
-            showTransition,
-            eliminatedOptions,
-            lifelinesUsed,
-            playerName,
-            selectedCategory,
-            currentQuestions,
-            currentSlide,
-            showSafetyBanner,
-            slideshowPlaying,
-            slideshowImages,
-            showTimeBonus,
-            timeBonusAmount,
-            audiencePoll,
-            showGuide,
-            isValidating
-        });
+        broadcastGameState({ gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, showSafetyBanner, slideshowPlaying, slideshowImages, showTimeBonus, timeBonusAmount, audiencePoll, showGuide, isValidating });
     }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, showSafetyBanner, slideshowPlaying, slideshowImages, showTimeBonus, timeBonusAmount, audiencePoll, showGuide, isValidating]);
+
     useEffect(() => {
         let interval;
-        // Only presenter controls the timer
         if (isPresenterMode() && isTimerRunning && timeLeft > 0 && gameSettings.timerEnabled && gameState === 'playing') {
             interval = setInterval(() => {
                 setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        // time up
-                        setIsTimerRunning(false);
-                        handleTimeUp();
-                        return 0;
-                    }
+                    if (prev <= 1) { setIsTimerRunning(false); handleTimeUp(); return 0; }
                     return prev - 1;
                 });
             }, 1000);
@@ -592,82 +517,37 @@ const QuizIQGame = () => {
     }, [isTimerRunning, timeLeft, gameSettings.timerEnabled, gameState]);
 
     useEffect(() => {
-        const authTime = localStorage.getItem('adminAuthTime');
-        if (authTime) {
-            const twelveHoursInMs = 12 * 60 * 60 * 1000;
-            const timePassed = Date.now() - parseInt(authTime);
-            if (timePassed < twelveHoursInMs) {
-                setIsAuthenticated(true);
-            }
-        }
-    }, []);
-
-    // keyboard controls
-    useEffect(() => {
         if (!isPresenterMode()) return;
-
         const handleKeyPress = (event) => {
             if (gameState === 'playing' && !showResult && !showTransition) {
                 const key = event.key;
                 const lowerKey = key.toLowerCase();
-
-                // calculate valid indices (skipping those removed by 50/50)
                 const validIndices = [0, 1, 2, 3].filter(i => !eliminatedOptions.includes(i));
-
                 if (['a', 'b', 'c', 'd'].includes(lowerKey)) {
-                    const idx = lowerKey.charCodeAt(0) - 97;
-                    handleAnswerSelect(idx);
-                }
-                else if (key === 'Enter') {
-                    if (selectedAnswer !== null) {
-                        triggerSubmitAnswer();
-                    }
-                }
-                else if (key === ' ') {
+                    handleAnswerSelect(lowerKey.charCodeAt(0) - 97);
+                } else if (key === 'Enter') {
+                    if (selectedAnswer !== null) triggerSubmitAnswer();
+                } else if (key === 'ArrowDown' || key === 'ArrowRight') {
                     event.preventDefault();
-                    setIsTimerRunning(prev => !prev);
-                }
-                else if (key === 'ArrowDown' || key === 'ArrowRight') {
+                    const currentPos = validIndices.indexOf(selectedAnswer);
+                    setSelectedAnswer(validIndices[selectedAnswer === null ? 0 : (currentPos + 1) % validIndices.length]);
+                } else if (key === 'ArrowUp' || key === 'ArrowLeft') {
                     event.preventDefault();
-                    let nextIndex;
-                    if (selectedAnswer === null) {
-                        nextIndex = validIndices[0];
-                    } else {
-                        const currentPos = validIndices.indexOf(selectedAnswer);
-                        const nextPos = (currentPos + 1) % validIndices.length;
-                        nextIndex = validIndices[nextPos];
-                    }
-                    setSelectedAnswer(nextIndex);
-                }
-                else if (key === 'ArrowUp' || key === 'ArrowLeft') {
-                    event.preventDefault();
-                    let prevIndex;
-                    if (selectedAnswer === null) {
-                        prevIndex = validIndices[validIndices.length - 1];
-                    } else {
-                        const currentPos = validIndices.indexOf(selectedAnswer);
-                        const prevPos = (currentPos - 1 + validIndices.length) % validIndices.length;
-                        prevIndex = validIndices[prevPos];
-                    }
-                    setSelectedAnswer(prevIndex);
+                    const currentPos = validIndices.indexOf(selectedAnswer);
+                    setSelectedAnswer(validIndices[selectedAnswer === null ? validIndices.length - 1 : (currentPos - 1 + validIndices.length) % validIndices.length]);
                 }
             }
         };
-
         window.addEventListener('keydown', handleKeyPress);
         return () => window.removeEventListener('keydown', handleKeyPress);
     }, [gameState, showResult, selectedAnswer, showTransition, eliminatedOptions, lifelinesUsed]);
 
-
-    // --- CSV template download & import
     const downloadExcelTemplate = () => {
-        const csvContent =
-            'data:text/csv;charset=utf-8,' +
+        const csvContent = 'data:text/csv;charset=utf-8,' +
             'Question|Option A|Option B|Option C|Option D|Correct Answer (1-4)|Difficulty|Category\n' +
             'What is the capital of Nigeria?|Lagos|Abuja|Kano|Port Harcourt|2|easy|Geography\n' +
             'Which planet is closest to the Sun?|Venus|Mercury|Earth|Mars|2|easy|Science\n' +
             'Who said, "I came, I saw, I conquered"?|Napoleon|Julius Caesar|Alexander|Hannibal|2|medium|History\n';
-
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement('a');
         link.setAttribute('href', encodedUri);
@@ -677,465 +557,160 @@ const QuizIQGame = () => {
         document.body.removeChild(link);
     };
 
-    const GameGuide = ({ onClose }) => {
-        return (
-            <>
-                <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 100; }
-                }
-                .guide-scrollbar::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .guide-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255,255,255,0.05);
-                    border-radius: 4px;
-                }
-                .guide-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255,255,255,0.3);
-                    border-radius: 4px;
-                }
-                .guide-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255,255,255,0.5);
-                }
+    const GameGuide = ({ onClose }) => (
+        <>
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                .guide-scrollbar::-webkit-scrollbar { width: 8px; }
+                .guide-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
+                .guide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+                .guide-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.5); }
             `}</style>
-                <div
-                    onClick={onClose}
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(0, 0, 0, 0.5)',
-                        backdropFilter: 'blur(10px)',
-                        zIndex: 10000,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '20px',
-                        animation: 'fadeIn 0.3s ease-out'
-                    }}>
-                    <div style={{
-                        background: LUXURY_THEME.background,
-                        border: `2px solid ${LUXURY_THEME.accent}`,
-                        borderRadius: '20px',
-                        maxWidth: '900px',
-                        width: '100%',
-                        maxHeight: '90vh',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
-                    }}>
-                        {/* Header */}
-                        <div style={{
-                            padding: '24px',
-                            borderBottom: `1px solid ${LUXURY_THEME.border}`,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                        }}>
-                            <h2 style={{
-                                margin: 0,
-                                fontSize: '1.8rem',
-                                background: LUXURY_THEME.secondary,
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent'
-                            }}>
-                                📖 Game Guide & Shortcuts
-                            </h2>
-                            <button
-                                onClick={onClose}
-                                style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    fontSize: '2rem',
-                                    color: LUXURY_THEME.textGold,
-                                    cursor: 'pointer',
-                                    padding: '0 8px',
-                                    lineHeight: 1
-                                }}
-                            >
-                                ×
-                            </button>
-                        </div>
-
-                        <div className="guide-scrollbar" style={{
-                            flex: 1,
-                            overflowY: 'auto',
-                            padding: '24px',
-                            color: LUXURY_THEME.text
-                        }}>
-                            {/* Game Modes */}
-                            <section style={{ marginBottom: '32px' }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Game Modes</h3>
-                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                    <p><strong>Presenter Mode:</strong> Control the game, see correct answers, use keyboard shortcuts</p>
-                                    <p style={{ color: '#888', fontSize: '0.9rem' }}>Access via: <code style={{ fontFamily: 'JetBrainsMonoNL-Bold', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>?mode=presenter</code></p>
-
-                                    <p style={{ marginTop: '12px' }}><strong>Audience Mode:</strong> View-only mode that syncs with presenter in real-time</p>
-                                    <p style={{ color: '#888', fontSize: '0.9rem' }}>Access via: <code style={{ fontFamily: 'JetBrainsMonoNL-Bold', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>?mode=audience</code></p>
-
-                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: On PC PROJECTIONS (Win + P) should ALWAYS be set to "EXTEND MODE" with the Presenter Mode on the PC and the Audience Session dragged to the Extended Screen.</p>
-                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Set Your Browser Zoom 🔎 to 120/125 for best viewing experience.</p>
-                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Simply REFRESH the App if you urgently need to restart or go back to the homepage.</p>
-                                </div>
-                            </section>
-
-                            {/* Question Management */}
-                            <section style={{ marginBottom: '32px' }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Question Management</h3>
-                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                    <p><strong>1. Default Questions:</strong> Built-in Nigerian + Global question set</p>
-
-                                    <p style={{ marginTop: '12px' }}><strong>2. Custom Questions (CSV Import):</strong></p>
-                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
-                                        <li>Upload unlimited question sets via CSV/TXT files</li>
-                                        <li>Format: <code style={{ fontFamily: 'JetBrainsMonoNL-Bold', fontSize: '0.85rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '3px' }}>Question | Option A | B | C | D | Correct (1-4) | Difficulty | Category</code></li>
-                                        <li>Download template available in-app</li>
-                                        <li>Rename, delete, or preview question sets</li>
-                                        <li>Play Next Game feature auto-selects unplayed sets</li>
-                                    </ul>
-                                </div>
-                            </section>
-
-                            {/* Lifelines */}
-                            <section style={{ marginBottom: '32px' }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Lifelines</h3>
-                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                    <p><strong>1. 50/50:</strong> Eliminates 2 wrong answers + adds <span style={{ color: '#00ff00' }}>10 seconds</span> to timer</p>
-
-                                    <p style={{ marginTop: '12px' }}><strong>2. Ask the Audience:</strong> Shows audience poll with visual bar graph + adds <span style={{ color: '#00ff00' }}>10 seconds</span> to timer</p>
-                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
-                                        <li>Green bars indicate top 2 likely answers</li>
-                                        <li>White bars indicate less likely answers</li>
-                                        <li>Displays percentage for each option</li>
-                                    </ul>
-
-                                    <p style={{ marginTop: '12px' }}><strong>3. Phone a Friend:</strong> Adds <span style={{ color: '#00ff00' }}>15 seconds</span> to timer</p>
-
-                                    <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: Time bonuses shows a "+10s" or "+15s" animation and timer continues without stopping</p>
-                                </div>
-                            </section>
-
-                            {/* Timer & Scoring */}
-                            <section style={{ marginBottom: '32px' }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Timer & Scoring</h3>
-                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
-                                        <li>Default: 30 seconds per question (configurable)</li>
-                                        <li>Timer can be paused/resumed (presenter only)</li>
-                                        <li>Prize structure: ₦500 → ₦10,000 (15 questions)</li>
-                                        <li><strong>Safety Nets</strong> at Questions 5, 10, and 15
-                                            <ul style={{ marginTop: '4px' }}>
-                                                <li>Banner announces when reaching safety net questions</li>
-                                                <li>Wrong answer drops you to last safety net amount</li>
-                                            </ul>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </section>
-
-                            {/* Results */}
-                            <section style={{ marginBottom: '32px' }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Results & Celebrations</h3>
-                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                    <p>😔 <strong>₦0:</strong> "Game Over" message</p>
-                                    <p>😉 <strong>₦2,500 - ₦9,000:</strong> "Good Job!" with encouragement</p>
-                                    <p>🤑 <strong>₦10,000:</strong> "Congratulations!" + Full-screen confetti celebration</p>
-                                    <h3 style={{ color: LUXURY_THEME.textGold, margin: '0 0 10px 0' }}>Claim Your Winnings!</h3>
-                                    <p style={{ fontSize: '0.9rem', marginBottom: '15px' }}>
-                                        To process your prize and verify your score, please complete the official claim form.
-                                    </p>
-                                </div>
-                            </section>
-
-                            {/* Slideshow */}
-                            <section style={{ marginBottom: '32px' }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Slideshow Feature</h3>
-                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
-                                        <li>Upload up to 10 images for slideshow display</li>
-                                        <li>Auto-advances every 5 seconds</li>
-                                        <li>Perfect for sponsor logos, advertisements, or break screens</li>
-                                        <li>Delete individual images or start slideshow anytime</li>
-                                    </ul>
-                                </div>
-                            </section>
-
-                            {/* Keyboard Shortcuts */}
-                            <section style={{ marginBottom: '32px' }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Keyboard Shortcuts</h3>
-                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                    <p><strong>Answer Selection:</strong></p>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginTop: '8px', marginBottom: '16px' }}>
-                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>A</kbd> Select Option A</p>
-                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>B</kbd> Select Option B</p>
-                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>C</kbd> Select Option C</p>
-                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>D</kbd> Select Option D</p>
-                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>Enter</kbd> Submit selected answer</p>
-                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>↑↓←→</kbd> Navigate through options</p>
-                                    </div>
-
-                                    <p><strong>Timer Control:</strong></p>
-                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginTop: '8px' }}>
-                                        <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontFamily: 'JetBrainsMonoNL-Bold' }}>Space</kbd> Pause/Resume timer</p>
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* Presenter Workflow */}
-                            <section style={{ marginBottom: '32px' }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Presenter Workflow</h3>
-                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                    <p><strong>Setup:</strong></p>
-                                    <ol style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
-                                        <li>Enter player name</li>
-                                        <li>Choose question category or import custom CSV</li>
-                                        <li>Select specific question set to play</li>
-                                    </ol>
-
-                                    <p style={{ marginTop: '16px' }}><strong>During Game:</strong></p>
-                                    <ol style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
-                                        <li>Press Space to start timer</li>
-                                        <li>Use A/B/C/D keys to select answer</li>
-                                        <li>Use lifelines as needed (adds time automatically)</li>
-                                        <li>Press Enter or click "Submit Answer"</li>
-                                        <li>Watch transition video</li>
-                                        <li>Proceed to next question</li>
-                                    </ol>
-
-                                    <p style={{ marginTop: '16px' }}><strong>After Game:</strong></p>
-                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
-                                        <li><strong>Play Next Game:</strong> Auto-loads next unplayed question set</li>
-                                        <li><strong>Restart Game:</strong> Go back to player registration</li>
-                                        <li><strong>Start Slideshow:</strong> Display uploaded images</li>
-                                    </ul>
-                                </div>
-                            </section>
-
-                            {/* Tips */}
-                            <section style={{ marginBottom: '32px' }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Tips & Best Practices</h3>
-                                <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                    <ul style={{ marginLeft: '20px', color: 'rgba(255,255,255,0.85)' }}>
-                                        <li><strong>For Hosts:</strong> Keep timer running for excitement, pause only if needed</li>
-                                        <li><strong>Question Sets:</strong> Organize by difficulty or topic for better flow</li>
-                                        <li><strong>Lifelines:</strong> Strategic use, time bonuses can be crucial</li>
-                                        <li><strong>Audience Poll:</strong> Most helpful when 2+ answers seem correct</li>
-                                        <li><strong>Safety Nets:</strong> Remind players before safety net questions for added tension</li>
-                                        <li><strong>Slideshow:</strong> Upload sponsor logos before event starts</li>
-                                    </ul>
-                                </div>
-                            </section>
-
-                            {/* Footer */}
-                            <div style={{
-                                marginTop: '40px',
-                                paddingTop: '20px',
-                                borderTop: `1px solid ${LUXURY_THEME.border}`,
-                                textAlign: 'center',
-                                color: '#888',
-                                fontSize: '0.9rem'
-                            }}>
-                                    <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>Powered by 6TechSolutions</code></p>
-                                    <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>Contact/WhatsApp: +234 909 725 3310</code></p>
-                                    <p style={{ color: '#888', fontSize: '0.9rem' }}><code style={{ fontFamily: 'JetBrainsMonoNL-Bold', padding: '2px 8px', borderRadius: '0px' }}>EMail: 6techsolutions@gmail.com</code></p>
+            <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeIn 0.3s ease-out' }}>
+                <div style={{ background: LUXURY_THEME.background, border: `2px solid ${LUXURY_THEME.accent}`, borderRadius: '20px', maxWidth: '900px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+                    <div style={{ padding: '24px', borderBottom: `1px solid ${LUXURY_THEME.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h2 style={{ margin: 0, fontSize: '1.8rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>📖 Game Guide & Shortcuts</h2>
+                        <button onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '2rem', color: LUXURY_THEME.textGold, cursor: 'pointer', padding: '0 8px', lineHeight: 1 }}>×</button>
+                    </div>
+                    <div className="guide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '24px', color: LUXURY_THEME.text }}>
+                        <section style={{ marginBottom: '32px' }}>
+                            <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Game Modes</h3>
+                            <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                <p><strong>Presenter Mode:</strong> Control the game, see correct answers, use keyboard shortcuts</p>
+                                <p style={{ color: '#888', fontSize: '0.9rem' }}>Access via: <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>?mode=presenter</code></p>
+                                <p style={{ marginTop: '12px' }}><strong>Audience Mode:</strong> View-only mode that syncs with presenter in real-time</p>
+                                <p style={{ color: '#888', fontSize: '0.9rem' }}>Access via: <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>?mode=audience</code></p>
+                                <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: On PC PROJECTIONS (Win + P) should ALWAYS be set to "EXTEND MODE".</p>
+                                <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Set Your Browser Zoom to 120/125 for best viewing experience.</p>
+                                <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Simply REFRESH the App if you urgently need to restart or go back to the homepage.</p>
                             </div>
+                        </section>
+                        <section style={{ marginBottom: '32px' }}>
+                            <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Lifelines</h3>
+                            <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                <p><strong>1. 50/50:</strong> Eliminates 2 wrong answers + adds <span style={{ color: '#00ff00' }}>10 seconds</span> to timer</p>
+                                <p style={{ marginTop: '12px' }}><strong>2. Ask the Audience:</strong> Shows audience poll + adds <span style={{ color: '#00ff00' }}>10 seconds</span></p>
+                                <p style={{ marginTop: '12px' }}><strong>3. Phone a Friend:</strong> Adds <span style={{ color: '#00ff00' }}>15 seconds</span> to timer</p>
+                            </div>
+                        </section>
+                        <section style={{ marginBottom: '32px' }}>
+                            <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Keyboard Shortcuts</h3>
+                            <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
+                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
+                                    <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>A B C D</kbd> Select option</p>
+                                    <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>Enter</kbd> Submit answer</p>
+                                    <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>Space</kbd> Pause/Resume timer</p>
+                                    <p style={{ margin: '4px 0' }}><kbd style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }}>Arrow keys</kbd> Navigate options</p>
+                                </div>
+                            </div>
+                        </section>
+                        <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: `1px solid ${LUXURY_THEME.border}`, textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>
+                            <p><code>Powered by 6TechSolutions</code></p>
+                            <p><code>Contact/WhatsApp: +234 909 725 3310</code></p>
+                            <p><code>EMail: 6techsolutions@gmail.com</code></p>
                         </div>
                     </div>
                 </div>
-            </>
-        );
-    };
+            </div>
+        </>
+    );
 
     const handleExcelImport = async (event) => {
         const files = Array.from(event.target.files);
         if (!files.length) return;
-
         const newSets = [];
         let totalQuestionsCount = 0;
-
-        // Process files sequentially
         for (const file of files) {
             try {
-                // Read file content wrapped in a Promise
                 const text = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = (e) => resolve(e.target.result);
                     reader.onerror = (e) => reject(e);
                     reader.readAsText(file);
                 });
-
                 const lines = text.split(/\r?\n/);
-
-                // Check header
                 const firstLine = lines[0].toLowerCase();
                 const hasHeader = firstLine.includes('question') && (firstLine.includes('option') || firstLine.includes('correct'));
                 const startIndex = hasHeader ? 1 : 0;
-
                 const questions = [];
                 for (let i = startIndex; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (!line) continue;
-
                     const cols = line.split('|').map(col => col.trim());
-                    // 8 columns required
                     if (cols.length >= 8) {
                         questions.push({
-                            id: Date.now() + Math.random() + i, // Ensure unique ID
-                            question: cols[0],
-                            options: [cols[1], cols[2], cols[3], cols[4]],
+                            id: Date.now() + Math.random() + i,
+                            question: cols[0], options: [cols[1], cols[2], cols[3], cols[4]],
                             correct: Math.max(0, Math.min(3, parseInt(cols[5], 10) - 1)),
-                            difficulty: (cols[6] || 'medium').toLowerCase(),
-                            category: (cols[7] || 'Imported')
+                            difficulty: (cols[6] || 'medium').toLowerCase(), category: (cols[7] || 'Imported')
                         });
                     }
                 }
-
                 if (questions.length > 0) {
-                    newSets.push({
-                        id: Date.now() + Math.random(), // Unique ID for the set
-                        name: file.name.replace('.csv', '').replace('.txt', ''),
-                        questions: questions,
-                        createdAt: new Date().toLocaleString()
-                    });
+                    newSets.push({ id: Date.now() + Math.random(), name: file.name.replace('.csv', '').replace('.txt', ''), questions, createdAt: new Date().toLocaleString() });
                     totalQuestionsCount += questions.length;
                 }
-            } catch (error) {
-                console.error(`Error parsing file ${file.name}:`, error);
-            }
+            } catch (error) { console.error(`Error parsing file ${file.name}:`, error); }
         }
-
         if (newSets.length > 0) {
             const updatedSets = [...(importedQuestions.sets || []), ...newSets];
             setImportedQuestions({ sets: updatedSets });
-
             try {
                 localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets }));
                 alert(`✅ Successfully imported ${newSets.length} file(s) with ${totalQuestionsCount} total questions!`);
-            } catch (error) {
-                console.error('Failed to save to storage:', error);
-                alert(`Imported questions, but failed to save permanently.`);
-            }
-        } else {
-            alert('⚠️ No valid questions found in the selected files.');
-        }
-
-        event.target.value = ''; // Reset input to allow re-uploading same files
+            } catch (error) { alert(`Imported questions, but failed to save permanently.`); }
+        } else { alert('⚠️ No valid questions found in the selected files.'); }
+        event.target.value = '';
     };
-
 
     const handleImageUpload = async (event) => {
         const files = Array.from(event.target.files);
-
         if (!files.length) return;
-
-        if (slideshowImages.length >= 10) {
-            alert('Maximum 10 images allowed. Please delete some images first.');
-            event.target.value = '';
-            return;
-        }
-
+        if (slideshowImages.length >= 10) { alert('Maximum 10 images allowed.'); event.target.value = ''; return; }
         const remainingSlots = 10 - slideshowImages.length;
         const filesToProcess = files.slice(0, remainingSlots);
-
-        if (files.length > remainingSlots) {
-            alert(`Only ${remainingSlots} slots remaining. Uploading first ${remainingSlots} images.`);
-        }
-
-        const imagePromises = filesToProcess
-            .filter(file => file.type.startsWith('image/'))
-            .map(file => {
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        resolve({
-                            id: Date.now() + Math.random(),
-                            src: e.target.result,
-                            name: file.name
-                        });
-                    };
-                    reader.readAsDataURL(file);
-                });
-            });
-
+        if (files.length > remainingSlots) alert(`Only ${remainingSlots} slots remaining.`);
+        const imagePromises = filesToProcess.filter(file => file.type.startsWith('image/')).map(file => new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve({ id: Date.now() + Math.random(), src: e.target.result, name: file.name });
+            reader.readAsDataURL(file);
+        }));
         try {
             const processedImages = await Promise.all(imagePromises);
-
             setSlideshowImages(prev => {
                 const updatedList = [...prev, ...processedImages];
-
-                // Save to localStorage
                 localStorage.setItem('QUIZ_SLIDESHOW_DATA', JSON.stringify(updatedList));
                 localStorage.setItem('slideshow-images', JSON.stringify(updatedList));
-
                 return updatedList;
             });
-
-            event.target.value = ''; // Reset input
-        } catch (error) {
-            console.error("Error processing images:", error);
-            alert('Failed to upload images. Please try again.');
-        }
-    };
-
-    //auth handler
-    const handleAuthentication = () => {
-        if (passwordInput === ADMIN_PASSWORD) {
-            setIsAuthenticated(true);
-            localStorage.setItem('adminAuthTime', Date.now().toString());
-        } else {
-            alert('Wrong Password');
-        }
+            event.target.value = '';
+        } catch (error) { alert('Failed to upload images. Please try again.'); }
     };
 
     const deleteImage = (imageId) => {
         const updatedImages = slideshowImages.filter(img => img.id !== imageId);
         setSlideshowImages(updatedImages);
-
-        try {
-            localStorage.setItem('slideshow-images', JSON.stringify(updatedImages));
-        } catch (error) {
-            console.error('Failed to update storage:', error);
-        }
+        try { localStorage.setItem('slideshow-images', JSON.stringify(updatedImages)); } catch (error) { console.error('Failed to update storage:', error); }
     };
 
     const startSlideshow = () => {
-        if (!isPresenterMode()) return; // Only presenter can start
-        if (slideshowImages.length === 0) {
-            alert('Please upload images first before starting slideshow.');
-            return;
-        }
+        if (!isPresenterMode()) return;
+        if (slideshowImages.length === 0) { alert('Please upload images first.'); return; }
         setGameState('slideshow');
     };
 
-
-    const getDefaultQuestions = () => {
-        const combined = [...(QUESTIONS_DATABASE.nigerian || []), ...(QUESTIONS_DATABASE.worldwide || [])];
-        return combined;
-    };
+    const getDefaultQuestions = () => [...(QUESTIONS_DATABASE.nigerian || []), ...(QUESTIONS_DATABASE.worldwide || [])];
 
     const getQuestionsForCategory = (category) => {
-        if (category === 'default') {
-            return getDefaultQuestions();
-        }
-        if (category === 'custom') {
-            const allQuestions = (importedQuestions.sets || []).flatMap(set => set.questions);
-            return allQuestions;
-        }
+        if (category === 'default') return getDefaultQuestions();
+        if (category === 'custom') return (importedQuestions.sets || []).flatMap(set => set.questions);
         return [];
     };
 
     const getScoreAfterWrongAnswer = () => {
-        const lastSafetyNet = GAME_CONFIG.safetyNets
-            .filter((net) => net < currentQuestion)
-            .sort((a, b) => b - a)[0]; // Get the highest safety net passed
-
+        const lastSafetyNet = GAME_CONFIG.safetyNets.filter((net) => net < currentQuestion).sort((a, b) => b - a)[0];
         return lastSafetyNet !== undefined ? GAME_CONFIG.prizeStructure[lastSafetyNet] : 0;
     };
-
 
     const handleAnswerSelect = (answerIndex) => {
         if (!isPresenterMode()) return;
@@ -1143,145 +718,93 @@ const QuizIQGame = () => {
         setSelectedAnswer(answerIndex);
     };
 
-
     const handleFiftyFifty = () => {
         if (lifelinesUsed.fiftyFifty) return;
         const q = currentQuestions[currentQuestion];
         if (!q) return;
-        const correct = q.correct;
-        const wrongs = [0, 1, 2, 3].filter((i) => i !== correct);
-        const toEliminate = wrongs.slice(0, 2);
-        setEliminatedOptions(toEliminate);
+        const wrongs = [0, 1, 2, 3].filter((i) => i !== q.correct);
+        setEliminatedOptions(wrongs.slice(0, 2));
         setLifelinesUsed((p) => ({ ...p, fiftyFifty: true }));
-        //+10secs
         setTimeLeft((prev) => prev + 10);
-        setTimeBonusAmount(10);
-        setShowTimeBonus(true);
+        setTimeBonusAmount(10); setShowTimeBonus(true);
         setTimeout(() => setShowTimeBonus(false), 2000);
     };
-
 
     const handleAskAudience = () => {
         if (lifelinesUsed.askAudience) return;
         setLifelinesUsed((p) => ({ ...p, askAudience: true }));
-        //+20secs
         setTimeLeft((prev) => prev + 10);
-        setTimeBonusAmount(10);
-        setShowTimeBonus(true);
+        setTimeBonusAmount(10); setShowTimeBonus(true);
         setTimeout(() => setShowTimeBonus(false), 2000);
-
-        //generate audience poll
         const q = currentQuestions[currentQuestion];
         if (!q) return;
-
         const correctAnswer = q.correct;
-        const allOptions = [0, 1, 2, 3];
-        const wrongOptions = allOptions.filter(i => i !== correctAnswer);
-
-        //pick one random wrong option to be the second highest
+        const wrongOptions = [0, 1, 2, 3].filter(i => i !== correctAnswer);
         const secondHighest = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
         const remainingOptions = wrongOptions.filter(i => i !== secondHighest);
-
-        //generate %
-        const correctPercentage = 45 + Math.floor(Math.random() * 30); // 45-75%
-        const secondPercentage = 15 + Math.floor(Math.random() * 20); // 15-35%
+        const correctPercentage = 45 + Math.floor(Math.random() * 30);
+        const secondPercentage = 15 + Math.floor(Math.random() * 20);
         const remaining = 100 - correctPercentage - secondPercentage;
-
-        //distribute remaining percentage between other 2
         const thirdPercentage = Math.floor(remaining / 2) + Math.floor(Math.random() * (remaining / 2));
-        const fourthPercentage = remaining - thirdPercentage;
-
-        //create poll results obj
-        const pollResults = {
-            [correctAnswer]: correctPercentage,
-            [secondHighest]: secondPercentage,
-            [remainingOptions[0]]: thirdPercentage,
-            [remainingOptions[1]]: fourthPercentage
-        };
-        setAudiencePoll(pollResults);
+        setAudiencePoll({ [correctAnswer]: correctPercentage, [secondHighest]: secondPercentage, [remainingOptions[0]]: thirdPercentage, [remainingOptions[1]]: remaining - thirdPercentage });
     };
 
     const handlePhoneAFriend = () => {
         if (lifelinesUsed.phoneAFriend) return;
         setLifelinesUsed((p) => ({ ...p, phoneAFriend: true }));
-        //can add a suggestion popup here
-        //+20secs
         setTimeLeft((prev) => prev + 15);
-        setTimeBonusAmount(15);
-        setShowTimeBonus(true);
+        setTimeBonusAmount(15); setShowTimeBonus(true);
         setTimeout(() => setShowTimeBonus(false), 2000);
     };
 
     const handleTimeUp = () => {
-        if (selectedAnswer !== null) {
-            triggerSubmitAnswer();
-            return;
-        }
-        //if no answer selected, just go straight to result
+        if (selectedAnswer !== null) { triggerSubmitAnswer(); return; }
         setIsTimerRunning(false);
         setShowResult(true);
-
-        // Proceed immediately after showing result
-        setTimeout(() => {
-            onTransitionEnded();
-        }, 2000);
+        setTimeout(() => { onTransitionEnded(); }, 2000);
     };
-
 
     const triggerSubmitAnswer = () => {
-        if (isValidating) return; //prevent double clicks
+        if (isValidating) return;
         if (gameState !== 'playing') return;
-
         setIsTimerRunning(false);
         setIsValidating(true);
-
         setTimeout(() => {
-            setIsValidating(false); //stop blinking
-            setShowResult(true);   //show green/red colors
-
-            // Proceed immediately after showing result
-            setTimeout(() => {
-                onTransitionEnded();
-            }, 2000); // 2 seconds to see the correct/wrong answer
-
+            setIsValidating(false);
+            setShowResult(true);
+            setTimeout(() => { onTransitionEnded(); }, 2000);
         }, 3000);
     };
-
 
     const onTransitionEnded = () => {
         setShowTransition(false);
         const q = currentQuestions[currentQuestion];
         const isCorrect = q && selectedAnswer === q.correct;
-
         if (isCorrect) {
-            //const transitionTime = isMobile ? 500 : 3500;
             const newScore = GAME_CONFIG.prizeStructure[Math.min(currentQuestion, GAME_CONFIG.prizeStructure.length - 1)];
             setScore(newScore);
-
-            //setShowTransition(true);
-
-            // move to next or finish
             if (currentQuestion < currentQuestions.length - 1) {
-                const nextQuestionIdx = currentQuestion + 1; // Calculate next index
-
-                // Check if next question is a safety net
+                const nextQuestionIdx = currentQuestion + 1;
                 if (GAME_CONFIG.safetyNets.includes(nextQuestionIdx)) {
                     setShowSafetyBanner(true);
-                    setTimeout(() => setShowSafetyBanner(false), 5000); // Hide after 5 seconds
+                    setTimeout(() => setShowSafetyBanner(false), 5000);
                 }
-
                 setCurrentQuestion(nextQuestionIdx);
                 setSelectedAnswer(null);
                 setShowResult(false);
                 setTimeLeft(GAME_CONFIG.timePerQuestion);
-                setIsTimerRunning(false);
+                setIsTimerRunning(false); // keep paused while question animates in
                 setEliminatedOptions([]);
                 setAudiencePoll(null);
+                // [ADDITION 3] auto-start timer 10s after question appears
+                // (gives time for the typewriter animation to finish displaying options)
+                setTimeout(() => {
+                    setIsTimerRunning(true);
+                }, 10000);
             } else {
                 setGameState('result');
             }
         } else {
-            // wrong answer or timeout
             setScore(getScoreAfterWrongAnswer());
             setGameState('result');
         }
@@ -1289,114 +812,58 @@ const QuizIQGame = () => {
 
     const playNextUnplayedSet = () => {
         if (!isPresenterMode()) return;
-
-        // Validate player name first
-        if (!playerName.trim()) {
-            alert("Please enter a player name first!");
-            return;
-        }
-
-        // 1. Get all available custom sets
+        if (!playerName.trim()) { alert("Please enter a player name first!"); return; }
         const allSets = importedQuestions.sets || [];
-        if (allSets.length === 0) {
-            alert("No custom question sets found! Import some CSVs first.");
-            return;
-        }
-
-        // 2. Filter out sets we have already played
+        if (allSets.length === 0) { alert("No custom question sets found! Import some CSVs first."); return; }
         const unplayedSets = allSets.filter(set => !playedSetIds.includes(set.id));
-
-        // 3. Check availability
         if (unplayedSets.length === 0) {
             if (window.confirm("You've played all available sets! \n\nClear history and start over?")) {
-                setPlayedSetIds([]); // Reset history
-                // Recursively call to pick one from the fresh batch
+                setPlayedSetIds([]);
                 setTimeout(() => playNextUnplayedSet(), 100);
             }
             return;
         }
-
-        // 4. Shuffle: Pick a random one from the remaining unplayed sets
         const randomSet = unplayedSets[Math.floor(Math.random() * unplayedSets.length)];
-
-        // 5. Load it and Start (DON'T clear playerName here!)
-        setPlayedSetIds(prev => [...prev, randomSet.id]); // Mark as played
+        setPlayedSetIds(prev => [...prev, randomSet.id]);
         setCurrentQuestions(randomSet.questions.slice(0, GAME_CONFIG.totalQuestions));
         setSelectedCategory(`custom: ${randomSet.name}`);
-
-        // Reset Game State immediately
-        setCurrentQuestion(0);
-        setScore(0);
-        setSelectedAnswer(null);
-        setShowResult(false);
-        setTimeLeft(GAME_CONFIG.timePerQuestion);
-        setIsTimerRunning(false);
+        setCurrentQuestion(0); setScore(0); setSelectedAnswer(null); setShowResult(false);
+        setTimeLeft(GAME_CONFIG.timePerQuestion); setIsTimerRunning(false);
         setLifelinesUsed({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
         setEliminatedOptions([]);
         setGameState('playing');
     };
 
-    // reset & select category
     const resetGame = () => {
-        if (!isPresenterMode()) return; // Only presenter can reset
-        setGameState('registration');
-        setCurrentQuestion(0);
-        setScore(0);
-        setSelectedAnswer(null);
-        setShowResult(false);
-        setTimeLeft(GAME_CONFIG.timePerQuestion);
-        setIsTimerRunning(false);
+        if (!isPresenterMode()) return;
+        setGameState('registration'); setCurrentQuestion(0); setScore(0); setSelectedAnswer(null);
+        setShowResult(false); setTimeLeft(GAME_CONFIG.timePerQuestion); setIsTimerRunning(false);
         setLifelinesUsed({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
-        setEliminatedOptions([]);
-        setPlayerName('');
-        setSelectedCategory('');
-        setCurrentQuestions([]);
+        setEliminatedOptions([]); setPlayerName(''); setSelectedCategory(''); setCurrentQuestions([]);
     };
+
     const deleteQuestionSet = (setId) => {
         const updatedSets = importedQuestions.sets.filter(set => set.id !== setId);
         setImportedQuestions({ sets: updatedSets });
-
-
-        try {
-            localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets }));
-        } catch (error) {
-            console.error('Failed to update storage:', error);
-        }
+        try { localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets })); } catch (error) { console.error('Failed to update storage:', error); }
     };
+
     const deleteAllImportedSets = () => {
-        if (!importedQuestions.sets || importedQuestions.sets.length === 0) {
-            alert("No imported question sets to delete.");
-            return;
-        }
-
-        if (window.confirm("⚠️ ARE YOU SURE? \nThis will permanently delete ALL imported question sets. This action cannot be undone.")) {
-            // Clear state
+        if (!importedQuestions.sets || importedQuestions.sets.length === 0) { alert("No imported question sets to delete."); return; }
+        if (window.confirm("⚠️ ARE YOU SURE? \nThis will permanently delete ALL imported question sets.")) {
             setImportedQuestions({ sets: [] });
-
-            // Clear local storage
-            try {
-                localStorage.removeItem('imported-questions');
-                alert("All imported sets have been deleted.");
-            } catch (error) {
-                console.error('Failed to clear storage:', error);
-            }
+            try { localStorage.removeItem('imported-questions'); alert("All imported sets have been deleted."); } catch (error) { console.error('Failed to clear storage:', error); }
         }
     };
-    const renameQuestionSet = (setId, newName) => {
-        const updatedSets = importedQuestions.sets.map(set =>
-                set.id === setId ? { ...set, name: newName } : set
-        );
-        setImportedQuestions({ sets: updatedSets });
 
-        try {
-            localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets }));
-        } catch (error) {
-            console.error('Failed to update storage:', error);
-        }
+    const renameQuestionSet = (setId, newName) => {
+        const updatedSets = importedQuestions.sets.map(set => set.id === setId ? { ...set, name: newName } : set);
+        setImportedQuestions({ sets: updatedSets });
+        try { localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets })); } catch (error) { console.error('Failed to update storage:', error); }
     };
 
     const selectCategory = (category) => {
-        if (!isPresenterMode()) return; // Only presenter can select
+        if (!isPresenterMode()) return;
         setSelectedCategory(category);
         const questions = getQuestionsForCategory(category);
         const final = questions && questions.length > 0 ? questions : getDefaultQuestions();
@@ -1405,558 +872,227 @@ const QuizIQGame = () => {
     };
 
     const startGame = () => {
-        if (!isPresenterMode()) return; // Only presenter can start
-        if (!currentQuestions || currentQuestions.length === 0) {
-            alert('No questions loaded. Import CSV under Custom or choose Default.');
-            return;
-        }
-        setCurrentQuestion(0);
-        setScore(0);
-        setSelectedAnswer(null);
-        setShowResult(false);
-        setTimeLeft(GAME_CONFIG.timePerQuestion);
-        setIsTimerRunning(false);
+        if (!isPresenterMode()) return;
+        if (!currentQuestions || currentQuestions.length === 0) { alert('No questions loaded.'); return; }
+        setCurrentQuestion(0); setScore(0); setSelectedAnswer(null); setShowResult(false);
+        setTimeLeft(GAME_CONFIG.timePerQuestion); setIsTimerRunning(false);
         setLifelinesUsed({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
-        setEliminatedOptions([]);
-        setAudiencePoll(null);
+        setEliminatedOptions([]); setAudiencePoll(null);
         setGameState('playing');
+        // auto-start timer after 10s so question + options finish animating in
+        setTimeout(() => setIsTimerRunning(true), 10000);
+    };
+
+    // [ADDITION 2] Paystack inline payment handler
+    const handlePaystackPayment = () => {
+        if (!claimNIN || claimNIN.length < 11) { alert('Please enter a valid 11-digit NIN.'); return; }
+        if (!claimPhone || claimPhone.length < 11) { alert('Please enter a valid 11-digit phone number.'); return; }
+        setPaystackLoading(true);
+        const openModal = () => {
+            const handler = window.PaystackPop.setup({
+                key: 'pk_live_REPLACE_WITH_YOUR_PAYSTACK_KEY',
+                amount: score * 100,
+                currency: 'NGN',
+                ref: `QUIZIQ-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                metadata: {
+                    custom_fields: [
+                        { display_name: 'Player Name', variable_name: 'player_name', value: playerName },
+                        { display_name: 'NIN',         variable_name: 'nin',         value: claimNIN   },
+                        { display_name: 'Phone',       variable_name: 'phone',       value: claimPhone },
+                    ]
+                },
+                callback: (response) => { setPaystackLoading(false); setPaystackSuccess(true); console.log('Paystack ref:', response.reference); },
+                onClose: () => { setPaystackLoading(false); }
+            });
+            handler.openIframe();
+        };
+        if (!window.PaystackPop) {
+            const script = document.createElement('script');
+            script.src = 'https://js.paystack.co/v1/inline.js';
+            script.onload = openModal;
+            document.head.appendChild(script);
+        } else { openModal(); }
     };
 
     const PrizeLadder = React.memo(({ currentQuestion, score, safetyNets, prizeStructure, currency }) => {
         const totalQuestions = prizeStructure.length;
-
         const reversedPrizes = [...prizeStructure].reverse();
-
         return (
-            <div style={{
-                ...styles.card,
-                padding: 0,
-                height: isMobile ? '300px' : 'auto', // Limit height on mobile so page isn't too long
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden'
-            }}>
-                {/* Header */}
-                <div style={{
-                    margin: 0,
-                    padding: '7px 16px',
-                    backgroundColor: LUXURY_THEME.backgroundDark,
-                    color: LUXURY_THEME.textGold,
-                    textAlign: 'center',
-                    fontSize: '1.1rem',
-                    fontWeight: '700',
-                    borderBottom: `2px solid ${LUXURY_THEME.accent}`
-                }}>
+            <div style={{ ...styles.card, padding: 0, height: isMobile ? '300px' : 'auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ margin: 0, padding: '7px 16px', backgroundColor: LUXURY_THEME.backgroundDark, color: LUXURY_THEME.textGold, textAlign: 'center', fontSize: '1.1rem', fontWeight: '700', borderBottom: `2px solid ${LUXURY_THEME.accent}` }}>
                     Prize Ladder
                 </div>
-
-                {/* Scrollable Prize List */}
-                <div style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    overflowX: 'hidden'
-                }}>
+                <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
                     <div style={{ padding: '0px 0' }}>
                         {reversedPrizes.map((prize, index) => {
                             const actualIndex = totalQuestions - index - 1;
-                            const questionNumber = actualIndex + 1;
                             const isSafetyNet = safetyNets.includes(actualIndex);
                             const isCurrentQuestion = actualIndex === currentQuestion;
-
                             const rowStyle = {
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '2.3px 16px',
-                                fontSize: '0.95rem',
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '2.3px 16px', fontSize: '0.95rem',
                                 fontWeight: isSafetyNet || isCurrentQuestion ? '700' : '500',
-                                background: isCurrentQuestion
-                                    ? LUXURY_THEME.accent + '33'
-                                    : isSafetyNet
-                                        ? 'rgba(0, 255, 0, 0.08)'
-                                        : 'transparent',
-                                color: isCurrentQuestion
-                                    ? LUXURY_THEME.textGold
-                                    : isSafetyNet
-                                        ? '#9bffb0'
-                                        : LUXURY_THEME.text,
-                                borderLeft: isCurrentQuestion
-                                    ? `4px solid ${LUXURY_THEME.textGold}`
-                                    : isSafetyNet
-                                        ? `4px solid #9bffb0`
-                                        : '4px solid transparent',
-                                borderRight: isCurrentQuestion
-                                    ? `4px solid ${LUXURY_THEME.textGold}`
-                                    : isSafetyNet
-                                        ? `4px solid #9bffb0`
-                                        : '4px solid transparent',
-                                transition: 'all 0.3s ease',
-                                minHeight: '32px'
+                                background: isCurrentQuestion ? LUXURY_THEME.accent + '33' : isSafetyNet ? 'rgba(0,255,0,0.08)' : 'transparent',
+                                color: isCurrentQuestion ? LUXURY_THEME.textGold : isSafetyNet ? '#9bffb0' : LUXURY_THEME.text,
+                                borderLeft: isCurrentQuestion ? `4px solid ${LUXURY_THEME.textGold}` : isSafetyNet ? `4px solid #9bffb0` : '4px solid transparent',
+                                borderRight: isCurrentQuestion ? `4px solid ${LUXURY_THEME.textGold}` : isSafetyNet ? `4px solid #9bffb0` : '4px solid transparent',
+                                transition: 'all 0.3s ease', minHeight: '32px'
                             };
-
                             return (
                                 <div key={actualIndex} style={rowStyle}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <span style={{ minWidth: '32px' }}>Q{questionNumber}</span>
-                                    {isSafetyNet && <span></span>}
-                                </span>
-                                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                                    {currency}{prize.toLocaleString()}
-                                </span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <span style={{ minWidth: '32px' }}>Q{actualIndex + 1}</span>
+                                        {isSafetyNet && <span></span>}
+                                    </span>
+                                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>{currency}{prize.toLocaleString()}</span>
                                 </div>
                             );
                         })}
                     </div>
                 </div>
-
-                {/* Footer - Current Score */}
-                <div style={{
-                    padding: '7px 16px',
-                    backgroundColor: LUXURY_THEME.backgroundDark,
-                    borderTop: `1px solid ${LUXURY_THEME.border}`,
-                    textAlign: 'center',
-                    color: LUXURY_THEME.textGold,
-                    fontSize: '1rem',
-                    fontWeight: '700'
-                }}>
+                <div style={{ padding: '7px 16px', backgroundColor: LUXURY_THEME.backgroundDark, borderTop: `1px solid ${LUXURY_THEME.border}`, textAlign: 'center', color: LUXURY_THEME.textGold, fontSize: '1rem', fontWeight: '700' }}>
                     Current Score: {currency}{score.toLocaleString()}
                 </div>
             </div>
         );
     });
 
-
-    // UI styles (no-scroll)
     const styles = {
         container: {
             width: '100vw',
-            height: isMobile ? 'auto' : '100vh',
-            overflow: 'hidden',
-            overflowY: isMobile ? 'auto' : 'hidden',
+            minHeight: '100vh',       // always fill screen but never clip
+            height: 'auto',           // grow with content — no cutting off
+            overflowX: 'hidden',
+            overflowY: 'auto',        // always scrollable when content overflows
             background: LUXURY_THEME.primary,
-            padding: isMobile ? '10px' : '2vh 2vw',
-            marginBottom: 12,
-            paddingBottom: isMobile ? '80px' : '65px',
+            padding: isMobile ? '10px 10px 80px 10px' : '2vh 2vw 70px 2vw',
             boxSizing: 'border-box',
             fontFamily: "'Product Sans', 'Georgia', serif",
             position: 'relative',
             color: LUXURY_THEME.text,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: isMobile ? 'flex-start' : 'space-between'
         },
-        centerArea: {
-            maxWidth: isMobile ? '100%' : '90vw',
-            margin: '0 auto',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'stretch',
-            flex: 1,
-            minHeight: 0
-        },
-        header: {
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: isMobile ? 'flex-start' : 'center',
-            flexDirection: isMobile ? 'column' : 'row', // Stack header on mobile
-            gap: 12,
-            flexWrap: 'wrap'
-        },
-        lifelineBar: {
-            display: 'flex',
-            gap: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: '1vh',
-            flexWrap: 'wrap'
-        },
+        centerArea: { maxWidth: isMobile ? '100%' : '90vw', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' },
+        header: { display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: 12, flexWrap: 'wrap' },
+        lifelineBar: { display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center', marginTop: '1vh', flexWrap: 'wrap' },
         lifelineBtn: (used) => ({
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: isMobile ? '8px 10px' : '10px 12px',
-            borderRadius: 10,
-            cursor: used ? 'not-allowed' : 'pointer',
-            background: used ? 'rgba(255, 0, 0, 0.08)' : 'rgba(0, 128, 0, 0.08)',
+            display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '8px 10px' : '10px 12px',
+            borderRadius: 10, cursor: used ? 'not-allowed' : 'pointer',
+            background: used ? 'rgba(255,0,0,0.08)' : 'rgba(0,128,0,0.08)',
             border: `1px solid ${used ? 'rgba(255,0,0,0.35)' : 'rgba(0,128,0,0.35)'}`,
-            color: used ? '#ff9999' : '#b7ffb7',
-            minWidth: isMobile ? '30%' : 140, // Smaller buttons on mobile
-            justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: 'clamp(0.7rem, 1.5vw, 1rem)'
+            color: used ? '#ff9999' : '#b7ffb7', minWidth: isMobile ? '30%' : 140,
+            justifyContent: 'center', fontWeight: 700, fontSize: 'clamp(0.7rem, 1.5vw, 1rem)'
         }),
-        mainFlex: {
-            display: 'flex',
-            gap: 22,
-            alignItems: 'stretch',
-            flex: 1,
-            marginTop: '2vh',
-            minHeight: 0,
-            flexDirection: isMobile ? 'column' : 'row' // Stack game a
-        },
-        leftMain: {
-            flex: 3,
-            minHeight: 0,
-            display: 'flex',
-            flexDirection: 'column'
-        },
-        rightSide: {
-            flex: 1,
-            minWidth: isMobile ? '100%' : '20vw',
-            minHeight: 0,
-            marginTop: isMobile ? '20px' : '0'
-        },
-        card: {
-            backgroundColor: LUXURY_THEME.background,
-            backdropFilter: 'blur(12px)',
-            borderRadius: 16,
-            padding: isMobile ? '15px' : '2vh 2vw',
-            marginBottom: '1vh',
-            border: `2px solid ${LUXURY_THEME.border}`,
-            boxShadow: LUXURY_THEME.shadow,
-            overflow: 'auto'
-        },
-        questionText: {
-            fontSize: isMobile ? '1.2rem' : 'clamp(1.2rem, 2.5vw, 1.5rem)',
-            marginBottom: '1vh',
-            lineHeight: 1.4
-        },
+        mainFlex: { display: 'flex', gap: 22, alignItems: 'stretch', flex: 1, marginTop: '2vh', minHeight: 0, flexDirection: isMobile ? 'column' : 'row' },
+        leftMain: { flex: 3, minHeight: 0, display: 'flex', flexDirection: 'column' },
+        rightSide: { flex: 1, minWidth: isMobile ? '100%' : '20vw', minHeight: 0, marginTop: isMobile ? '20px' : '0' },
+        card: { backgroundColor: LUXURY_THEME.background, backdropFilter: 'blur(12px)', borderRadius: 16, padding: isMobile ? '15px' : '2vh 2vw', marginBottom: '1vh', border: `2px solid ${LUXURY_THEME.border}`, boxShadow: LUXURY_THEME.shadow, overflow: 'auto' },
+        questionText: { fontSize: isMobile ? '1.2rem' : 'clamp(1.2rem, 2.5vw, 1.5rem)', marginBottom: '1vh', lineHeight: 1.4 },
         optionBtn: (disabled, selected) => ({
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: isMobile ? '12px' : '1.5vh 2vw',
-            borderRadius: 12,
-            marginBottom: '1vh',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: isMobile ? '12px' : '1.5vh 2vw', borderRadius: 12, marginBottom: '1vh',
             cursor: disabled ? 'not-allowed' : 'pointer',
             background: selected ? 'rgba(212,175,55,0.12)' : 'rgba(0,0,0,0.35)',
             border: selected ? `2px solid ${LUXURY_THEME.textGold}` : `1px solid rgba(255,255,255,0.06)`,
-            opacity: disabled ? 0.5 : 1,
-            fontSize: isMobile ? '0.95rem' : 'clamp(0.9rem, 1.8vw, 1.1rem)'
+            opacity: disabled ? 0.5 : 1, fontSize: isMobile ? '0.95rem' : 'clamp(0.9rem, 1.8vw, 1.1rem)'
         }),
-        timerBar: {
-            height: '1.2vh',
-            borderRadius: 8,
-            background: 'rgba(255,255,255,0.06)',
-            overflow: 'hidden'
-        },
-        timerFill: (pct) => ({
-            width: `${pct}%`,
-            height: '100%',
-            background: 'linear-gradient(90deg,#ffd700,#ffb347)',
-            transition: 'width 0.9s linear'
-        }),
+        timerBar: { height: '1.2vh', borderRadius: 8, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' },
+        timerFill: (pct) => ({ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#ffd700,#ffb347)', transition: 'width 0.9s linear' }),
     };
 
-    if (isPresenterMode() && !isAuthenticated) {
-        return (
-            <div style={{ ...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ ...styles.card, width: '400px', textAlign: 'center', padding: '40px' }}>
-                    <img src={xxvLogo} alt="Logo" style={{ width: isMobile ? 100 : 150, marginBottom: 0 }} />
-                    <h2 style={{ color: LUXURY_THEME.textGold, marginBottom: 20 }}>Admin Access</h2>
-                    <input
-                        type="password"
-                        placeholder="Enter Passkey"
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAuthentication()}
-                        style={{
-                            width: '90%',
-                            padding: '15px',
-                            borderRadius: '8px',
-                            background: 'rgba(0,0,0,0.5)',
-                            color: '#fff',
-                            border: `1px solid ${LUXURY_THEME.border}`,
-                            marginBottom: '20px'
-                        }}
-                    />
-                    <button
-                        onClick={handleAuthentication}
-                        style={{
-                            width: '100%',
-                            padding: '12px',
-                            background: LUXURY_THEME.secondary,
-                            border: 'none',
-                            borderRadius: '8px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Get Access
-                    </button>
-                </div>
-                <AnimatedBanner />
-            </div>
-        );
-    }
-
-    // Render: Registration
+    // ─── RENDER: Registration ───────────────────────────────────────────────────
     if (gameState === 'registration') {
         return (
             <div style={styles.container}>
-                <div style={{ ...styles.centerArea }}>
+                <div style={{ height: 'env(safe-area-inset-top)', backgroundColor: '#000', width: '100%' }} />
+                <div style={styles.centerArea}>
                     <div style={styles.header}>
-                        <div>
-                            <img
-                                src={xxvLogo}
-                                alt="XXV Logo"
-                                style={{
-                                    width: 150,
-                                    height: 150,
-                                    objectFit: 'contain'
-                                }}
-                            />
-                        </div>
-                        <img
-                            src={Image6ts}
-                            alt="6tsTNC"
-                            style={{
-                                width: 150,
-                                height: 150,
-                                objectFit: 'contain'
-                            }}
-                        />
+                        <div><img src={xxvLogo} alt="XXV Logo" style={{ width: isMobile ? 90 : 150, height: isMobile ? 90 : 150, objectFit: 'contain' }} /></div>
+                        <img src={Image6ts} alt="6tsTNC" style={{ width: isMobile ? 90 : 150, height: isMobile ? 90 : 150, objectFit: 'contain' }} />
                     </div>
-
-                    <div style={{ ...styles.card, maxWidth: 1500, marginBottom: 'auto', marginTop: 120, marginLeft: 'auto', marginRight: 'auto' }}>
+                    <div style={{ ...styles.card, maxWidth: 600, marginTop: isMobile ? '16px' : '32px', marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
                         <h3 style={{ color: LUXURY_THEME.textGold }}>Enter Player Name</h3>
-                        <input
-                            autoFocus
-                            type="text"
-                            placeholder="Player name..."
-                            value={playerName}
-                            onChange={(e) => setPlayerName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && playerName.trim() && setGameState('category-selection')}
-                            style={{
-                                width: 'auto',
-                                padding: '20px 30px',
-                                borderRadius: 10,
-                                border: `1px solid ${LUXURY_THEME.border}`,
-                                backgroundColor: 'rgba(0,0,0,0.45)',
-                                color: LUXURY_THEME.text,
-                                fontSize: 16,
-                                marginTop: -2,
-                                marginBottom: 12
-                            }}
+                        <input autoFocus type="text" placeholder="Player name..." value={playerName}
+                               onChange={(e) => setPlayerName(e.target.value)}
+                               onKeyDown={(e) => e.key === 'Enter' && playerName.trim() && setGameState('category-selection')}
+                               style={{ width: 'auto', padding: '20px 30px', borderRadius: 10, border: `1px solid ${LUXURY_THEME.border}`, backgroundColor: 'rgba(0,0,0,0.45)', color: LUXURY_THEME.text, fontSize: 16, marginTop: -2, marginBottom: 12 }}
                         />
                         <div style={{ display: 'flex', gap: 12 }}>
-                            <button
-                                onClick={() => {
-                                    if (!isPresenterMode()) return; // Audience can't click
-                                    if (playerName.trim()) {
-                                        setGameState('category-selection');
-                                    }
-                                }}
-                                disabled={!playerName.trim()}
-                                style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}
-                            >
+                            <button onClick={() => { if (!isPresenterMode()) return; if (playerName.trim()) setGameState('category-selection'); }} disabled={!playerName.trim()}
+                                    style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}>
                                 Start Game
                             </button>
-                            <button
-                                onClick={() => {
-                                    if (!isPresenterMode()) return;
-                                    setPlayerName('Guest');
-                                    setGameState('category-selection');
-                                }}
-                                style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${LUXURY_THEME.border}` }}
-                            >
+                            <button onClick={() => { if (!isPresenterMode()) return; setPlayerName('Guest'); setGameState('category-selection'); }}
+                                    style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${LUXURY_THEME.border}` }}>
                                 Guest
                             </button>
                         </div>
                     </div>
                 </div>
-
-                {/* floating audience label, only for Audience screen*/}
-                {!isPresenterMode() && (gameState === 'registration') && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '20px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        zIndex: 1000,
-                        pointerEvents: 'none',
-                        textAlign: 'center'
-                    }}>
-                        <h2 style={{
-                            fontSize: '3rem',      // Very large for the lounge screen
-                            color: '#d4af37',        // Using the gold accent
-                            textTransform: 'uppercase',
-                            fontWeight: '900',
-                            letterSpacing: '15px',   // Spaced out for a premium feel
-                            opacity: 0.25,           // Subtle watermark effect
-                            margin: 0
-                        }}>
-                            Audience
-                        </h2>
+                {!isPresenterMode() && (
+                    <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, pointerEvents: 'none', textAlign: 'center' }}>
+                        <h2 style={{ fontSize: '3rem', color: '#d4af37', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '15px', opacity: 0.25, margin: 0 }}>Audience</h2>
                     </div>
                 )}
-
                 <video src={TRANSITION_VIDEO_PATH} preload="auto" style={{ display: 'none' }} />
-
                 <AnimatedBanner />
             </div>
         );
     }
 
-
+    // ─── RENDER: Category Selection ─────────────────────────────────────────────
+    // BUG FIX: The original file was missing the closing </div> for styles.centerArea,
+    // which caused a JSX parse error at the start of the 'menu' block.
     if (gameState === 'category-selection') {
         return (
             <div style={styles.container}>
+                <div style={{ height: 'env(safe-area-inset-top)', backgroundColor: '#000', width: '100%' }} />
                 <div style={styles.centerArea}>
                     <div style={styles.header}>
                         <div>
                             <h1 style={{ margin: 0, fontSize: '2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Choose Category</h1>
                             <div style={{ color: 'rgba(255,255,255,0.9)' }}>Welcome {playerName}</div>
                         </div>
-
                         <div>
                             <button onClick={() => setGameState('registration')} style={{ padding: '8px 12px', borderRadius: 8 }}>Back</button>
                         </div>
                     </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 20, marginTop: 18 }}>
-                        <div style={{ ...styles.card, cursor: 'pointer', display: 'flex', flexDirection: 'column', minHeight: 120 }} onClick={() => selectCategory('default')}>
-                            <div style={{ fontSize: 36 }}>🌍 + 📁</div>
-                            <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Default Sample + Custom Questions (CSV/txt)</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Mixed Nigerian + Global question set (default sample).</p>
-                            <div style={{ marginTop: 12, color: '#bcd', fontWeight: 600 }}>{getDefaultQuestions().length} default questions, {(importedQuestions.sets || []).length} custom question sets </div>
-                        </div>
-
-                        <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', minHeight: 120 }}>
-                            <div style={{ fontSize: 36 }}>️️ℹ️</div>
-                            <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Info Tab</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.85)', flex: 1 }}>Game Guide & Shortcuts</p>
-                            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                                <button onClick={() => setShowGuide(true)}  style={{ padding: '8px 12px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem' }}>📖 View Game Guide & Shortcuts</button>
+                    {/* [ADDITION 1] Shuffling news card widget */}
+                    <NewsCardWidget />
+                    <div style={{ marginTop: 18 }}>
+                        <div style={{ ...styles.card, cursor: 'pointer', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', gap: 20, padding: isMobile ? '20px' : '24px 32px' }}
+                             onClick={() => { selectCategory('default'); setTimeout(() => startGame(), 100); }}>
+                            <div style={{ fontSize: 48, flexShrink: 0 }}>🌍</div>
+                            <div style={{ flex: 1 }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 0, marginBottom: 8, fontSize: '1.2rem' }}>Default + Custom Questions</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: '0.9rem' }}>Mixed Nigerian &amp; Global question set. CSV imports included.</p>
+                                <div style={{ marginTop: 10, color: '#bcd', fontWeight: 600, fontSize: '0.85rem' }}>
+                                    {getDefaultQuestions().length} default questions • {(importedQuestions.sets || []).length} custom sets loaded
+                                </div>
                             </div>
-                        </div>
-
-                        <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', minHeight: 120 }}>
-                            <div style={{ fontSize: 36 }}>📥</div>
-                            <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Import Questions</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.8)', flex: 1, fontSize: '0.95rem' }}>
-                                Upload CSV with pipe-delimited format: Question | Options A-D | Correct Answer (1-4) | Difficulty | Category
-                            </p>
-                            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                                <button onClick={downloadExcelTemplate} style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(0,128,0,0.15)', border: '1px solid rgba(0,255,0,0.3)', color: '#9bffb0', fontSize: '0.85rem' }}>📥 Download Template</button>
-                                <label style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', fontSize: '0.85rem' }}>
-                                    📂 Upload CSV
-                                    <input type="file" accept=".csv,.txt" multiple onChange={handleExcelImport} style={{ display: 'none' }} />
-                                </label>
-                                <button onClick={() => {
-                                    const sample = [{
-                                        id: Date.now(),
-                                        question: 'Sample: Sky color?',
-                                        options: ['Red','Green','Blue','Yellow'],
-                                        correct: 2,
-                                        difficulty: 'easy',
-                                        category: 'General'
-                                    }];
-                                    const newSet = {
-                                        id: Date.now(),
-                                        name: 'Sample Question Set',
-                                        questions: sample,
-                                        createdAt: new Date().toLocaleString()
-                                    };
-                                    const updatedSets = [...(importedQuestions.sets||[]), newSet];
-                                    setImportedQuestions({ sets: updatedSets });
-
-                                    // Save to storage
-                                    try {
-                                        localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets }));
-                                        alert('Sample set imported and saved!');
-                                    } catch (error) {
-                                        alert('Sample set imported but may not persist.');
-                                    }
-                                }} style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '0.85rem' }}>▶️ Load Sample</button>
-                            </div>
-                        </div>
-
-                        <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', minHeight: 120 }}>
-                            <div style={{ fontSize: 36 }}>🖼️</div>
-                            <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 12, marginBottom: 8 }}>Slideshows</h3>
-                            <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: 12, fontSize: '0.95rem' }}>
-                                Upload images for slideshow display. (Max: 10 images)
-                            </p>
-
-                            <div style={{ flex: 1, overflowY: 'auto', maxHeight: 120, marginBottom: 12 }}>
-                                {slideshowImages.length === 0 ? (
-                                    <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', fontStyle: 'italic' }}>No images uploaded yet</div>
-                                ) : (
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                        {slideshowImages.map(img => (
-                                            <div key={img.id} style={{ position: 'relative', width: 60, height: 60, borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.2)' }}>
-                                                <img src={img.src} alt={img.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                <button
-                                                    onClick={() => deleteImage(img.id)}
-                                                    style={{ position: 'absolute', top: 2, right: 2, width: 18, height: 18, borderRadius: '50%', background: 'rgba(255,0,0,0.8)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 10, fontWeight: 'bold', padding: 0 }}
-                                                >×</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                                <label style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', fontSize: '0.85rem' }}>
-                                    📤 Upload Images ({slideshowImages.length}/10)
-                                    <input type="file" accept="image/*" multiple onChange={handleImageUpload} style={{ display: 'none' }} />
-                                </label>
-                                <button
-                                    onClick={startSlideshow}
-                                    disabled={slideshowImages.length === 0}
-                                    style={{
-                                        padding: '8px 12px',
-                                        borderRadius: 8,
-                                        border: '1px solid rgba(255,255,255,0.2)',
-                                        cursor: slideshowImages.length === 0 ? 'not-allowed' : 'pointer',
-                                        background: slideshowImages.length === 0 ? 'rgba(100,100,100,0.3)' : 'rgba(0,128,0,0.15)',
-                                        color: slideshowImages.length === 0 ? '#888' : '#9bffb0',
-                                        fontSize: '0.85rem',
-                                        opacity: slideshowImages.length === 0 ? 0.5 : 1
-                                    }}
-                                >
-                                    ▶️ Play Slideshow
-                                </button>
+                            <div style={{ padding: '10px 20px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', color: '#1a1a1a', fontWeight: 800, fontSize: '0.95rem', flexShrink: 0 }}>
+                                Select →
                             </div>
                         </div>
                     </div>
-                </div>
-
-                {/* floating audience label, only for Audience screen*/}
-                {!isPresenterMode() && (gameState === 'category-selection') && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '20px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        zIndex: 1000,
-                        pointerEvents: 'none',
-                        textAlign: 'center'
-                    }}>
-                        <h2 style={{
-                            fontSize: '3rem',      // Very large for the lounge screen
-                            color: '#d4af37',        // Using the gold accent
-                            textTransform: 'uppercase',
-                            fontWeight: '900',
-                            letterSpacing: '15px',   // Spaced out for a premium feel
-                            opacity: 0.25,           // Subtle watermark effect
-                            margin: 0
-                        }}>
-                            Audience
-                        </h2>
-                    </div>
-                )}
-                {showGuide && <GameGuide onClose={() => setShowGuide(false)} />}
+                    {!isPresenterMode() && (
+                        <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, pointerEvents: 'none', textAlign: 'center' }}>
+                            <h2 style={{ fontSize: '3rem', color: '#d4af37', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '15px', opacity: 0.25, margin: 0 }}>Audience</h2>
+                        </div>
+                    )}
+                    {showGuide && <GameGuide onClose={() => setShowGuide(false)} />}
+                </div>{/* ← closes styles.centerArea — this was the missing div! */}
                 <AnimatedBanner />
             </div>
         );
     }
 
+    // ─── RENDER: Menu ───────────────────────────────────────────────────────────
     if (gameState === 'menu') {
         return (
             <div style={styles.container}>
+                <div style={{ height: 'env(safe-area-inset-top)', backgroundColor: '#000', width: '100%' }} />
                 <div style={styles.centerArea}>
                     <div style={styles.header}>
                         <div>
@@ -1964,271 +1100,78 @@ const QuizIQGame = () => {
                             <div style={{ color: 'rgba(255,255,255,0.9)' }}>Welcome {playerName}</div>
                         </div>
                         <div>
-                            <button
-                                onClick={deleteAllImportedSets} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}
-                            >
-                                Delete All Question Sets!
-                            </button>
-                            <button onClick={() => setGameState('category-selection')} style={{ padding: '8px 12px', borderRadius: 8 }}
-                            >
-                                Back
-                            </button>
+                            <button onClick={deleteAllImportedSets} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}>Delete All Question Sets!</button>
+                            <button onClick={() => setGameState('category-selection')} style={{ padding: '8px 12px', borderRadius: 8 }}>Back</button>
                         </div>
                     </div>
-
+                    {/* [ADDITION 1] Shuffling news card widget */}
+                    <NewsCardWidget />
                     <div style={{ ...styles.card, marginTop: 18 }}>
                         <h3 style={{ borderBottom: `1px solid ${LUXURY_THEME.border}`, paddingBottom: 10, color: LUXURY_THEME.textGold, marginBottom: 20 }}>Available Question Sets</h3>
-
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20, maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
-
-                            {/* 1. Default Set Card */}
-                            <div style={{
-                                ...styles.card,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                border: `2px solid ${LUXURY_THEME.accent}`,
-                                minHeight: 280
-                            }}>
+                            <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', border: `2px solid ${LUXURY_THEME.accent}`, minHeight: 280 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                                     <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: LUXURY_THEME.textGold }}>🌍 Default Set</div>
                                     <div style={{ fontSize: '0.8rem', background: 'rgba(212,175,55,0.2)', padding: '4px 10px', borderRadius: 6, color: LUXURY_THEME.textGold }}>Built-in</div>
                                 </div>
-
-                                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 12 }}>
-                                    {getDefaultQuestions().length} questions • Mixed Nigerian + Global
-                                </div>
-
-                                <div style={{
-                                    flex: 1,
-                                    fontSize: '0.85rem',
-                                    color: '#aaa',
-                                    marginBottom: 15,
-                                    background: 'rgba(0,0,0,0.3)',
-                                    padding: 12,
-                                    borderRadius: 8,
-                                    maxHeight: 140,
-                                    overflowY: 'auto'
-                                }}>
+                                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 12 }}>{getDefaultQuestions().length} questions • Mixed Nigerian + Global</div>
+                                <div style={{ flex: 1, fontSize: '0.85rem', color: '#aaa', marginBottom: 15, background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 8, maxHeight: 140, overflowY: 'auto' }}>
                                     <div style={{ marginBottom: 8, fontStyle: 'italic', color: '#bbb' }}>Preview:</div>
-                                    {getDefaultQuestions().slice (0, 3).map((q, i) => (
-                                        <div key={i} style={{
-                                            marginBottom: 6,
-                                            paddingLeft: 8,
-                                            borderLeft: '2px solid rgba(255,255,255,0.2)'
-                                        }}>
+                                    {getDefaultQuestions().slice(0, 3).map((q, i) => (
+                                        <div key={i} style={{ marginBottom: 6, paddingLeft: 8, borderLeft: '2px solid rgba(255,255,255,0.2)' }}>
                                             • {q.question.length > 10 ? q.question.substring(0, 10) + '...' : q.question}
                                         </div>
                                     ))}
-                                    {getDefaultQuestions().length > 3 && (
-                                        <div style={{ marginTop: 8, color: LUXURY_THEME.accent, fontSize: '0.8rem' }}>
-                                            + {getDefaultQuestions().length - 3} more questions
-                                        </div>
-                                    )}
+                                    {getDefaultQuestions().length > 3 && <div style={{ marginTop: 8, color: LUXURY_THEME.accent, fontSize: '0.8rem' }}>+ {getDefaultQuestions().length - 3} more questions</div>}
                                 </div>
-
-                                <button
-                                    onClick={() => {
-                                        selectCategory('default');
-                                        // Immediately start game after selecting default
-                                        setTimeout(() => startGame(), 100);
-                                    }}
-                                    style={{
-                                        padding: '12px',
-                                        borderRadius: 8,
-                                        background: 'linear-gradient(90deg,#ffd700,#ffb347)',
-                                        border: 'none',
-                                        fontWeight: 'bold',
-                                        cursor: 'pointer',
-                                        color: '#1a1a1a',
-                                        fontSize: '1rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: 8
-                                    }}
-                                >
+                                <button onClick={() => { selectCategory('default'); setTimeout(() => startGame(), 100); }}
+                                        style={{ padding: '12px', borderRadius: 8, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', fontWeight: 'bold', cursor: 'pointer', color: '#1a1a1a', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                                     <Play size={18} /> Play Default Set
                                 </button>
                             </div>
-
-                            {/* 2. Imported Question Sets */}
                             {(importedQuestions.sets || []).map((set) => (
-                                <div style={{
-                                    ...styles.card,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    border: `2px solid ${LUXURY_THEME.accent}`,
-                                    minHeight: 280
-                                }}>
+                                <div key={set.id} style={{ ...styles.card, display: 'flex', flexDirection: 'column', border: `2px solid ${LUXURY_THEME.accent}`, minHeight: 280 }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                                         <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: LUXURY_THEME.textGold }}>📚 {set.name}</div>
                                     </div>
-
-                                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 12 }}>
-                                        {set.questions.length} questions • Created: {set.createdAt}
-                                    </div>
-
-                                    <div style={{
-                                        flex: 1,
-                                        fontSize: '0.85rem',
-                                        color: '#aaa',
-                                        marginBottom: 15,
-                                        background: 'rgba(0,0,0,0.3)',
-                                        padding: 12,
-                                        borderRadius: 8,
-                                        maxHeight: 140,
-                                        overflowY: 'auto'
-                                    }}>
+                                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 12 }}>{set.questions.length} questions • Created: {set.createdAt}</div>
+                                    <div style={{ flex: 1, fontSize: '0.85rem', color: '#aaa', marginBottom: 15, background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 8, maxHeight: 140, overflowY: 'auto' }}>
                                         <div style={{ marginBottom: 8, fontStyle: 'italic', color: '#bbb' }}>Preview:</div>
                                         {set.questions.slice(0, 3).map((q, i) => (
-                                            <div key={i} style={{
-                                                marginBottom: 6,
-                                                paddingLeft: 8,
-                                                borderLeft: '2px solid rgba(255,255,255,0.2)'
-                                            }}>
+                                            <div key={i} style={{ marginBottom: 6, paddingLeft: 8, borderLeft: '2px solid rgba(255,255,255,0.2)' }}>
                                                 • {q.question.length > 10 ? q.question.substring(0, 10) + '...' : q.question}
                                             </div>
                                         ))}
-                                        {set.questions.length > 3 && (
-                                            <div style={{ marginTop: 8, color: LUXURY_THEME.accent, fontSize: '0.8rem' }}>
-                                                + {set.questions.length - 3} more questions
-                                            </div>
-                                        )}
+                                        {set.questions.length > 3 && <div style={{ marginTop: 8, color: LUXURY_THEME.accent, fontSize: '0.8rem' }}>+ {set.questions.length - 3} more questions</div>}
                                     </div>
-
                                     <div style={{ display: 'flex', gap: 8 }}>
-                                        <button
-                                            onClick={() => {
-                                                setCurrentQuestions(set.questions.slice(0, GAME_CONFIG.totalQuestions));
-                                                setSelectedCategory(`custom: ${set.name}`);
-
-                                                // mark as played
-                                                setPlayedSetIds(prev => [...prev, set.id]);
-
-                                                setTimeout(() => startGame(), 100);
-                                            }}
-                                            style={{
-                                                flex: 1,
-                                                padding: '10px',
-                                                borderRadius: 8,
-                                                background: 'linear-gradient(90deg,#ffd700,#ffb347)',
-                                                border: 'none',
-                                                fontWeight: 'bold',
-                                                cursor: 'pointer',
-                                                color: '#1a1a1a',
-                                                fontSize: '1rem',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: 6
-                                            }}
-                                        >
+                                        <button onClick={() => { setCurrentQuestions(set.questions.slice(0, GAME_CONFIG.totalQuestions)); setSelectedCategory(`custom: ${set.name}`); setPlayedSetIds(prev => [...prev, set.id]); setTimeout(() => startGame(), 100); }}
+                                                style={{ flex: 1, padding: '10px', borderRadius: 8, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', fontWeight: 'bold', cursor: 'pointer', color: '#1a1a1a', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                                             <Play size={16} /> Play
                                         </button>
-
-                                        <button
-                                            title="Rename Set"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                const newName = prompt("Rename this set:", set.name);
-                                                if (newName && newName.trim()) renameQuestionSet(set.id, newName.trim());
-                                            }}
-                                            style={{
-                                                padding: '10px 14px',
-                                                borderRadius: 8,
-                                                background: 'rgba(255,255,255,0.05)',
-                                                border: '1px solid rgba(255,255,255,0.2)',
-                                                cursor: 'pointer',
-                                                fontSize: '1.1rem'
-                                            }}
-                                        >
-                                            ✏️
-                                        </button>
-
-                                        <button
-                                            title="Delete Set"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if(window.confirm(`Delete "${set.name}"?`)) deleteQuestionSet(set.id);
-                                            }}
-                                            style={{
-                                                padding: '10px 14px',
-                                                borderRadius: 8,
-                                                background: 'rgba(255,0,0,0.1)',
-                                                border: '1px solid rgba(255,0,0,0.3)',
-                                                cursor: 'pointer',
-                                                fontSize: '1.1rem'
-                                            }}
-                                        >
-                                            🗑️
-                                        </button>
+                                        <button title="Rename Set" onClick={(e) => { e.stopPropagation(); const n = prompt("Rename this set:", set.name); if (n && n.trim()) renameQuestionSet(set.id, n.trim()); }}
+                                                style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '1.1rem' }}>✏️</button>
+                                        <button title="Delete Set" onClick={(e) => { e.stopPropagation(); if (window.confirm(`Delete "${set.name}"?`)) deleteQuestionSet(set.id); }}
+                                                style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)', cursor: 'pointer', fontSize: '1.1rem' }}>🗑️</button>
                                     </div>
                                 </div>
                             ))}
-
-                            {/* Empty State if no imported sets */}
                             {(importedQuestions.sets || []).length === 0 && (
-                                <div style={{
-                                    ...styles.card,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    minHeight: 280,
-                                    border: '2px dashed rgba(255,255,255,0.2)'
-                                }}>
+                                <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 280, border: '2px dashed rgba(255,255,255,0.2)' }}>
                                     <div style={{ fontSize: '3rem', marginBottom: 12 }}>📂</div>
-                                    <div style={{ color: '#888', fontSize: '0.95rem', textAlign: 'center', marginBottom: 12 }}>
-                                        No custom question sets yet
-                                    </div>
-                                    <label
-                                        style={{
-                                            padding: '8px 16px',
-                                            borderRadius: 8,
-                                            background: 'rgba(255,255,255,0.05)',
-                                            border: '1px solid rgba(255,255,255,0.2)',
-                                            color: '#bbb',
-                                            cursor: 'pointer',
-                                            display: 'inline-block'
-                                        }}
-                                    >
+                                    <div style={{ color: '#888', fontSize: '0.95rem', textAlign: 'center', marginBottom: 12 }}>No custom question sets yet</div>
+                                    <label style={{ padding: '8px 16px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', color: '#bbb', cursor: 'pointer', display: 'inline-block' }}>
                                         Upload CSV
-                                        <input
-                                            type="file"
-                                            accept=".csv,.txt"
-                                            multiple
-                                            onChange={handleExcelImport}
-                                            style={{ display: 'none' }}
-                                        />
+                                        <input type="file" accept=".csv,.txt" multiple onChange={handleExcelImport} style={{ display: 'none' }} />
                                     </label>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
-
-                {/* floating audience label, only for Audience screen*/}
-                {!isPresenterMode() && (gameState === 'menu') && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '20px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        zIndex: 1000,
-                        pointerEvents: 'none',
-                        textAlign: 'center'
-                    }}>
-                        <h2 style={{
-                            fontSize: '3rem',
-                            color: '#d4af37',
-                            textTransform: 'uppercase',
-                            fontWeight: '900',
-                            letterSpacing: '15px',
-                            opacity: 0.25,
-                            margin: 0
-                        }}>
-                            Audience
-                        </h2>
+                {!isPresenterMode() && (
+                    <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, pointerEvents: 'none', textAlign: 'center' }}>
+                        <h2 style={{ fontSize: '3rem', color: '#d4af37', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '15px', opacity: 0.25, margin: 0 }}>Audience</h2>
                     </div>
                 )}
                 <AnimatedBanner />
@@ -2236,83 +1179,31 @@ const QuizIQGame = () => {
         );
     }
 
-    // Playing - main screen
+    // ─── RENDER: Playing ────────────────────────────────────────────────────────
     if (gameState === 'playing') {
         const q = currentQuestions[currentQuestion] || { question: 'Question not found', options: ['', '', '', ''], correct: 0 };
-
-        // 1. Logic for the "Big Clock" animation
         const isUrgent = timeLeft <= 10;
         const clockStyle = {
-            fontSize: isUrgent ? '5rem' : '3rem',
-            fontWeight: '800',
+            fontSize: isUrgent ? '5rem' : '3rem', fontWeight: '800',
             color: isUrgent ? '#ff4d4d' : LUXURY_THEME.textGold,
             textShadow: isUrgent ? '0 0 30px rgba(255,0,0,0.6)' : '0 2px 10px rgba(0,0,0,0.3)',
-            transition: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-            textAlign: 'center',
-            lineHeight: 1
+            transition: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)', textAlign: 'center', lineHeight: 1
         };
-
-        // 2. Logic for Smart Timer Button
-        const isStart = timeLeft === GAME_CONFIG.timePerQuestion;
-        const timerBtnText = isTimerRunning ? 'Pause Timer' : (isStart ? 'Start Timer' : 'Resume Timer');
-
-        // Custom Pause Icon
-        const pauseIcon = (
-            <div style={{ display: 'flex', gap: 4 }}>
-                <div style={{ width: 4, height: 16, background: '#1a1a1a', borderRadius: 2 }}></div>
-                <div style={{ width: 4, height: 16, background: '#1a1a1a', borderRadius: 2 }}></div>
-            </div>
-        );
-
-        const isSafetyNet = GAME_CONFIG.safetyNets.includes(currentQuestion);
         const potentialSecure = GAME_CONFIG.prizeStructure[currentQuestion];
         const dropAmount = getScoreAfterWrongAnswer();
-
-        // transition screen
         return (
             <div style={styles.container}>
                 <BounceKeyframes />
                 <div style={styles.centerArea}>
-
                     {showSafetyBanner && (
-                        <div style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            zIndex: 9998, // Below video, above game
-                            width: '80%',
-                            maxWidth: '1000px',
-                            height: '80%',
-                            maxHeight: '500px',
-                            background: 'rgba(0, 0, 0, 0.85)', // Dark transparent background
-                            backdropFilter: 'blur(10px)',
-                            border: `2px solid ${LUXURY_THEME.textGold}`,
-                            borderRadius: '20px',
-                            padding: '40px',
-                            textAlign: 'center',
-                            boxShadow: '0 0 50px rgba(212, 175, 55, 0.5)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center',
-                            alignItems: 'center'
-                        }}>
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 9998, width: '80%', maxWidth: '1000px', height: '80%', maxHeight: '500px', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', border: `2px solid ${LUXURY_THEME.textGold}`, borderRadius: '20px', padding: '40px', textAlign: 'center', boxShadow: '0 0 50px rgba(212,175,55,0.5)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                             <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔒</div>
-                            <h2 style={{
-                                color: LUXURY_THEME.textGold,
-                                textTransform: 'uppercase',
-                                fontSize: '2.5rem',
-                                margin: '0 0 20px 0',
-                                letterSpacing: '4px'
-                            }}>
-                                Safety Net Announcement
-                            </h2>
-                            <div style={{fontSize: '1.6rem', opacity: 0.9, lineHeight: 1.4}}>
-                            Right answer secures <strong>{GAME_CONFIG.currency}{potentialSecure.toLocaleString()}</strong>. (Wrong answer drops you to {GAME_CONFIG.currency}{dropAmount.toLocaleString()})
+                            <h2 style={{ color: LUXURY_THEME.textGold, textTransform: 'uppercase', fontSize: '2.5rem', margin: '0 0 20px 0', letterSpacing: '4px' }}>Safety Net Announcement</h2>
+                            <div style={{ fontSize: '1.6rem', opacity: 0.9, lineHeight: 1.4 }}>
+                                Right answer secures <strong>{GAME_CONFIG.currency}{potentialSecure.toLocaleString()}</strong>. (Wrong answer drops you to {GAME_CONFIG.currency}{dropAmount.toLocaleString()})
                             </div>
                         </div>
                     )}
-
                     <div style={styles.header}>
                         <div>
                             <h1 style={{ margin: 0, fontSize: '1.6rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -2320,53 +1211,25 @@ const QuizIQGame = () => {
                             </h1>
                             <div style={{ color: 'rgba(255,255,255,0.9)' }}>{playerName} • Score: {GAME_CONFIG.currency}{score}</div>
                         </div>
-
-                        {/* Lifelines */}
                         <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
                             <div style={styles.lifelineBar}>
-                                <div title="50/50" onClick={() => isPresenterMode() && handleFiftyFifty()} style={{...styles.lifelineBtn(lifelinesUsed.fiftyFifty), cursor: !isPresenterMode() || lifelinesUsed.fiftyFifty ? 'not-allowed' : 'pointer'}}>
+                                <div title="50/50" onClick={() => isPresenterMode() && handleFiftyFifty()} style={{ ...styles.lifelineBtn(lifelinesUsed.fiftyFifty), cursor: !isPresenterMode() || lifelinesUsed.fiftyFifty ? 'not-allowed' : 'pointer' }}>
                                     <Scissors size={18} /> <span>50/50</span>
                                 </div>
-                                <div title="Ask Audience" onClick={() => isPresenterMode() && handleAskAudience()} style={{...styles.lifelineBtn(lifelinesUsed.askAudience), cursor: !isPresenterMode() || lifelinesUsed.askAudience ? 'not-allowed' : 'pointer'}}>
+                                <div title="Ask Audience" onClick={() => isPresenterMode() && handleAskAudience()} style={{ ...styles.lifelineBtn(lifelinesUsed.askAudience), cursor: !isPresenterMode() || lifelinesUsed.askAudience ? 'not-allowed' : 'pointer' }}>
                                     <Users size={18} /> <span>Ask Audience</span>
                                 </div>
-                                <div title="Phone a Friend" onClick={() => isPresenterMode() && handlePhoneAFriend()} style={{...styles.lifelineBtn(lifelinesUsed.phoneAFriend), cursor: !isPresenterMode() || lifelinesUsed.phoneAFriend ? 'not-allowed' : 'pointer'}}>
+                                <div title="Phone a Friend" onClick={() => isPresenterMode() && handlePhoneAFriend()} style={{ ...styles.lifelineBtn(lifelinesUsed.phoneAFriend), cursor: !isPresenterMode() || lifelinesUsed.phoneAFriend ? 'not-allowed' : 'pointer' }}>
                                     <Phone size={18} /> <span>Phone a Friend</span>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Smart Timer Button */}
-                        <div>
-                            <button
-                                onClick={() => isPresenterMode() && setIsTimerRunning(!isTimerRunning)}
-                                style={{
-                                    padding: '12px 24px', borderRadius: 10, border: 'none', fontWeight: '800',
-                                    cursor: isPresenterMode() ? 'pointer' : 'not-allowed', fontSize: '1rem',
-                                    background: LUXURY_THEME.secondary,
-                                    color: '#1a1a1a',
-                                    boxShadow: '0 0 20px rgba(212, 175, 55, 0.4)',
-                                    display: 'flex', alignItems: 'center', gap: 10, minWidth: 160, justifyContent: 'center',
-                                    transform: 'scale(1)', transition: 'transform 0.1s',
-                                    opacity: isPresenterMode() ? 1 : 0.6
-                                }}
-                                onMouseDown={(e) => isPresenterMode() && (e.currentTarget.style.transform = 'scale(0.95)')}
-                                onMouseUp={(e) => isPresenterMode() && (e.currentTarget.style.transform = 'scale(1)')}
-                            >
-                                {isTimerRunning ? pauseIcon : <Play size={20} fill="#1a1a1a" />}
-                                {timerBtnText}
-                            </button>
-                        </div>
                     </div>
-
                     <div style={styles.mainFlex}>
                         <div style={styles.leftMain}>
                             <div style={styles.card}>
-                                {/* Question Text */}
                                 <div style={styles.questionText}>{q.question}</div>
                                 <div style={{ color: 'rgba(255,255,255,0.75)', marginBottom: 12 }}>{q.category || 'General'} • {q.difficulty}</div>
-
-                                {/* Options */}
                                 <div>
                                     {(q.options || []).map((opt, idx) => {
                                         const isElim = eliminatedOptions.includes(idx);
@@ -2375,167 +1238,68 @@ const QuizIQGame = () => {
                                         const hasAudiencePoll = audiencePoll !== null;
                                         const pollPercentage = hasAudiencePoll ? audiencePoll[idx] : 0;
                                         const isTopOption = hasAudiencePoll && pollPercentage >= 15;
-                                        const pollColor = isTopOption ? 'rgba(0, 255, 0, 0.15)' : 'rgba(255, 255, 255, 0.08)';
-
+                                        const pollColor = isTopOption ? 'rgba(0,255,0,0.15)' : 'rgba(255,255,255,0.08)';
                                         let backgroundStyle = isSelected ? `${LUXURY_THEME.border}` : 'rgba(0,0,0,0.3)';
                                         let borderStyle = isSelected ? `2px solid ${LUXURY_THEME.textGold}` : 'rgba(0,0,0,0.45)';
                                         let animStyle = 'none';
-
-                                        // suspense phase (blinking)
-                                        if (isValidating && isSelected) {
-                                            animStyle = 'blinkOption 1s linear infinite';
-                                            borderStyle = '2px solid #fff';
-                                        }
-
-                                        // result phase
+                                        if (isValidating && isSelected) { animStyle = 'blinkOption 1s linear infinite'; borderStyle = '2px solid #fff'; }
                                         if (showResult) {
-                                            if (isCorrect) {
-                                                //always highlight correct answer in green (whether they picked it or not)
-                                                backgroundStyle = 'linear-gradient(90deg, #004d00, #006400)'; //dark Green
-                                                borderStyle = '2px solid #00ff00';
-                                            } else if (isSelected && !isCorrect) {
-                                                //highlight wrong selection in red
-                                                backgroundStyle = 'linear-gradient(90deg, #8b0000, #a00000)'; // Dark Red
-                                                borderStyle = '2px solid #ff0000';
-                                            } else {
-                                                //dim other options
-                                                backgroundStyle = 'rgba(0,0,0,0.3)';
-                                                borderStyle = '1px solid rgba(255,255,255,0.05)';
-                                            }
+                                            if (isCorrect) { backgroundStyle = 'linear-gradient(90deg, #004d00, #006400)'; borderStyle = '2px solid #00ff00'; }
+                                            else if (isSelected && !isCorrect) { backgroundStyle = 'linear-gradient(90deg, #8b0000, #a00000)'; borderStyle = '2px solid #ff0000'; }
+                                            else { backgroundStyle = 'rgba(0,0,0,0.3)'; borderStyle = '1px solid rgba(255,255,255,0.05)'; }
                                         }
-
                                         return (
-                                            <div
-                                                key={`question-${currentQuestion}-option-${idx}`}
-                                                onClick={() => {
-                                                    //prevent changing answer during validation or result
-                                                    if (isElim || showResult || showTransition || isValidating) return;
-                                                    setSelectedAnswer(idx);
-                                                }}
-                                                style={{
-                                                    ...styles.optionBtn(isElim, isSelected),
-                                                    position: 'relative',
-                                                    overflow: 'hidden',
-                                                    background: backgroundStyle,
-                                                    border: borderStyle,
-                                                    animation: animStyle,
-                                                    animationFillMode: 'both',
-                                                    transition: 'background 0.3s',
-                                                    transform: 'none',
-                                                    margin: '0 0 1vh 0'
-                                                }}
-
-                                            >
-                                                {/* Audience Poll Background */}
+                                            <div key={`question-${currentQuestion}-option-${idx}`}
+                                                 onClick={() => { if (isElim || showResult || showTransition || isValidating) return; setSelectedAnswer(idx); }}
+                                                 style={{ ...styles.optionBtn(isElim, isSelected), position: 'relative', overflow: 'hidden', background: backgroundStyle, border: borderStyle, animation: animStyle, animationFillMode: 'both', transition: 'background 0.3s', transform: 'none', margin: '0 0 1vh 0' }}>
                                                 {hasAudiencePoll && (
-                                                    <div style={{
-                                                        position: 'absolute',
-                                                        right: 0,
-                                                        top: 0,
-                                                        bottom: 0,
-                                                        width: `${pollPercentage}%`,
-                                                        background: pollColor,
-                                                        transition: 'width 1.5s ease-out',
-                                                        zIndex: 0,
-                                                        borderRadius: '0 12px 12px 0'
-                                                    }} />
+                                                    <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: `${pollPercentage}%`, background: pollColor, transition: 'width 1.5s ease-out', zIndex: 0, borderRadius: '0 12px 12px 0' }} />
                                                 )}
-
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
-                                                    <div style={{
-                                                        width: 36, height: 36, borderRadius: 8,
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        background: 'rgba(255,255,255,0.03)',
-                                                        flexShrink: 0,
-                                                        color: (isValidating && isSelected) ? '#000' : 'inherit' // Invert text color during blink
-                                                    }}>
+                                                    <div style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.03)', flexShrink: 0, color: (isValidating && isSelected) ? '#000' : 'inherit' }}>
                                                         {['A', 'B', 'C', 'D'][idx]}
                                                     </div>
-
-                                                    <div style={{
-                                                        overflow: 'hidden',
-                                                        whiteSpace: 'nowrap',
-                                                        width: (showResult || isValidating) ? '100%' : '0',
-                                                        animation: (showResult || isValidating) ? 'none' : 'typewriterEffect 1.5s steps(30) forwards',
-                                                        animationDelay: `${idx * 3}s`, // This creates the "one after another" effect
-                                                        animationFillMode: 'forwards',
-                                                        color: (isValidating && isSelected) ? '#000' : 'inherit'
-                                                    }}>
+                                                    <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', width: (showResult || isValidating) ? '100%' : '0', animation: (showResult || isValidating) ? 'none' : 'typewriterEffect 1.5s steps(30) forwards', animationDelay: `${idx * 3}s`, animationFillMode: 'forwards', color: (isValidating && isSelected) ? '#000' : 'inherit' }}>
                                                         {opt}
                                                     </div>
                                                 </div>
-
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
-                                                    {hasAudiencePoll && (
-                                                        <span style={{
-                                                            fontSize: '0.9rem', fontWeight: '700',
-                                                            color: isTopOption ? '#00ff00' : 'rgba(255,255,255,0.5)',
-                                                            minWidth: '45px', textAlign: 'right'
-                                                        }}>
-                                                            {pollPercentage}%
-                                                        </span>
-                                                    )}
+                                                    {hasAudiencePoll && (<span style={{ fontSize: '0.9rem', fontWeight: '700', color: isTopOption ? '#00ff00' : 'rgba(255,255,255,0.5)', minWidth: '45px', textAlign: 'right' }}>{pollPercentage}%</span>)}
                                                     {isCorrect && isPresenterMode() && <Crown size={18} color={LUXURY_THEME.textGold} />}
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
-
-                                {/* Big Clock Section */}
                                 <div style={{ marginTop: 20, padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                     <div style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '2px', color: '#888', marginBottom: 10 }}>Time Remaining</div>
-
-                                    {/* Clock and Button Row */}
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', position: 'relative' }}>
                                         <div style={{ position: 'relative', display: 'inline-block' }}>
-                                            <div style={clockStyle}>
-                                                {timeLeft}
-                                            </div>
-
-                                            {/* Time Bonus Animation */}
+                                            <div style={clockStyle}>{timeLeft}</div>
                                             {showTimeBonus && (
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    top: '15%',
-                                                    left: '-80px',
-                                                    fontSize: '2rem',
-                                                    fontWeight: '800',
-                                                    color: '#00ff00',
-                                                    textShadow: '0 0 20px rgba(0,255,0,0.8)',
-                                                    animation: 'slideInBonus 0.8s ease-out, fadeOut 0.5s ease-out 1.5s',
-                                                    zIndex: 10
-                                                }}>
+                                                <div style={{ position: 'absolute', top: '15%', left: '-80px', fontSize: '2rem', fontWeight: '800', color: '#00ff00', textShadow: '0 0 20px rgba(0,255,0,0.8)', animation: 'slideInBonus 0.8s ease-out, fadeOut 0.5s ease-out 1.5s', zIndex: 10 }}>
                                                     +{timeBonusAmount}s
                                                 </div>
                                             )}
                                         </div>
-
                                         {isPresenterMode() && (
                                             <button onClick={() => triggerSubmitAnswer()} disabled={selectedAnswer === null || showTransition}
-                                                    style={{
-                                                        position: 'absolute',
-                                                        right: 0,
-                                                        padding: '12px 18px', borderRadius: 10,
-                                                        background: selectedAnswer === null ? 'rgba(255,255,255,0.04)' : `${LUXURY_THEME.secondary}`,
-                                                        border: 'none', cursor: selectedAnswer === null ? 'not-allowed' : 'pointer', fontWeight: 700, color: selectedAnswer === null ? '#aaa' : '#000'
-                                                    }}
-                                            >
+                                                    style={{ position: 'absolute', right: 0, padding: '12px 18px', borderRadius: 10, background: selectedAnswer === null ? 'rgba(255,255,255,0.04)' : `${LUXURY_THEME.secondary}`, border: 'none', cursor: selectedAnswer === null ? 'not-allowed' : 'pointer', fontWeight: 700, color: selectedAnswer === null ? '#aaa' : '#000' }}>
                                                 Submit Answer
                                             </button>
                                         )}
                                     </div>
-
                                     <div style={{ color: isUrgent ? '#ff4d4d' : 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: 8 }}>
                                         {timeLeft === 0 ? "TIME'S UP!" : "SECONDS"}
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        {/* Right-side Prize Ladder */}
                         <div style={styles.rightSide}>
                             <PrizeLadder currentQuestion={currentQuestion} score={score} safetyNets={GAME_CONFIG.safetyNets} prizeStructure={GAME_CONFIG.prizeStructure} currency={GAME_CONFIG.currency} />
+                            <div style={{ marginTop: 12 }}>
+                                <NewsCardWidget />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2544,151 +1308,96 @@ const QuizIQGame = () => {
         );
     }
 
-    // Result screen
+    // ─── RENDER: Result ─────────────────────────────────────────────────────────
     if (gameState === 'result') {
-        const isWinner = score === 10000;
-        const isGoodScore = score >= 2500 && score < 10000;
-
+        const isWinner = score === 1000;
         return (
             <div style={styles.container}>
                 <BounceKeyframes />
                 {isWinner && <Confetti />}
                 <div style={styles.centerArea}>
-                    <div style={styles.header}>
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: '2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}></h1>
-                        </div>
-                        <div>
-                            <button
-                                onClick={() => {
-                                    if (!isPresenterMode()) return;
-                                    // 1. CLEAR the name right now so the next screen starts fresh
-                                    setPlayerName('');
-                                    // 2. MOVE to the name input screen
-                                    setGameState('play_next');
-                                }}
-                                style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10,}}
-                            >
-                                Play Next Game
-                            </button>
-                            <button
-                                onClick={() => resetGame()} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}
-                            >
-                                Restart Game
-                            </button>
-                            <button onClick={() => startSlideshow()} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}
-                            >
-                                Start Slideshow
-                            </button>
-                        </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: 8, paddingBottom: 12 }}>
+                        <button onClick={() => { if (!isPresenterMode()) return; setPlayerName(''); setGameState('play_next'); }} style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: `1px solid ${LUXURY_THEME.border}`, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Play Next Game</button>
+                        <button onClick={() => resetGame()} style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: `1px solid ${LUXURY_THEME.border}`, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Restart Game</button>
+                        <button onClick={() => startSlideshow()} style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: `1px solid ${LUXURY_THEME.border}`, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Start Slideshow</button>
                     </div>
-
-                    <div style={{ ...styles.card, marginTop: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 40, paddingBottom: 40 }}>
-
-                        <div style={{
-                            fontSize: '6rem',
-                            marginBottom: 20,
-                            animation: 'bounceIn 1s ease-out forwards, float 3s ease-in-out infinite 1s'
-                        }}>
-                            {score === 10000 ? '🤑' : score >= 2500 ? '😉' : '😔'}
+                    <div style={{ ...styles.card, marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 32, paddingBottom: 32 }}>
+                        <div style={{ fontSize: '6rem', marginBottom: 20, animation: 'float 3s ease-in-out infinite' }}>
+                            {score === 1000 ? '🤑' : score >= 250 ? '😉' : '😔'}
                         </div>
-
                         <h3 style={{ color: LUXURY_THEME.textGold, fontSize: '2rem', margin: '10px 0' }}>
-                            {score === 10000 ? 'Congratulations!' : score >= 2500 ? 'Great Job!' : 'Game Over'}
+                            {score === 1000 ? 'Congratulations!' : score >= 250 ? 'Great Job!' : 'Game Over'}
                         </h3>
-
                         <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.2rem', maxWidth: 600, lineHeight: 1.5 }}>
-                            {score === 10000
-                                ? `Incredible job, ${playerName}! You've secured the top prize!`
-                                : score >= 2500
-                                    ? `Great work, ${playerName}! You're taking home ${GAME_CONFIG.currency}${score.toLocaleString()}`
-                                    : `Good effort, ${playerName}. Try again next time.`
-                            }
+                            {score === 1000 ? `Incredible job, ${playerName}! You've secured the top prize!` : score >= 2500 ? `Great work, ${playerName}! You're taking home ${GAME_CONFIG.currency}${score.toLocaleString()}` : `Good effort, ${playerName}. Try again next time.`}
                         </p>
-
-                        <p style={{ color: LUXURY_THEME.textGold, fontSize: '1.4rem', fontWeight: 'bold', marginTop: '20px', textTransform: 'uppercase', letterSpacing: '2px' }}>
-                            Fill form below to claim prize
-                        </p>
-
-                        <div style={{
-                            marginTop: 20,
-                            padding: '15px 30px',
-                            background: `${LUXURY_THEME.bgGray}`,
-                            border: `1px solid ${LUXURY_THEME.accent}`,
-                            borderRadius: 12
-                        }}>
+                        <div style={{ marginTop: 20, padding: '15px 30px', border: `1px solid ${LUXURY_THEME.accent}`, borderRadius: 12 }}>
                             <span style={{ color: '#aaa' }}>Final Score:</span>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: LUXURY_THEME.textGold }}>
-                                {GAME_CONFIG.currency}{score.toLocaleString()}
-                            </div>
+                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: LUXURY_THEME.textGold }}>{GAME_CONFIG.currency}{score.toLocaleString()}</div>
                         </div>
+
+                        {/* [ADDITION 2] Paystack prize claim — only shown when score > 0 */}
+                        {score > 0 && (
+                            <div style={{ marginTop: 28, width: '100%', maxWidth: 480, background: 'rgba(212,175,55,0.07)', border: `1px solid ${LUXURY_THEME.border}`, borderRadius: 14, padding: '22px 24px', textAlign: 'left' }}>
+                                <h3 style={{ color: LUXURY_THEME.textGold, margin: '0 0 6px 0', fontSize: '1.1rem' }}>🏦 Claim Your Prize</h3>
+                                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.82rem', margin: '0 0 16px 0' }}>
+                                    Enter your details to receive your {GAME_CONFIG.currency}{score.toLocaleString()} via Paystack.
+                                </p>
+                                {paystackSuccess ? (
+                                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                        <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🎉</div>
+                                        <div style={{ color: '#00ff00', fontWeight: 'bold', fontSize: '1.1rem' }}>Payment Successful!</div>
+                                        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', marginTop: 6 }}>{GAME_CONFIG.currency}{score.toLocaleString()} processed for {playerName}</div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', display: 'block', marginBottom: 4 }}>NIN (11 digits)</label>
+                                            <input type="text" inputMode="numeric" maxLength={11} placeholder="12345678901" value={claimNIN}
+                                                   onChange={e => setClaimNIN(e.target.value.replace(/\D/g, ''))}
+                                                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1px solid ${LUXURY_THEME.border}`, backgroundColor: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '0.95rem', boxSizing: 'border-box' }} />
+                                        </div>
+                                        <div style={{ marginBottom: 10 }}>
+                                            <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', display: 'block', marginBottom: 4 }}>Phone Number</label>
+                                            <input type="tel" inputMode="numeric" maxLength={11} placeholder="08012345678" value={claimPhone}
+                                                   onChange={e => setClaimPhone(e.target.value.replace(/\D/g, ''))}
+                                                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `1px solid ${LUXURY_THEME.border}`, backgroundColor: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: '0.95rem', boxSizing: 'border-box' }} />
+                                        </div>
+                                        <button onClick={handlePaystackPayment} disabled={paystackLoading}
+                                                style={{ width: '100%', padding: '13px', borderRadius: 10, background: paystackLoading ? 'rgba(255,255,255,0.1)' : 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: paystackLoading ? 'wait' : 'pointer', fontWeight: '800', fontSize: '1rem', color: paystackLoading ? '#888' : '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                            {paystackLoading ? '⏳ Opening payment...' : `💳 Receive ${GAME_CONFIG.currency}${score.toLocaleString()}`}
+                                        </button>
+                                        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.7rem', textAlign: 'center', margin: '10px 0 0 0' }}>Secured by Paystack · NGN payments</p>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
-
                 <AnimatedBanner />
             </div>
         );
     }
 
-//new "Next Player" transition screen
+    // ─── RENDER: Play Next ──────────────────────────────────────────────────────
     if (gameState === 'play_next') {
         return (
             <div style={styles.container}>
-                <div style={{ ...styles.centerArea }}>
+                <div style={styles.centerArea}>
                     <div style={styles.header}>
-                        <div>
-                            <img
-                                src={xxvLogo}
-                                alt="XXV Logo"
-                                style={{
-                                    width: isMobile ? 100 : 150,
-                                    height: isMobile ? 100 : 150,
-                                    objectFit: 'contain'
-                                }}
-                            />
-                        </div>
-                        <img
-                            src={Image6ts}
-                            alt="6ts"
-                            style={{
-                                width: isMobile ? 100 : 150,
-                                height: isMobile ? 100 : 150,
-                                objectFit: 'contain'
-                            }}
-                        />
+                        <div><img src={xxvLogo} alt="XXV Logo" style={{ width: isMobile ? 100 : 150, height: isMobile ? 100 : 150, objectFit: 'contain' }} /></div>
+                        <img src={Image6ts} alt="6ts" style={{ width: isMobile ? 100 : 150, height: isMobile ? 100 : 150, objectFit: 'contain' }} />
                     </div>
-
                     <div style={{ ...styles.card, maxWidth: 1500, marginBottom: 'auto', marginTop: 120, marginLeft: 'auto', marginRight: 'auto' }}>
                         <h3 style={{ color: LUXURY_THEME.textGold }}>Enter Player Name</h3>
-                        <input
-                            autoFocus
-                            type="text"
-                            placeholder="Player name..."
-                            value={playerName}
-                            onChange={(e) => setPlayerName(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && playerName.trim() && playNextUnplayedSet()}
-                            style={{
-                                width: 'auto',
-                                padding: '20px 30px',
-                                borderRadius: 10,
-                                border: `1px solid ${LUXURY_THEME.border}`,
-                                backgroundColor: 'rgba(0,0,0,0.45)',
-                                color: LUXURY_THEME.text,
-                                fontSize: 16,
-                                marginTop: -2,
-                                marginBottom: 12
-                            }}
+                        <input autoFocus type="text" placeholder="Player name..." value={playerName}
+                               onChange={(e) => setPlayerName(e.target.value)}
+                               onKeyDown={(e) => e.key === 'Enter' && playerName.trim() && playNextUnplayedSet()}
+                               style={{ width: 'auto', padding: '20px 30px', borderRadius: 10, border: `1px solid ${LUXURY_THEME.border}`, backgroundColor: 'rgba(0,0,0,0.45)', color: LUXURY_THEME.text, fontSize: 16, marginTop: -2, marginBottom: 12 }}
                         />
                         <div style={{ display: 'flex', gap: 12 }}>
-                            <button
-                                onClick={() => {
-                                    if (!isPresenterMode()) return;
-                                    setPlayerName('');
-                                    playNextUnplayedSet();
-                                }}
-                                disabled={!playerName.trim()}
-                                style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}
-                            >
+                            <button onClick={() => { if (!isPresenterMode()) return; setPlayerName(''); playNextUnplayedSet(); }} disabled={!playerName.trim()}
+                                    style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}>
                                 Proceed to Next Game
                             </button>
                         </div>
@@ -2699,57 +1408,27 @@ const QuizIQGame = () => {
         );
     }
 
-
-
-    // Slideshow screen
+    // ─── RENDER: Slideshow ──────────────────────────────────────────────────────
     if (gameState === 'slideshow') {
         return (
             <div style={{ ...styles.container, padding: 0, background: '#000' }}>
                 <div style={{ position: 'relative', width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-
-
                     {isPresenterMode() && (
-                        <button
-                            onClick={() => setGameState('registration')}
-                            style={{
-                                position: 'absolute',
-                                top: '30px',
-                                right: '30px',
-                                zIndex: 10000,
-                                padding: '14px 30px',
-                                background: 'rgba(255,255,255,0.1)',
-                                backdropFilter: 'blur(10px)',
-                                border: `1px solid ${LUXURY_THEME.accent}`,
-                                color: LUXURY_THEME.textGold,
-                                borderRadius: '30px',
-                                cursor: 'pointer',
-                                fontWeight: 'bold'
-                            }}
-                        >
+                        <button onClick={() => setGameState('registration')}
+                                style={{ position: 'absolute', top: '30px', right: '30px', zIndex: 10000, padding: '14px 30px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', border: `1px solid ${LUXURY_THEME.accent}`, color: LUXURY_THEME.textGold, borderRadius: '30px', cursor: 'pointer', fontWeight: 'bold' }}>
                             ✕ Exit Slideshow
                         </button>
                     )}
-
-
-
                     {slideshowImages.length > 0 && (
-                        <img
-                            src={slideshowImages[currentSlide].src}
-                            alt="Slideshow"
-                            style={{
-                                maxWidth: '100%',
-                                maxHeight: '100%',
-                                objectFit: 'contain',
-                                transition: 'opacity 0.5s ease-in-out'
-                            }}
-                        />
+                        <img src={slideshowImages[currentSlide].src} alt="Slideshow"
+                             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', transition: 'opacity 0.5s ease-in-out' }} />
                     )}
                 </div>
-
                 <AnimatedBanner />
             </div>
         );
     }
+
     return null;
 };
 
