@@ -91,7 +91,7 @@ Error generating stack: `+l.message+`
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
- */const yg=[["path",{d:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",key:"1yyitq"}],["path",{d:"M16 3.128a4 4 0 0 1 0 7.744",key:"16gr8j"}],["path",{d:"M22 21v-2a4 4 0 0 0-3-3.87",key:"kshegd"}],["circle",{cx:"9",cy:"7",r:"4",key:"nufk8"}]],mg=uu("users",yg),vg="/answer-transition.mp4",pg="https://gatewaybe-production.up.railway.app/",_={primary:"linear-gradient(135deg, #1a1a1a 0%, #2d1810 50%, #1a1a1a 100%)",secondary:"linear-gradient(45deg, #ffd700, #ffb347, #d4af37)",accent:"#d4af37",background:"rgba(212, 175, 55, 0.15)",backgroundDark:"rgba(0, 0, 0, 0.3)",text:"#ffffff",textGold:"#ffd700",border:"rgba(212, 175, 55, 0.3)",shadow:"0 8px 32px rgba(212, 175, 55, 0.2)"},bg=`
+ */const yg=[["path",{d:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",key:"1yyitq"}],["path",{d:"M16 3.128a4 4 0 0 1 0 7.744",key:"16gr8j"}],["path",{d:"M22 21v-2a4 4 0 0 0-3-3.87",key:"kshegd"}],["circle",{cx:"9",cy:"7",r:"4",key:"nufk8"}]],mg=uu("users",yg),vg="/answer-transition.mp4",pg="https://gatewaybe-production.up.railway.app",_={primary:"linear-gradient(135deg, #1a1a1a 0%, #2d1810 50%, #1a1a1a 100%)",secondary:"linear-gradient(45deg, #ffd700, #ffb347, #d4af37)",accent:"#d4af37",background:"rgba(212, 175, 55, 0.15)",backgroundDark:"rgba(0, 0, 0, 0.3)",text:"#ffffff",textGold:"#ffd700",border:"rgba(212, 175, 55, 0.3)",shadow:"0 8px 32px rgba(212, 175, 55, 0.2)"},bg=`
     .status-bar-safe {
         height: env(safe-area-inset-top, 20px);
         background: #000;
