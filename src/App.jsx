@@ -15,10 +15,8 @@ import {
 
 const TRANSITION_VIDEO_PATH = '/answer-transition.mp4';
 
-// ─── PROXY CONFIG ─────────────────────────────────────────────────────────────
-// The React app talks to your local server.js — the Flutterwave key never
-// appears in the browser bundle. Run `cd server && node server.js` first.
-const PROXY_BASE = 'http://localhost:3001';
+
+const PROXY_BASE = 'https://gatewaybe-production.up.railway.app/';
 
 const LUXURY_THEME = {
     primary: 'linear-gradient(135deg, #1a1a1a 0%, #2d1810 50%, #1a1a1a 100%)',
@@ -584,11 +582,6 @@ const QuizIQGame = () => {
         const auto = detectNigerianNetwork(fullPhone);
         if (auto) { setDetectedNetwork(auto); setManualNetwork(null); }
         else       { setDetectedNetwork(null); }
-        // Auto-fire only when network is confidently known
-        const net = manualNetwork || auto;
-        if (net && claimStatus === 'idle') {
-            setTimeout(() => sendAirtime(fullPhone, net.code), 500);
-        }
     };
 
     // Manual send button — also used as fallback if auto-trigger didn't fire
@@ -1240,7 +1233,7 @@ const QuizIQGame = () => {
                                     <h3 style={{ color: LUXURY_THEME.textGold, margin: 0, fontSize: '1.15rem' }}>Claim Your Airtime Prize</h3>
                                 </div>
                                 <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem', margin: '0 0 20px 0' }}>
-                                    Enter your phone number — airtime is sent automatically once complete.
+                                    Enter your phone number, airtime is sent automatically once complete.
                                 </p>
 
                                 {isSuccess ? (
@@ -1285,7 +1278,7 @@ const QuizIQGame = () => {
                                                 }}
                                             />
                                             <div style={{ marginTop: 5, fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)' }}>
-                                                11 digits · for record purposes only
+                                                 digits 11·
                                             </div>
                                         </div>
 
@@ -1315,7 +1308,7 @@ const QuizIQGame = () => {
                                                 disabled={isLoading || isSuccess}
                                             />
                                             <div style={{ marginTop: 5, fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)' }}>
-                                                "0" is pre-filled — type your remaining 10 digits
+                                                "0" Type your remaining 10 digits
                                             </div>
                                         </div>
 
