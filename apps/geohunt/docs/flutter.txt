@@ -1,0 +1,31 @@
+ const sendAirtime = async (phone, networkCode) => {
+        if (claimStatus === 'loading' || claimStatus === 'success') return;
+        if (!phone || phone.length !== 11) { setClaimError('Please complete all 11 phone digits.'); return; }
+        if (!networkCode) { setClaimError('Please select your network above.'); return; }
+        setClaimError('');
+        setClaimStatus('loading');
+        try {
+            const res = await fetch(`${PROXY_BASE}/api/send-airtime`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerName, phone, nin: 'N/A', amountNGN: score }),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || 'Airtime transfer failed.');
+            setClaimStatus('success');
+        } catch (err) {
+            console.error('Airtime error:', err);
+            setClaimError(err.message || 'Something went wrong. Please try again.');
+            setClaimStatus('error');
+        }
+    };
+
+    const handlePhoneComplete = (fullPhone) => {
+        setClaimPhone(fullPhone);
+        const auto = detectNigerianNetwork(fullPhone);
+        if (auto) { setDetectedNetwork(auto); setManualNetwork(null); }
+        else       { setDetectedNetwork(null); }
+    };
+
+    const handleAirtimeTransfer = () => sendAirtime(claimPhone, activeNetwork?.code);
+

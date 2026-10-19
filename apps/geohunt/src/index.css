@@ -1,0 +1,1683 @@
+:root {
+  font-family:
+    Georgia, "Palatino Linotype", Palatino, "Book Antiqua", serif;
+  color: oklch(0.17 0.012 72);
+  background: oklch(0.14 0.025 260);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+button:focus,
+[role="button"]:focus {
+  outline: none;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid oklch(0.7 0.12 86 / 0.6);
+  outline-offset: 2px;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.relative {
+  position: relative;
+}
+
+.h-screen {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.w-screen {
+  width: 100vw;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.inline-flex {
+  display: inline-flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.floating-button,
+.top-pill,
+.locate-button,
+.scroll-icon {
+  z-index: 50;
+  border: 1px solid oklch(0.98 0.009 82 / 0.28);
+  color: oklch(0.98 0.01 82);
+  background: oklch(0.22 0.024 76 / 0.76);
+  box-shadow: 0 16px 44px oklch(0.1 0.02 72 / 0.28);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.floating-button,
+.scroll-icon {
+  position: fixed;
+}
+
+.floating-button {
+  top: 16px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+}
+
+.top-left {
+  left: 16px;
+}
+
+.top-right {
+  right: 16px;
+}
+
+.avatar-button {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.top-pill-row {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 50;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 136px);
+}
+
+.top-pill {
+  min-width: 140px;
+  max-width: 100%;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.88rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.locate-button {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.locate-button:active {
+  transform: scale(0.92);
+}
+
+.top-pill-pulse {
+  animation: pillPulse 1.8s ease-out infinite;
+}
+
+@keyframes pillPulse {
+  0%,
+  100% {
+    border-color: oklch(0.91 0.06 86 / 0.32);
+  }
+  50% {
+    border-color: oklch(0.86 0.12 82 / 0.8);
+  }
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 70;
+  width: min(390px, 88vw);
+  padding: 22px;
+  background: oklch(0.96 0.018 83);
+  color: oklch(0.18 0.018 71);
+  box-shadow: 0 24px 80px oklch(0.12 0.02 72 / 0.32);
+  overflow-y: auto;
+}
+
+.drawer-left {
+  left: 0;
+}
+
+.drawer-right {
+  right: 0;
+}
+
+.drawer-header,
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.drawer-header h2,
+.admin-header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: 0;
+}
+
+.icon-button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid oklch(0.44 0.04 76 / 0.18);
+  border-radius: 999px;
+  background: oklch(0.92 0.02 83);
+  color: inherit;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 4px;
+  margin: 28px 0 22px;
+  padding: 4px;
+  border-radius: 12px;
+  background: oklch(0.88 0.025 84);
+}
+
+.segmented button,
+.admin-tabs button {
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: oklch(0.34 0.035 74);
+  font-size: 0.86rem;
+  font-weight: 800;
+  padding: 10px 12px;
+}
+
+.segmented .active,
+.admin-tabs .active {
+  background: oklch(0.99 0.012 86);
+  box-shadow: 0 8px 20px oklch(0.35 0.035 78 / 0.12);
+  color: oklch(0.19 0.02 72);
+}
+
+.drawer-form {
+  display: grid;
+  gap: 10px;
+}
+
+.drawer-form label,
+.admin-gate-form label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: oklch(0.36 0.04 75);
+}
+
+.drawer-form input,
+.input-row,
+.admin-password-row input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid oklch(0.48 0.04 76 / 0.22);
+  border-radius: 10px;
+  background: oklch(0.99 0.01 86);
+  color: oklch(0.18 0.018 71);
+}
+
+.drawer-form input,
+.admin-password-row input {
+  padding: 0 12px;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.input-row input {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+}
+
+.primary-button,
+.secondary-button,
+.approve-button,
+.decline-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 850;
+}
+
+.primary-button {
+  margin-top: 6px;
+  background: oklch(0.39 0.08 86);
+  color: oklch(0.98 0.01 86);
+}
+
+.secondary-button {
+  margin-top: 14px;
+  width: 100%;
+  background: oklch(0.91 0.022 82);
+  color: oklch(0.23 0.03 74);
+}
+
+.profile-panel {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: oklch(0.36 0.08 84);
+  color: oklch(0.98 0.01 84);
+  font-weight: 900;
+}
+
+.profile-panel h3,
+.profile-panel p {
+  margin: 0;
+}
+
+.profile-stat {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid oklch(0.55 0.04 78 / 0.18);
+  border-bottom: 1px solid oklch(0.55 0.04 78 / 0.18);
+}
+
+.profile-stat-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0;
+  border-top: 1px solid oklch(0.55 0.04 78 / 0.18);
+  border-bottom: 1px solid oklch(0.55 0.04 78 / 0.18);
+  border-left: none;
+  border-right: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
+  border-radius: 0;
+  transition: background 0.12s;
+}
+
+.profile-stat-btn:hover {
+  background: oklch(0.90 0.02 83);
+}
+
+.profile-stat-btn:disabled {
+  cursor: default;
+}
+
+.profile-stat-btn > span:first-child {
+  flex: 1;
+}
+
+.profile-stat-count {
+  background: oklch(0.86 0.03 83);
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 1px 9px;
+  color: oklch(0.36 0.04 74);
+}
+
+.form-error {
+  margin: 4px 0 0;
+  color: oklch(0.47 0.17 28);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 20px;
+  z-index: 80;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: oklch(0.22 0.03 42 / 0.88);
+  color: oklch(0.98 0.01 86);
+}
+
+.scroll-icon {
+  right: 14px;
+  top: 50%;
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+}
+
+.clue-scroll-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: oklch(0.13 0.018 72 / 0.42);
+}
+
+.scroll-paper {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 36px);
+  overflow: auto;
+  padding: 32px 24px 26px;
+  border: 2px solid #8B6914;
+  border-radius: 20px 13px 24px 15px;
+  background-color: #f5e6c8;
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)' opacity='.08'/%3E%3C/svg%3E");
+  box-shadow: 0 30px 90px oklch(0.12 0.02 70 / 0.38);
+}
+
+.scroll-close {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid oklch(0.25 0.04 72 / 0.22);
+  border-radius: 999px;
+  background: oklch(0.96 0.018 82);
+}
+
+.scroll-paper h1 {
+  margin: 0;
+  color: oklch(0.24 0.055 72);
+  font-family: Georgia, "Palatino Linotype", serif;
+  font-size: clamp(2rem, 8vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.scroll-divider {
+  width: 100%;
+  height: 24px;
+  margin: 20px 0;
+  fill: none;
+  stroke: #8B6914;
+  stroke-width: 1.6;
+}
+
+.riddle {
+  margin: 0 0 22px;
+  color: oklch(0.24 0.035 70);
+  font-family: Georgia, "Palatino Linotype", serif;
+  font-size: 1.18rem;
+  font-style: italic;
+  line-height: 1.65;
+}
+
+.hint-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid oklch(0.44 0.06 74 / 0.24);
+  border-radius: 10px;
+  background: oklch(0.91 0.045 82 / 0.64);
+  padding: 12px 14px;
+  color: oklch(0.26 0.045 72);
+  font-weight: 850;
+}
+
+.hint-toggle .rotated {
+  transform: rotate(180deg);
+}
+
+.hint-box {
+  overflow: hidden;
+  margin: 10px 0 0;
+  color: oklch(0.28 0.035 74);
+}
+
+.reward-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 22px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: oklch(0.82 0.12 88 / 0.68);
+  color: oklch(0.25 0.05 72);
+  font-weight: 900;
+}
+
+.muted-callout,
+.submit-success {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: oklch(0.87 0.035 82 / 0.66);
+  color: oklch(0.34 0.035 72);
+  font-weight: 750;
+}
+
+.submission-preview,
+.solved-state img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.submit-actions,
+.admin-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.admin-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: fit-content;
+}
+.admin-status-approved {
+  color: oklch(0.32 0.10 145);
+  background: oklch(0.92 0.06 145);
+}
+.admin-status-rejected {
+  color: oklch(0.36 0.16 28);
+  background: oklch(0.93 0.06 28);
+}
+
+.submit-button {
+  width: 100%;
+}
+
+.solved-state {
+  display: grid;
+  gap: 12px;
+}
+
+.solved-state span {
+  color: oklch(0.44 0.13 145);
+  font-weight: 900;
+}
+
+.user-pulse {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 2px solid oklch(0.62 0.18 255 / 0.62);
+  animation: userPulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes userPulse {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.86;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+.admin-gate,
+.admin-console {
+  min-height: 100dvh;
+  background: oklch(0.95 0.014 82);
+  color: oklch(0.19 0.018 72);
+}
+
+.admin-gate {
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.admin-gate-form {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 10px;
+}
+
+.admin-password-row {
+  display: grid;
+  grid-template-columns: 1fr 48px;
+  gap: 8px;
+}
+
+.admin-password-row button {
+  border: 0;
+  border-radius: 10px;
+  background: oklch(0.34 0.075 83);
+  color: oklch(0.98 0.01 86);
+}
+
+.admin-console {
+  padding: 22px;
+}
+
+.admin-header {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: oklch(0.89 0.02 82);
+}
+
+.admin-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-tabs span {
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: oklch(0.78 0.06 84 / 0.52);
+}
+
+.submission-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.submission-card {
+  width: 320px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid oklch(0.64 0.03 76 / 0.2);
+  border-radius: 12px;
+  background: oklch(0.99 0.009 86);
+  box-shadow: 0 8px 28px oklch(0.18 0.02 72 / 0.12);
+}
+
+.admin-photo {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.submission-body {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.submission-body h3,
+.submission-body p {
+  margin: 0;
+}
+
+.submission-body h3 {
+  font-size: 1.1rem;
+}
+
+.answer-name,
+.coords {
+  color: oklch(0.38 0.04 74);
+  font-weight: 800;
+}
+
+.admin-inline-link {
+  color: oklch(0.42 0.1 258);
+  font-weight: 800;
+  text-decoration: none;
+  border-bottom: 1px solid oklch(0.42 0.1 258 / 0.4);
+}
+
+.admin-inline-link:hover {
+  color: oklch(0.35 0.12 258);
+  border-bottom-color: oklch(0.35 0.12 258);
+}
+
+.mini-map {
+  height: 160px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.approve-button {
+  background: oklch(0.5 0.14 145);
+  color: oklch(0.98 0.01 145);
+}
+
+.decline-button {
+  background: oklch(0.55 0.18 29);
+  color: oklch(0.98 0.01 29);
+}
+
+/* ── Quest pill ────────────────────────────────────────────────────── */
+.quest-pill {
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.quest-pill:active {
+  transform: scale(0.96);
+}
+
+.pill-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Quests Available drawer ─────────────────────────────────────────── */
+.drawer-subtitle {
+  margin: 6px 0 14px;
+  font-size: 0.78rem;
+  color: oklch(0.44 0.04 76);
+}
+
+.quest-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 0;
+  color: oklch(0.44 0.04 76);
+}
+
+.quest-empty p {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.quest-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.quest-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 0;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+}
+
+.quest-row-title {
+  font-size: 0.92rem;
+  font-weight: 850;
+  color: oklch(0.22 0.025 72);
+}
+
+.quest-row-distance {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: oklch(0.44 0.06 84);
+  background: oklch(0.88 0.03 83);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.quest-divider {
+  height: 1px;
+  background: oklch(0.55 0.03 78 / 0.16);
+}
+
+.quest-row-completed {
+  opacity: 0.52;
+  cursor: default;
+}
+
+.quest-row-completed:hover {
+  background: transparent;
+}
+
+.quest-completed-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: oklch(0.48 0.04 75);
+  background: oklch(0.86 0.02 82);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ── Quest scroll panel ───────────────────────────────────────────────── */
+.quest-action-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.quest-directions-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid oklch(0.44 0.06 74 / 0.28);
+  border-radius: 10px;
+  background: oklch(0.91 0.022 82);
+  color: oklch(0.26 0.06 258);
+  font-size: 0.92rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.quest-directions-btn:hover {
+  background: oklch(0.87 0.025 82);
+}
+
+.quest-directions-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: oklch(0.39 0.08 86);
+  color: oklch(0.98 0.01 86);
+  font-size: 0.92rem;
+  font-weight: 850;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.quest-directions-btn-primary:hover {
+  background: oklch(0.36 0.09 86);
+}
+
+.quest-signin-btn {
+  width: 100%;
+  margin-top: 0;
+}
+
+.quest-signin-btn:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.quest-address-link {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-bottom: 16px;
+  font-size: 0.78rem;
+  font-weight: 750;
+  color: oklch(0.38 0.08 258);
+  text-decoration: none;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.quest-address-link:hover {
+  text-decoration: underline;
+}
+
+.quest-address-link svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.quest-instructions {
+  margin: 0 0 22px;
+  color: oklch(0.24 0.035 70);
+  font-family: Georgia, "Palatino Linotype", serif;
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+/* ── Info button & notification badge ───────────────────────────────── */
+.notif-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  border: 1.5px solid oklch(0.22 0.024 76 / 0.76);
+}
+
+.notif-dot-red { background: oklch(0.58 0.21 28); }
+.notif-dot-green { background: oklch(0.52 0.14 145); }
+
+/* ── Notification drawer ─────────────────────────────────────────────── */
+.notif-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  display: grid;
+  gap: 14px;
+}
+
+.notif-card {
+  padding: 14px;
+  border-radius: 12px;
+  background: oklch(0.91 0.02 83);
+  display: grid;
+  gap: 10px;
+}
+
+.notif-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.notif-card-title {
+  font-size: 0.92rem;
+  font-weight: 850;
+  color: oklch(0.22 0.025 72);
+}
+
+.notif-card-date {
+  font-size: 0.76rem;
+  color: oklch(0.46 0.04 75);
+  white-space: nowrap;
+}
+
+.notif-status {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+.notif-approved { background: oklch(0.84 0.1 145 / 0.5); color: oklch(0.32 0.1 145); }
+.notif-rejected { background: oklch(0.84 0.1 28 / 0.4); color: oklch(0.38 0.1 28); }
+.notif-pending { background: oklch(0.88 0.04 83); color: oklch(0.38 0.04 75); }
+.notif-pending-link { background: oklch(0.84 0.1 60 / 0.4); color: oklch(0.38 0.1 60); }
+
+.link-sent-msg {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: oklch(0.34 0.12 145);
+  background: oklch(0.88 0.08 145 / 0.35);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.notif-approved-msg {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: oklch(0.36 0.1 145);
+}
+
+.notif-rejected-msg {
+  margin: 0;
+  font-size: 0.84rem;
+  color: oklch(0.46 0.04 75);
+}
+
+.notif-pending-msg {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: oklch(0.38 0.06 84);
+}
+
+.notif-post-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: oklch(0.42 0.09 258);
+  text-decoration: none;
+}
+
+/* ── Link form (Stage 2 submission) ─────────────────────────────────── */
+.link-form {
+  display: grid;
+  gap: 10px;
+}
+
+.link-form-instruction {
+  margin: 0;
+  font-size: 0.82rem;
+  color: oklch(0.34 0.035 74);
+  line-height: 1.5;
+}
+
+.link-template-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.link-template-box {
+  flex: 1;
+  resize: none;
+  border: 1px solid oklch(0.48 0.04 76 / 0.22);
+  border-radius: 8px;
+  background: oklch(0.99 0.01 86);
+  color: oklch(0.26 0.03 72);
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.link-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid oklch(0.48 0.04 76 / 0.22);
+  border-radius: 10px;
+  background: oklch(0.99 0.01 86);
+  color: oklch(0.18 0.018 71);
+  font: inherit;
+}
+
+/* ── Solved quest overlay ─────────────────────────────────────────────── */
+.solved-winner-trigger {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: oklch(0.38 0.06 258);
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.solved-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: oklch(0.1 0.018 72 / 0.62);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.solved-overlay-card {
+  position: relative;
+  width: min(420px, 100%);
+  border-radius: 18px;
+  background: oklch(0.97 0.012 84);
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+  box-shadow: 0 32px 80px oklch(0.1 0.02 72 / 0.32);
+}
+
+.solved-overlay-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.solved-overlay-photo {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.solved-overlay-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.solved-overlay-avatar {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: oklch(0.36 0.08 84);
+  color: oklch(0.98 0.01 84);
+  font-weight: 900;
+}
+
+.solved-overlay-username {
+  margin: 0;
+  font-weight: 850;
+  font-size: 1rem;
+  color: oklch(0.22 0.025 72);
+}
+
+.solved-overlay-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: oklch(0.44 0.04 75);
+}
+
+/* ── Auth drawer extras ────────────────────────────────────────────── */
+.network-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid oklch(0.48 0.04 76 / 0.22);
+  border-radius: 10px;
+  background: oklch(0.99 0.01 86);
+  color: oklch(0.18 0.018 71);
+  font: inherit;
+}
+
+.optional-label {
+  font-weight: 400;
+  color: oklch(0.52 0.03 75);
+}
+
+/* ── Admin: main tab / settings layout ──────────────────────────────── */
+.admin-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.submission-status-tabs {
+  margin-bottom: 18px;
+}
+
+/* ── Admin: quests tab layout ────────────────────────────────────────── */
+.quests-tab {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 18px;
+  height: calc(100dvh - 120px);
+}
+
+.quests-table-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.quests-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.quests-search {
+  flex: 1;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid oklch(0.48 0.04 76 / 0.22);
+  border-radius: 10px;
+  background: oklch(0.99 0.01 86);
+  color: oklch(0.18 0.018 71);
+  font: inherit;
+}
+
+.quests-loading {
+  color: oklch(0.44 0.04 75);
+  font-size: 0.86rem;
+}
+
+.quests-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  overflow-y: auto;
+}
+
+.quests-table thead th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid oklch(0.55 0.03 78 / 0.2);
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: oklch(0.44 0.04 75);
+}
+
+.quests-table tbody td {
+  padding: 10px;
+  border-bottom: 1px solid oklch(0.55 0.03 78 / 0.1);
+  color: oklch(0.24 0.025 72);
+}
+
+.quests-table tbody tr {
+  cursor: pointer;
+}
+
+.quests-table tbody tr:hover td,
+.quest-row-selected td {
+  background: oklch(0.93 0.022 83);
+}
+
+.badge-solved {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: oklch(0.84 0.1 145 / 0.4);
+  color: oklch(0.34 0.1 145);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.badge-active {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: oklch(0.84 0.1 258 / 0.3);
+  color: oklch(0.34 0.1 258);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.quests-map-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid oklch(0.55 0.03 78 / 0.2);
+}
+
+/* ── Admin map ───────────────────────────────────────────────────────── */
+.admin-map-wrap {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.admin-map-search {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+}
+
+.admin-map-search-input {
+  flex: 1;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: oklch(0.99 0.01 86);
+  font: inherit;
+  font-size: 0.84rem;
+  box-shadow: 0 4px 18px oklch(0.18 0.02 72 / 0.2);
+}
+
+.admin-map-search-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  background: oklch(0.34 0.075 83);
+  color: oklch(0.98 0.01 86);
+  font: inherit;
+  font-weight: 850;
+}
+
+/* ── Admin map address suggestions ──────────────────────────────────── */
+.admin-map-suggestions {
+  margin: 4px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  background: oklch(0.99 0.01 86);
+  border-radius: 10px;
+  box-shadow: 0 8px 28px oklch(0.18 0.02 72 / 0.22);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.admin-map-suggestions li button {
+  width: 100%;
+  padding: 9px 12px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  font-size: 0.82rem;
+  color: oklch(0.22 0.025 72);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.admin-map-suggestions li button:hover {
+  background: oklch(0.93 0.02 83);
+}
+
+/* ── Quest edit panel ─────────────────────────────────────────────────── */
+.quest-edit-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: 60%;
+  overflow-y: auto;
+  padding: 18px;
+  background: oklch(0.97 0.012 84);
+  border-top: 1px solid oklch(0.55 0.03 78 / 0.2);
+}
+
+.quest-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid oklch(0.48 0.04 76 / 0.22);
+  border-radius: 10px;
+  background: oklch(0.99 0.01 86);
+  color: oklch(0.18 0.018 71);
+  font: inherit;
+  resize: vertical;
+}
+
+.latLng-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid oklch(0.55 0.04 78 / 0.14);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.delete-button {
+  margin-top: 12px;
+  width: 100%;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  border: 1px solid oklch(0.55 0.18 29 / 0.3);
+  background: transparent;
+  color: oklch(0.48 0.16 28);
+  font-weight: 850;
+  font: inherit;
+}
+
+/* ── Settings modal ───────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: oklch(0.1 0.018 72 / 0.5);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.settings-modal {
+  width: min(480px, 100%);
+  border-radius: 16px;
+  background: oklch(0.97 0.012 84);
+  padding: 22px;
+  box-shadow: 0 24px 60px oklch(0.12 0.02 72 / 0.28);
+}
+
+/* ── Submission kind badge (inside .card-visual) ─────────────────────── */
+.submission-kind-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: oklch(0.16 0.02 72 / 0.66);
+  color: oklch(0.98 0.01 86);
+  z-index: 1;
+}
+
+.submission-card {
+  position: relative;
+}
+
+@media (max-width: 560px) {
+  .top-pill-row {
+    max-width: calc(100vw - 124px);
+    gap: 6px;
+  }
+
+  .top-pill {
+    min-width: 110px;
+    font-size: 0.78rem;
+    padding: 0 14px;
+  }
+
+  .locate-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .scroll-paper {
+    padding: 30px 18px 22px;
+  }
+
+  .admin-actions,
+  .submit-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .quests-tab {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .quests-map-col {
+    height: 50vh;
+  }
+}
+
+/* ── Notification drawer: new card layout ────────────────────────────── */
+.notif-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.notif-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 5px;
+}
+
+.notif-prize {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: oklch(0.42 0.07 74);
+}
+
+/* Thumbnail */
+.sub-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: block;
+}
+
+.sub-thumb-loading {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: oklch(0.86 0.02 83);
+  flex-shrink: 0;
+  animation: thumb-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes thumb-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Status dot */
+.status-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot-approved { background: oklch(0.52 0.14 145); }
+.status-dot-pending  { background: oklch(0.72 0.19 46);  }
+.status-dot-rejected { background: oklch(0.55 0.21 28);  }
+.status-dot-draft    { background: oklch(0.66 0.02 75);  }
+
+/* ── Admin card: photo fills, map as overlay ────────────────────────── */
+.card-visual {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  background: oklch(0.86 0.02 83);
+  cursor: zoom-in;
+}
+
+.card-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.22s ease;
+}
+
+.card-visual:hover .card-photo {
+  transform: scale(1.03);
+}
+
+.card-photo-loading {
+  width: 100%;
+  height: 100%;
+  background: oklch(0.86 0.02 83);
+  animation: thumb-pulse 1.2s ease-in-out infinite;
+}
+
+/* Map thumbnail: rounded rect pinned to bottom-right of the photo */
+.card-map-overlay {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 108px;
+  height: 78px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.32);
+  cursor: pointer;
+  padding: 0;
+  background: oklch(0.88 0.02 83);
+}
+
+/* Location dots used on mini-map markers */
+.loc-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2.5px solid white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  display: block;
+}
+
+.loc-dot-user  { background: oklch(0.48 0.18 258); }
+.loc-dot-quest { background: oklch(0.55 0.21 28);  }
+
+/* ── Photo lightbox ──────────────────────────────────────────────────── */
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+
+.lightbox-img {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: oklch(0.22 0.02 72 / 0.8);
+  color: white;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+/* ── Location verification modal ─────────────────────────────────────── */
+.location-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0, 0, 0, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.location-modal {
+  width: min(580px, 94vw);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.42);
+}
+
+.location-modal-map {
+  height: 380px;
+}
+
+.location-modal-footer {
+  background: oklch(0.97 0.012 84);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.location-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: oklch(0.34 0.03 74);
+}
