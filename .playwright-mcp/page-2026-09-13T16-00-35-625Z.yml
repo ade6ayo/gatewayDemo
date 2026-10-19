@@ -1,0 +1,74 @@
+- generic [ref=f1e3]:
+  - banner [ref=f1e47]:
+    - generic [ref=f1e48]:
+      - img "Gateway" [ref=f1e49]
+      - generic [ref=f1e50]:
+        - generic [ref=f1e51]: Question 3 of 3
+        - generic [ref=f1e52]: Ade
+    - generic [ref=f1e53]:
+      - generic [ref=f1e54]:
+        - generic [ref=f1e55]: SCORE
+        - generic [ref=f1e56]: ₦100
+      - link "Geohunt" [ref=f1e57] [cursor=pointer]:
+        - /url: https://geohunt-production.up.railway.app/
+      - button "Exit" [ref=f1e60] [cursor=pointer]
+  - generic [ref=f1e61]:
+    - generic [ref=f1e62]:
+      - generic [ref=f1e63]:
+        - button "50/50" [ref=f1e64]
+        - button "Audience" [ref=f1e72]
+        - button "Phone Friend" [active] [ref=f1e79]
+      - generic [ref=f1e83]:
+        - generic [ref=f1e84]:
+          - generic [ref=f1e85]: Science
+          - generic [ref=f1e86]: easy
+        - generic [ref=f1e87]: Senator Solomon Olamilekan Adeola (YAYI) currently serves as the Chairman of which influential Senate Committee?
+        - generic [ref=f1e88]:
+          - generic [ref=f1e252]:
+            - generic [ref=f1e253]: A
+            - generic [ref=f1e254]: Committee on Finance
+          - generic [ref=f1e255]:
+            - generic [ref=f1e256]: B
+            - generic [ref=f1e257]: Committee on Appropriations
+          - generic [ref=f1e261]:
+            - generic [ref=f1e262]: C
+            - generic [ref=f1e263]: Committee on Public Accounts
+          - generic [ref=f1e264]:
+            - generic [ref=f1e265]: D
+            - generic [ref=f1e266]: Committee on Works
+        - generic [ref=f1e104]:
+          - generic [ref=f1e105]:
+            - generic [ref=f1e110]:
+              - generic [ref=f1e111]: "30"
+              - generic [ref=f1e112]: seconds
+            - generic [ref=f1e113]:
+              - generic [ref=f1e114]: Answer to bank
+              - generic [ref=f1e115]: ₦250
+          - button "Submit Answer" [ref=f1e116] [cursor=pointer]
+    - generic [ref=f1e119]:
+      - generic [ref=f1e267]:
+        - generic [ref=f1e268]:
+          - generic [ref=f1e269]: Prize Ladder
+          - generic [ref=f1e270]: Climb to ₦250
+        - generic [ref=f1e271]:
+          - generic [ref=f1e272]:
+            - generic [ref=f1e273]:
+              - generic [ref=f1e274]: "3"
+              - generic [ref=f1e275]: Safe
+            - generic [ref=f1e276]: ₦250
+          - generic [ref=f1e277]:
+            - generic [ref=f1e278]: Safe
+            - generic [ref=f1e283]: ₦100
+          - generic [ref=f1e284]:
+            - generic [ref=f1e285]: Question
+            - generic [ref=f1e290]: ₦50
+        - generic [ref=f1e291]:
+          - generic [ref=f1e292]: Banked
+          - generic [ref=f1e293]: ₦100
+      - generic [ref=f1e143]:
+        - generic [ref=f1e144]:
+          - generic [ref=f1e145]: Nigeria News
+          - button "Expand" [ref=f1e147] [cursor=pointer]
+        - generic [ref=f1e298] [cursor=pointer]:
+          - generic [ref=f1e299]: Top Story
+          - generic [ref=f1e300]: "2027: Cross River APC pledges 1.5M votes for President Tinubu"

@@ -1,195 +1,234 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import xxvLogo from './assets/xxv.png';
-import Image6ts from './assets/6ts.png';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import yayiMark from './assets/yayi-mark.png';
+import adeolaPortrait from './assets/adeola-portrait.png';
+import mandatePortrait from './assets/yayi-portrait-new.png';
 import {
-    Play,
-    Trophy,
-    Crown,
+    Home,
+    Award,
+    QrCode,
+    Map,
+    Gift,
+    Search,
+    ArrowRight,
+    ArrowLeft,
+    Camera,
     CheckCircle,
-    XCircle,
-    Clock,
-    Scissors,
     Users,
+    HelpCircle,
+    FileText,
+    Ticket,
+    ChevronRight,
+    Play,
+    Scissors,
     Phone,
+    Check,
+    X as XIcon,
+    Sun,
+    Store,
+    Laptop,
+    Settings,
+    Trophy,
+    MapPin,
+    UserPlus,
+    Star,
 } from 'lucide-react';
 
-const TRANSITION_VIDEO_PATH = '/answer-transition.mp4';
+// ═══════════════════════════════════════════════════════════════════════════
+//  THEME + CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
 
-
-const PROXY_BASE = 'https://gatewaybe-production.up.railway.app/';
-
-const LUXURY_THEME = {
-    primary: 'linear-gradient(135deg, #1a1a1a 0%, #2d1810 50%, #1a1a1a 100%)',
-    secondary: 'linear-gradient(45deg, #ffd700, #ffb347, #d4af37)',
-    accent: '#d4af37',
-    background: 'rgba(212, 175, 55, 0.15)',
-    backgroundDark: 'rgba(0, 0, 0, 0.3)',
-    text: '#ffffff',
-    textGold: '#ffd700',
-    border: 'rgba(212, 175, 55, 0.3)',
-    shadow: '0 8px 32px rgba(212, 175, 55, 0.2)'
+const T = {
+    ground: '#0b1510',
+    header: '#0d1d16',
+    card: '#12241b',
+    heroA: '#0f3a26',
+    heroB: '#0c2a1c',
+    heroC: '#0a1f16',
+    accent: '#1fa85c',
+    accentDark: '#14734a',
+    gold: '#d9b45c',
+    goldLight: '#f0cf85',
+    text: '#ecf3ee',
+    textDim: 'rgba(236,243,238,.62)',
+    textMute: 'rgba(236,243,238,.5)',
+    line: 'rgba(255,255,255,.07)',
+    lineStrong: 'rgba(255,255,255,.12)',
 };
 
-const globalMobileStyles = `
-    .status-bar-safe {
-        height: env(safe-area-inset-top, 20px);
-        background: #000;
-        width: 100%;
-        position: sticky;
-        top: 0;
-        z-index: 10001;
-    }
-    @media (max-width: 768px) {
-        .player-photo-container { width: 120px !important; height: 120px !important; }
-        .header-icon { width: 30px !important; height: 30px !important; }
-        .app-logo { height: 40px !important; }
-    }
-`;
+const FONT = "'Inter', system-ui, -apple-system, sans-serif";
+const PROXY_BASE = 'https://gatewaybe-production.up.railway.app';
+const GEOHUNT_URL = 'https://geohunt-production.up.railway.app/';
 
-// ─── Nigerian network detection ───────────────────────────────────────────────
+const POINTS_GOAL = 2000;
+
+// ── Trivia game config ──────────────────────────────────────────────────────
+const QUESTIONS = [
+    {
+        id: 1,
+        question: "What is the primary gubernatorial campaign slogan displayed on yayiconnect.com?",
+        options: [
+            'Hope, Renewal, Victory',
+            'Progress. Unity. Future.',
+            'Better Days Ahead',
+            'Together for Greater Ogun',
+        ],
+        correct: 1, difficulty: 'easy', category: 'Campaign',
+        explanation: 'The banner of the official campaign platform features the motto: "Progress. Unity. Future."',
+    },
+    {
+        id: 2,
+        question: "For which election cycle and executive office is Senator Yayi campaigning?",
+        options: [
+            'Ogun State Governor 2027',
+            'Senate President 2027',
+            'Lagos West Senator 2027',
+            'Federal House of Representatives 2027',
+        ],
+        correct: 0, difficulty: 'easy', category: 'Campaign',
+        explanation: 'The platform explicitly brands his gubernatorial bid as "Senator Yayi | Ogun State Governor 2027."',
+    },
+    {
+        id: 3,
+        question: "According to the website, how many years of dedicated public service does Senator Yayi have?",
+        options: [
+            'Over 10 years',
+            'Over 15 years',
+            'Over 20 years',
+            'Over 30 years',
+        ],
+        correct: 2, difficulty: 'medium', category: 'Campaign',
+        explanation: 'Under the "About Senator Yayi" section, the site highlights his distinguished leadership with over 20 years of public service.',
+    },
+];
+
+const PRIZE_STRUCTURE = [50, 100, 250];
+const TIME_PER_QUESTION = 30;
+
+// ── Nigerian network detection ──────────────────────────────────────────────
 const detectNigerianNetwork = (phone) => {
-    const p = phone.replace(/\D/g, '');
+    const p = (phone || '').replace(/\D/g, '');
     const prefix = p.slice(0, 4);
     const MTN    = ['0703','0706','0803','0806','0810','0813','0814','0816','0903','0906','0913','0916'];
     const GLO    = ['0705','0805','0807','0811','0815','0905','0915'];
     const AIRTEL = ['0701','0708','0802','0808','0812','0901','0902','0904','0907','0912'];
     const NINE   = ['0809','0817','0818','0909','0908'];
-    if (MTN.includes(prefix))    return { name: 'MTN',    code: 'MTN'    };
-    if (GLO.includes(prefix))    return { name: 'GLO',    code: 'GLO'    };
-    if (AIRTEL.includes(prefix)) return { name: 'Airtel', code: 'AIRTEL' };
-    if (NINE.includes(prefix))   return { name: '9mobile',code: 'ETISALAT'};
+    if (MTN.includes(prefix))    return { name: 'MTN',     code: 'MTN' };
+    if (GLO.includes(prefix))    return { name: 'GLO',     code: 'GLO' };
+    if (AIRTEL.includes(prefix)) return { name: 'Airtel',  code: 'AIRTEL' };
+    if (NINE.includes(prefix))   return { name: '9mobile', code: 'ETISALAT' };
     return null;
 };
 
-// ─── NIGERIA NEWS HEADLINES (card widget) ─────────────────────────────────────
-const NIGERIA_NEWS_HEADLINES = [
-    "Ogun APC caucus endorses Tinubu, Abiodun & Adeola for 2027 governorship",
-    "Senate Leader rallies Ogun West professionals for Tinubu & Adeola",
-    "2027: Ogun West professionals adopt Tinubu, Senator Adeola at Abeokuta rally",
-    "Senator Adeola, NIS host grassroots soccer clinic for Ogun youth",
-    "Senate launches public hearing on 2026 budget — 'from budget to impact'",
-    "Ogun 2027: Beyond power rotation to Adeola's economic vision",
-    "Super Eagles make bold transfer moves ahead of AFCON 2026",
-    "Naira strengthens against dollar in official FX market — CBN data",
-    "NELFUND records 1.6M student loan applications, 983K beneficiaries so far",
-    "FG launches Nigeria Industrial Policy 2025 to diversify beyond oil",
-    "Troops neutralise kidnappers, rescue abducted woman in Plateau State",
-    "2027: Cross River APC pledges 1.5M votes for President Tinubu",
+const NETWORK_OPTIONS = [
+    { name: 'MTN',     code: 'MTN' },
+    { name: 'Airtel',  code: 'AIRTEL' },
+    { name: 'GLO',     code: 'GLO' },
+    { name: '9mobile', code: 'ETISALAT' },
 ];
 
-const NewsCardWidget = React.memo(() => {
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [expanded, setExpanded] = useState(false);
-    const [animatingOut, setAnimatingOut] = useState(false);
-    const VISIBLE = 4;
+// ── Home / directory data ───────────────────────────────────────────────────
+const PROJECTS = [
+    { id: 'p1', name: 'Solar street lights — Yewa North',  type: 'Solar',     status: 'DELIVERED', meta: 'Ward 04 · 220 poles · commissioned Jul 2026', pct: 100, reports: 412 },
+    { id: 'p2', name: 'Motorised borehole — Ayetoro I',    type: 'Boreholes', status: 'ACTIVE',    meta: 'Ward 04 · 1 of 3 phases · 2,400 households',  pct: 62,  reports: 138 },
+    { id: 'p3', name: 'Ilaro–Owode road rehabilitation',   type: 'Roads',     status: 'ACTIVE',    meta: 'Ogun West · 11.4 km · contractor on site',    pct: 41,  reports: 96 },
+    { id: 'p4', name: 'Primary health centre upgrade',     type: 'Health',    status: 'PLANNED',   meta: 'Imeko Afon · equipment tender open',          pct: 12,  reports: 24 },
+    { id: 'p5', name: 'Solar boreholes — Imeko cluster',   type: 'Boreholes', status: 'ACTIVE',    meta: '6 communities · water committees trained',    pct: 78,  reports: 201 },
+];
 
-    useEffect(() => {
-        const t = setInterval(() => {
-            setAnimatingOut(true);
-            setTimeout(() => {
-                setActiveIndex(prev => (prev + 1) % NIGERIA_NEWS_HEADLINES.length);
-                setAnimatingOut(false);
-            }, 480);
-        }, 4500);
-        return () => clearInterval(t);
-    }, []);
+const PROGRAMS = [
+    { id: 'g1', name: 'Artisan tools grant',         meta: '₦250,000 equipment support · Ogun West',   pct: 72, slots: '180 of 250 slots screened',  Icon: Settings, tint: 'accent' },
+    { id: 'g2', name: 'Gateway digital skills',      meta: '8-week training + device · 500 seats',    pct: 45, slots: '225 of 500 seats filled',    Icon: Laptop,   tint: 'gold' },
+    { id: 'g3', name: 'Agro input package',          meta: 'Seedlings, fertiliser, offtake guarantee', pct: 88, slots: '440 of 500 farmers cleared', Icon: Sun,      tint: 'accent' },
+    { id: 'g4', name: 'Market women revolving fund', meta: '0% interest · ward cooperative model',    pct: 30, slots: '150 of 500 groups onboarded', Icon: Store,    tint: 'gold' },
+];
 
-    const toggleExpand = () => setExpanded(prev => !prev);
+const PEERS = [
+    { name: 'Folashade A.',  ward: 'Ward 04 · Ayetoro I',  pts: 2180 },
+    { name: 'Tunde Bakare',  ward: 'Ward 04 · Ayetoro I',  pts: 1860 },
+    { name: 'Halima Yusuf',  ward: 'Ward 04 · Ayetoro II', pts: 1495 },
+    { name: 'Segun Odubiyi', ward: 'Ward 04 · Joga Orile', pts: 1120 },
+    { name: 'Chinedu Okafor',ward: 'Ward 04 · Ayetoro I',  pts: 980 },
+    { name: 'Ruka Adeniyi',  ward: 'Ward 04 · Ilaro Rd',   pts: 870 },
+    { name: 'Musa Danjuma',  ward: 'Ward 04 · Joga Orile', pts: 640 },
+];
 
-    const cardQueue = Array.from({ length: VISIBLE }, (_, i) =>
-        (activeIndex + i) % NIGERIA_NEWS_HEADLINES.length
-    );
+const RECENT_CHECKINS = [
+    { place: 'Ilaro Ward 02 · Youth Town Hall',       when: '14 Sep, 16:05', pts: '+50' },
+    { place: 'Abeokuta South · Market Walk',          when: '09 Sep, 09:12', pts: '+50' },
+    { place: 'Ayetoro I · Borehole Commissioning',    when: '31 Aug, 11:40', pts: '+60' },
+];
 
-    return (
-        <div style={{ width: '100%', marginBottom: 16 }}>
-            <style>{`
-                @keyframes cardFlyOff {
-                    0%   { transform: perspective(800px) rotateX(0deg) translateY(0) scale(1); opacity: 1; }
-                    100% { transform: perspective(800px) rotateX(-25deg) translateY(-60px) scale(0.85); opacity: 0; }
-                }
-                @keyframes cardRiseUp {
-                    0%   { transform: perspective(800px) rotateX(8deg) translateY(12px) scale(0.96); opacity: 0.7; }
-                    100% { transform: perspective(800px) rotateX(0deg) translateY(0px) scale(1); opacity: 1; }
-                }
-            `}</style>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <div style={{
-                    background: 'linear-gradient(45deg,#ffd700,#ffb347)', color: '#1a1a1a',
-                    fontWeight: '900', fontSize: '0.6rem', padding: '3px 10px',
-                    borderRadius: '20px', letterSpacing: '1.5px', textTransform: 'uppercase',
-                }}>🇳🇬 Latest News</div>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(212,175,55,0.2)' }} />
-                <button onClick={toggleExpand} style={{
-                    background: 'none', border: `1px solid rgba(212,175,55,0.3)`, borderRadius: 20,
-                    color: '#d4af37', fontSize: '0.7rem', padding: '2px 10px', cursor: 'pointer', fontWeight: 700
-                }}>{expanded ? 'Collapse ▲' : 'Expand ▼'}</button>
-            </div>
-            <div onClick={toggleExpand} style={{
-                position: 'relative', width: '100%',
-                height: expanded ? `${VISIBLE * 72 + 8}px` : '88px',
-                cursor: 'pointer', perspective: '800px',
-                transition: 'height 0.45s cubic-bezier(0.4,0,0.2,1)',
-                marginBottom: expanded ? '8px' : 0,
-            }}>
-                {[...cardQueue].reverse().map((headlineIdx, stackPos) => {
-                    const reversedPos = (VISIBLE - 1) - stackPos;
-                    const isFront = reversedPos === 0;
-                    const depthFactor = reversedPos;
-                    const collapsedStyle = {
-                        position: 'absolute', left: 0, right: 0,
-                        top: `${depthFactor * 6}px`, height: '72px', borderRadius: '16px',
-                        padding: '0 18px', display: 'flex', alignItems: 'center', boxSizing: 'border-box',
-                        background: isFront
-                            ? 'linear-gradient(135deg, rgba(45,24,16,0.98) 0%, rgba(20,10,0,0.99) 100%)'
-                            : `rgba(${10 + depthFactor * 12}, ${6 + depthFactor * 6}, 0, ${0.92 - depthFactor * 0.15})`,
-                        border: isFront
-                            ? '1.5px solid #d4af37'
-                            : `1px solid rgba(212,175,55,${0.25 - depthFactor * 0.06})`,
-                        boxShadow: isFront
-                            ? '0 8px 32px rgba(212,175,55,0.18), 0 2px 8px rgba(0,0,0,0.5)'
-                            : `0 ${4 + depthFactor * 4}px ${12 + depthFactor * 8}px rgba(0,0,0,0.4)`,
-                        transform: isFront && animatingOut
-                            ? undefined
-                            : `perspective(800px) rotateX(${depthFactor * 3}deg) translateY(${depthFactor * 3}px) scale(${1 - depthFactor * 0.03})`,
-                        animation: isFront && animatingOut ? 'cardFlyOff 0.48s ease-in forwards' :
-                            isFront && !animatingOut ? 'cardRiseUp 0.48s ease-out' : 'none',
-                        transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1)',
-                        zIndex: VISIBLE - depthFactor, transformOrigin: 'center bottom',
-                    };
-                    const expandedStyle = { ...collapsedStyle, position: 'absolute', top: `${reversedPos * 76}px`, transform: 'none', animation: 'none' };
-                    return (
-                        <div key={headlineIdx} style={expanded ? expandedStyle : collapsedStyle}>
-                            {(isFront || expanded) && (
-                                <div style={{ width: '100%' }}>
-                                    {isFront && <div style={{ fontSize: '0.6rem', color: '#ffd700', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 4, opacity: 0.7 }}>{expanded ? `Card ${reversedPos + 1} of ${VISIBLE}` : 'TOP STORY'}</div>}
-                                    {expanded && !isFront && <div style={{ fontSize: '0.6rem', color: 'rgba(212,175,55,0.6)', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 4 }}>STORY {reversedPos + 1}</div>}
-                                    <div style={{ color: isFront ? '#fff' : 'rgba(255,255,255,0.7)', fontSize: window.innerWidth <= 768 ? '0.78rem' : '0.85rem', fontWeight: isFront ? 600 : 400, lineHeight: 1.35, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                        {NIGERIA_NEWS_HEADLINES[headlineIdx]}
-                                    </div>
-                                </div>
-                            )}
-                            {!isFront && !expanded && (
-                                <div style={{ width: '60%', height: '10px', borderRadius: 4, background: `rgba(212,175,55,${0.12 - depthFactor * 0.02})` }} />
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-});
+const HUB_STEPS = [
+    { label: 'Application received',                       when: 'Today',   Icon: CheckCircle, color: T.accent,   done: true },
+    { label: 'Ward screening · Ayetoro I town hall',       when: '28 Sep',  Icon: Users,       color: T.gold,     done: false },
+    { label: 'Ballot draw, published publicly',            when: '05 Oct',  Icon: Ticket,      color: T.textMute, done: false },
+    { label: 'Collection at LGA secretariat',              when: '19 Oct',  Icon: Gift,        color: T.textMute, done: false },
+];
 
-// ─── SEGMENTED DIGIT INPUT ────────────────────────────────────────────────────
-// `prefixDigit`   → if set (e.g. "0"), first box is read-only and pre-filled
-// `length`        → total digit count including any prefix
-// `value`         → controlled full string (e.g. "08012345678")
-// `onChange`      → called with the full digit string whenever it changes
-// `onComplete`    → called with the full string when every box is filled
+// ═══════════════════════════════════════════════════════════════════════════
+//  PRIMITIVE COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const GlobalStyles = () => (
+    <style>{`
+        @keyframes yc-fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes yc-fade    { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes yc-pulse   { 0%,100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.04); opacity: 1; } }
+        @keyframes yc-spin    { to { transform: rotate(360deg); } }
+        @keyframes yc-scan    { 0% { top: 8%; } 100% { top: 88%; } }
+        @keyframes yc-drift   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .yc-btn { cursor: pointer; font-family: inherit; transition: filter .15s ease, background .15s ease, transform .1s ease; }
+        .yc-btn:hover { filter: brightness(1.12); }
+        .yc-btn:active { transform: scale(.98); }
+        .yc-tap { cursor: pointer; transition: filter .15s ease, background .15s ease; }
+        .yc-tap:hover { filter: brightness(1.12); }
+        .yc-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+        .yc-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 4px; }
+        .yc-hide-scroll::-webkit-scrollbar { display: none; }
+        .yc-hide-scroll { scrollbar-width: none; }
+        *:focus { outline: none !important; }
+        *:focus-visible { outline: none !important; }
+        button::-moz-focus-inner { border: 0; }
+    `}</style>
+);
+
+const Chip = ({ children, color = T.gold, bg }) => (
+    <span style={{
+        display: 'inline-block',
+        padding: '4px 10px',
+        borderRadius: 999,
+        background: bg || `${color}22`,
+        color,
+        fontSize: 10.5,
+        fontWeight: 600,
+        letterSpacing: '.14em',
+        textTransform: 'uppercase',
+    }}>{children}</span>
+);
+
+const SectionLabel = ({ children, right }) => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.18em', color: T.gold, textTransform: 'uppercase' }}>
+            {children}
+        </span>
+        {right}
+    </div>
+);
+
+const Divider = () => (
+    <div style={{
+        height: 1,
+        background: `linear-gradient(90deg,transparent,rgba(217,180,92,.35) 48px,rgba(217,180,92,.35) calc(100% - 48px),transparent)`,
+    }} />
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  DIGIT INPUT (used by airtime claim)
+// ═══════════════════════════════════════════════════════════════════════════
+
 const DigitInput = ({ length, prefixDigit, value, onChange, onComplete, disabled }) => {
-    const boxCount = prefixDigit ? length - 1 : length;   // editable boxes
+    const boxCount = prefixDigit ? length - 1 : length;
     const refs = useRef([]);
-
-    // derive editable portion from value
     const editablePart = value ? (prefixDigit ? value.slice(1) : value) : '';
     const digits = Array.from({ length: boxCount }, (_, i) => editablePart[i] || '');
 
@@ -199,31 +238,23 @@ const DigitInput = ({ length, prefixDigit, value, onChange, onComplete, disabled
         if (arr.every(d => d !== '')) onComplete && onComplete(full);
     };
 
-    const handleKeyDown = (e, idx) => {
+    const onKey = (e, idx) => {
         if (disabled) return;
         if (e.key === 'Backspace') {
             e.preventDefault();
             const arr = [...digits];
-            if (arr[idx]) {
-                arr[idx] = '';
-                commit(arr);
-            } else if (idx > 0) {
-                arr[idx - 1] = '';
-                commit(arr);
-                refs.current[idx - 1]?.focus();
-            }
+            if (arr[idx]) { arr[idx] = ''; commit(arr); }
+            else if (idx > 0) { arr[idx - 1] = ''; commit(arr); refs.current[idx - 1]?.focus(); }
         }
     };
 
-    const handleChange = (e, idx) => {
+    const onChg = (e, idx) => {
         if (disabled) return;
         const raw = e.target.value.replace(/\D/g, '');
         if (!raw) return;
         const arr = [...digits];
-        // allow pasting: spread digits across boxes
-        const chars = raw.split('').slice(0, boxCount - idx);
-        chars.forEach((ch, offset) => {
-            if (idx + offset < boxCount) arr[idx + offset] = ch;
+        raw.split('').slice(0, boxCount - idx).forEach((ch, off) => {
+            if (idx + off < boxCount) arr[idx + off] = ch;
         });
         commit(arr);
         const nextEmpty = arr.findIndex((d, i) => i >= idx && !d);
@@ -231,7 +262,7 @@ const DigitInput = ({ length, prefixDigit, value, onChange, onComplete, disabled
         setTimeout(() => refs.current[focusIdx]?.focus(), 0);
     };
 
-    const handlePaste = (e, idx) => {
+    const onPaste = (e) => {
         if (disabled) return;
         e.preventDefault();
         const pasted = e.clipboardData.getData('text').replace(/\D/g, '');
@@ -243,1224 +274,1740 @@ const DigitInput = ({ length, prefixDigit, value, onChange, onComplete, disabled
         setTimeout(() => refs.current[lastFilled]?.focus(), 0);
     };
 
-    const boxBase = {
-        width: 34, height: 42, borderRadius: 8, textAlign: 'center',
-        fontSize: '1.1rem', fontWeight: 700, color: '#fff',
-        background: 'rgba(0,0,0,0.45)', outline: 'none',
-        caretColor: LUXURY_THEME.textGold, border: `1.5px solid rgba(212,175,55,0.3)`,
-        transition: 'border-color 0.2s, box-shadow 0.2s',
-        cursor: disabled ? 'not-allowed' : 'text',
-        MozAppearance: 'textfield', WebkitAppearance: 'none',
-    };
-    const filledBox = { ...boxBase, border: `1.5px solid ${LUXURY_THEME.accent}`, boxShadow: `0 0 8px rgba(212,175,55,0.25)` };
-    const prefixBox = { ...boxBase, background: 'rgba(212,175,55,0.12)', border: `1.5px solid ${LUXURY_THEME.accent}`, color: LUXURY_THEME.textGold, cursor: 'default' };
+    const boxStyle = (filled) => ({
+        width: 30, height: 44, borderRadius: 8, textAlign: 'center',
+        fontSize: 15, fontWeight: 600,
+        color: T.text, background: filled ? 'rgba(31,168,92,.1)' : 'rgba(255,255,255,.04)',
+        border: filled ? `1px solid ${T.accent}` : `1px solid ${T.lineStrong}`,
+        outline: 'none', fontFamily: FONT,
+    });
 
     return (
-        <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'nowrap' }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {prefixDigit && (
-                <input readOnly value={prefixDigit} style={prefixBox} tabIndex={-1} />
+                <input readOnly value={prefixDigit} tabIndex={-1}
+                    style={{ ...boxStyle(false), background: 'rgba(217,180,92,.1)', border: `1px solid ${T.gold}55`, color: T.gold, cursor: 'default' }} />
             )}
-            {Array.from({ length: boxCount }, (_, i) => (
+            {digits.map((d, i) => (
                 <input
                     key={i}
                     ref={el => refs.current[i] = el}
                     type="text" inputMode="numeric" maxLength={1}
-                    value={digits[i]}
-                    onChange={e => handleChange(e, i)}
-                    onKeyDown={e => handleKeyDown(e, i)}
-                    onPaste={e => handlePaste(e, i)}
+                    value={d}
+                    onChange={e => onChg(e, i)}
+                    onKeyDown={e => onKey(e, i)}
+                    onPaste={onPaste}
                     onFocus={e => e.target.select()}
                     disabled={disabled}
-                    style={digits[i] ? filledBox : boxBase}
+                    style={boxStyle(!!d)}
                 />
             ))}
         </div>
     );
 };
 
-const bannerStyles = {
-    animatedBanner: {
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: '60px',
-        background: 'linear-gradient(90deg, #1a1a1a 0%, #2d1810 50%, #1a1a1a 100%)',
-        borderTop: `2px solid ${LUXURY_THEME.accent}`, display: 'flex',
-        alignItems: 'center', overflow: 'hidden', zIndex: 9999,
-        boxShadow: '0 -4px 20px rgba(212, 175, 55, 0.3)'
-    },
-    bannerContent: { animation: 'smoothScroll 35s linear infinite', whiteSpace: 'nowrap', paddingLeft: '20px' },
-    bannerInner: { display: 'inline-flex', alignItems: 'center', gap: '60px', color: LUXURY_THEME.textGold, fontSize: '1.05rem', fontWeight: '700' }
-};
+// ═══════════════════════════════════════════════════════════════════════════
+//  PHONE SHELL — wraps app on desktop as a phone frame, full-bleed on mobile
+// ═══════════════════════════════════════════════════════════════════════════
 
-const BannerKeyframes = React.memo(() => (
-    <style>{`
-        @keyframes smoothScroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-        ${globalMobileStyles}
-    `}</style>
-));
+const PhoneShell = ({ children }) => {
+    const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 480);
+    useEffect(() => {
+        const onResize = () => setIsMobile(window.innerWidth <= 480);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
 
-const AnimatedBanner = React.memo(() => (
-    <>
-        <BannerKeyframes />
-        <div style={bannerStyles.animatedBanner}>
-            <div style={bannerStyles.bannerContent}>
-                <div style={bannerStyles.bannerInner}>
-                    {[...Array(8)].map((_, i) => <span key={i}>  Powered by Ogun Ma YaYi Strategic Group " YaYI 2027 </span>)}
-                </div>
+    if (isMobile) {
+        return (
+            <div style={{
+                position: 'fixed',
+                inset: 0,
+                background: T.ground,
+                color: T.text,
+                fontFamily: FONT,
+                display: 'flex', flexDirection: 'column',
+                overflow: 'hidden',
+            }}>
+                {children}
+            </div>
+        );
+    }
+
+    return (
+        <div style={{
+            width: '100vw', minHeight: '100vh',
+            background: `radial-gradient(80% 60% at 50% 0%, rgba(31,168,92,.08), transparent 60%), #05100a`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '24px 16px',
+            fontFamily: FONT, color: T.text,
+        }}>
+            <div style={{
+                width: 412, height: 892, maxHeight: 'calc(100vh - 48px)',
+                borderRadius: 44,
+                border: '10px solid #0f1a14',
+                background: T.ground,
+                boxShadow: '0 40px 80px rgba(0,0,0,.55), 0 0 0 2px rgba(217,180,92,.15)',
+                overflow: 'hidden',
+                position: 'relative',
+                display: 'flex', flexDirection: 'column',
+            }}>
+                {children}
             </div>
         </div>
-    </>
-));
-
-const BounceKeyframes = React.memo(() => (
-    <style>{`
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-        @keyframes slideInBonus { 0% { transform: translateX(-100px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateX(0); opacity: 1; } }
-        @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
-        @keyframes blinkOption { 0% { background-color: #1a1a1a; color: #fff; } 50% { background-color: #ffd700; color: #000; box-shadow: 0 0 15px #ffffff; } 100% { background-color: #1a1a1a; color: #fff; } }
-        @keyframes typewriterEffect { from { width: 0; } to { width: 100%; } }
-        @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-        @keyframes pulseGreen { 0%,100% { box-shadow: 0 0 0 0 rgba(0,255,100,0.4); } 50% { box-shadow: 0 0 0 8px rgba(0,255,100,0); } }
-    `}</style>
-));
-
-const Confetti = () => {
-    const confettiPieces = Array.from({ length: 150 }, (_, i) => ({
-        id: i, left: `${Math.random() * 100}%`, animationDelay: `${Math.random() * 3}s`,
-        backgroundColor: ['#FFD700','#FF6B6B','#4ECDC4','#45B7D1','#FFA07A','#98D8C8'][Math.floor(Math.random() * 6)],
-        width: `${Math.random() * 10 + 5}px`, height: `${Math.random() * 10 + 5}px`
-    }));
-    return (
-        <>
-            <style>{`@keyframes confetti-fall { 0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }`}</style>
-            <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999, overflow: 'hidden' }}>
-                {confettiPieces.map((piece) => (
-                    <div key={piece.id} style={{ position: 'absolute', left: piece.left, top: '-20px', width: piece.width, height: piece.height, backgroundColor: piece.backgroundColor, animation: `confetti-fall ${3 + Math.random() * 2}s linear infinite`, animationDelay: piece.animationDelay, borderRadius: '2px' }} />
-                ))}
-            </div>
-        </>
     );
 };
 
-const QUESTIONS_DATABASE = {
-    nigerian: [
-        { id: 1, question: "Ogun State is famously known as the 'Gateway State' because:", options: ['It has the largest airport in West Africa.', 'It is the primary land route connecting Lagos to the rest of Nigeria and West Africa.', 'It was the first state to be created in Nigeria.', 'It is the only state with a sea port in the Southwest.'], correct: 1, difficulty: 'easy', category: '.' },
-        { id: 2, question: "Which iconic natural landmark in Abeokuta served as a fortress for the Egba people during the 19th-century wars?", options: ['Idanre Hills', 'Zuma Rock', 'Olumo Rock', 'Aso Rock'], correct: 2, difficulty: 'medium', category: '.' }
-    ],
-    worldwide: [
-        { id: 3, question: "Senator Solomon Olamilekan Adeola (YAYI) currently serves as the Chairman of which influential Senate Committee?", options: ['Committee on Finance', 'Committee on Appropriations', 'Committee on Public Accounts', 'Committee on Works'], correct: 1, difficulty: 'easy', category: 'Science' },
-        { id: 4, question: "Ogun State holds a unique educational record in Nigeria as the only state to:", options: ['Offer free education at all levels.', 'Have a university in every Local Government Area.', 'Operate two state-owned universities (OOU and TASUED).', 'Have the highest number of primary schools.'], correct: 2, difficulty: 'easy', category: '.' },
-        { id: 5, question: "Senator Yayi represented which district for 8 years (2015–2023) before becoming the Senator for Ogun West?", options: ['Ogun Central', 'Lagos West', 'Oyo South', 'Lagos Island'], correct: 1, difficulty: 'easy', category: '.' },
-        { id: 6, question: "The famous 'Ofada Rice' is named after a community located in which Ogun State Local Government Area (LGA)?", options: ['Abeokuta North', 'Ikenne', 'Obafemi Owode', 'Yewa South'], correct: 2, difficulty: 'medium', category: '.' },
-        { id: 7, question: "In 2022, Senator Adeola was conferred with which National Honour for his service to the country?", options: ['Member of the Order of the Federal Republic (MFR)', 'Officer of the Order of the Niger (OON)', 'Commander of the Order of the Niger (CON)', 'Grand Commander of the Order of the Niger (GCON)'], correct: 2, difficulty: 'easy', category: 'Nigeria' },
-        { id: 8, question: "Which planet in our solar system has the most moons?", options: ['Jupiter', 'Saturn', 'Uranus', 'Neptune'], correct: 1, difficulty: 'medium', category: 'Science' },
-        { id: 9, question: "Which Nigerian author wrote the novel 'Things Fall Apart'?", options: ['Wole Soyinka', 'Chimamanda Ngozi Adichie', 'Chinua Achebe', 'Buchi Emecheta'], correct: 2, difficulty: 'easy', category: 'Literature' },
-        { id: 10, question: "What year did Nigeria gain independence from Britain?", options: ['1957', '1960', '1963', '1966'], correct: 1, difficulty: 'medium', category: 'Nigeria' },
-        { id: 11, question: "Which company developed the Android operating system?", options: ['Apple', 'Microsoft', 'Google', 'IBM'], correct: 2, difficulty: 'easy', category: 'Technology' },
-        { id: 12, question: "Which African country has the largest population?", options: ['Ethiopia', 'Egypt', 'South Africa', 'Nigeria'], correct: 3, difficulty: 'easy', category: 'Geography' },
-        { id: 13, question: "What is the name of the longest river in Nigeria?", options: ['River Benue', 'River Ogun', 'River Niger', 'River Osun'], correct: 2, difficulty: 'medium', category: 'Nigeria' },
-        { id: 14, question: "Who is credited with inventing the World Wide Web?", options: ['Bill Gates', 'Steve Jobs', 'Tim Berners-Lee', 'Mark Zuckerberg'], correct: 2, difficulty: 'medium', category: 'Technology' },
-        { id: 15, question: "Which Nigerian music genre blends traditional Yoruba music with jazz and funk?", options: ['Highlife', 'Afrobeats', 'Fuji', 'Afrobeat'], correct: 3, difficulty: 'hard', category: 'Nigeria' },
-    ]
+// ═══════════════════════════════════════════════════════════════════════════
+//  HEADER + BOTTOM NAV
+// ═══════════════════════════════════════════════════════════════════════════
+
+const AppHeader = () => (
+    <div style={{
+        flex: 'none', display: 'flex', alignItems: 'center', gap: 10,
+        padding: '12px 14px 10px',
+        background: T.header,
+        borderBottom: `1px solid ${T.line}`,
+    }}>
+        <img src={yayiMark} alt="" style={{ width: 38, height: 38, objectFit: 'contain' }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.12em', color: T.text }}>YAYI GATEWAY</div>
+            <div style={{ marginTop: 3, fontSize: 11, fontWeight: 500, letterSpacing: '.24em', color: T.gold }}>CONNECT</div>
+        </div>
+        <button className="yc-btn" style={{
+            width: 44, height: 44, borderRadius: '50%', border: 'none',
+            background: 'transparent', color: T.textDim,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => {}} aria-label="Search">
+            <Search size={20} strokeWidth={2} />
+        </button>
+        <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            border: `1px solid ${T.gold}88`,
+            background: '#17402c',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 13, fontWeight: 600, letterSpacing: '.02em', color: T.text,
+        }}>AT</div>
+    </div>
+);
+
+const BottomNav = ({ screen, go }) => {
+    const items = [
+        { id: 'home',     label: 'Home',     Icon: Home },
+        { id: 'quests',   label: 'Quests',   Icon: Award },
+        { id: 'scan',     label: 'Scan',     Icon: QrCode },
+        { id: 'projects', label: 'Projects', Icon: Map },
+        { id: 'hub',      label: 'Hub',      Icon: Gift },
+    ];
+    return (
+        <div style={{
+            flex: 'none',
+            display: 'flex', alignItems: 'stretch',
+            padding: `6px 4px calc(10px + env(safe-area-inset-bottom, 0px))`,
+            background: T.header,
+            borderTop: `1px solid ${T.line}`,
+        }}>
+            {items.map(({ id, label, Icon }) => {
+                const active = screen === id;
+                return (
+                    <button key={id} className="yc-btn" onClick={() => go(id)} style={{
+                        flex: 1, minHeight: 56, border: 'none', background: 'transparent',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        gap: 5, borderRadius: 10, padding: 0,
+                    }}>
+                        <span style={{
+                            width: 46, height: 26, borderRadius: 13,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: active ? T.accent : 'transparent',
+                            transition: 'background .18s ease',
+                        }}>
+                            <Icon size={19} strokeWidth={2.2} color={active ? '#04140c' : T.textDim} />
+                        </span>
+                        <span style={{
+                            fontSize: 10.5, fontWeight: 500,
+                            color: active ? T.accent : T.textDim,
+                        }}>{label}</span>
+                    </button>
+                );
+            })}
+        </div>
+    );
 };
 
-const GAME_CONFIG = {
-    totalQuestions: 15,
-    timePerQuestion: 30,
-    prizeStructure: [50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000],
-    safetyNets: [0, 9, 14],
-    currency: '₦'
-};
+const Toast = ({ msg }) => msg ? (
+    <div style={{
+        position: 'absolute', left: 16, right: 16, bottom: 88, zIndex: 100,
+        padding: '13px 14px', borderRadius: 10,
+        background: 'rgba(22,51,35,.9)', backdropFilter: 'blur(8px)',
+        border: `1px solid ${T.accent}77`,
+        boxShadow: '0 12px 30px rgba(0,0,0,.45)',
+        display: 'flex', alignItems: 'center', gap: 10,
+        animation: 'yc-fade-up .28s cubic-bezier(0.16,1,0.3,1)',
+    }}>
+        <Award size={17} color={T.gold} strokeWidth={2.2} />
+        <span style={{ fontSize: 12.5, fontWeight: 500, lineHeight: 1.35, color: T.text }}>{msg}</span>
+    </div>
+) : null;
 
-const isPresenterMode = () => {
-    try { const u = new URLSearchParams(window.location.search); return u.get('mode') === 'presenter'; } catch (e) { return false; }
-};
+// ═══════════════════════════════════════════════════════════════════════════
+//  HOME SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
 
-const broadcastGameState = (state) => {
-    if (!isPresenterMode()) return;
-    try { localStorage.setItem('quiziq-sync', JSON.stringify({ ...state, timestamp: Date.now() })); } catch (error) { console.error('Broadcast failed:', error); }
-};
-
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
-const QuizIQGame = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [passwordInput, setPasswordInput] = useState('');
-    const [showCorrectAnswers] = useState(isPresenterMode());
-    const [gameState, setGameState] = useState('registration');
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [currentQuestions, setCurrentQuestions] = useState([]);
-    const [currentQuestion, setCurrentQuestion] = useState(0);
-    const [score, setScore] = useState(0);
-    const [selectedAnswer, setSelectedAnswer] = useState(null);
-    const [showResult, setShowResult] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(GAME_CONFIG.timePerQuestion);
-    const [isTimerRunning, setIsTimerRunning] = useState(false);
-    const [playerName, setPlayerName] = useState('');
-    const [importedQuestions, setImportedQuestions] = useState({ sets: [] });
-    const [slideshowImages, setSlideshowImages] = useState([]);
-    const [showSafetyBanner, setShowSafetyBanner] = useState(false);
-    const [currentSlide, setCurrentSlide] = useState(0);
-    const [slideshowPlaying, setSlideshowPlaying] = useState(true);
-    const [playedSetIds, setPlayedSetIds] = useState([]);
-    const [showTimeBonus, setShowTimeBonus] = useState(false);
-    const [timeBonusAmount, setTimeBonusAmount] = useState(0);
-    const [audiencePoll, setAudiencePoll] = useState(null);
-    const [showGuide, setShowGuide] = useState(false);
-    const [gameSettings] = useState({ soundEnabled: true, timerEnabled: true, showCategories: true, currency: '₦', contactName: 'Your Name' });
-    const [lifelinesUsed, setLifelinesUsed] = useState({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
-    const [isValidating, setIsValidating] = useState(false);
-    const [eliminatedOptions, setEliminatedOptions] = useState([]);
-    const [showTransition, setShowTransition] = useState(false);
-    const transitionVideoRef = useRef(null);
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-    // ── Airtime claim state ──────────────────────────────────────────────────
-    const [claimNIN,        setClaimNIN]        = useState('');
-    const [claimPhone,      setClaimPhone]      = useState('');
-    const [claimStatus,     setClaimStatus]     = useState('idle'); // idle | loading | success | error
-    const [claimError,      setClaimError]      = useState('');
-    const [detectedNetwork, setDetectedNetwork] = useState(null); // auto-detected from prefix
-    const [manualNetwork,   setManualNetwork]   = useState(null); // user can override
-
-    // All four Nigerian networks with their brand colours
-    const NETWORK_OPTIONS = [
-        { name: 'MTN',     code: 'MTN',      color: '#ffcc00', bg: 'rgba(255,204,0,0.15)'  },
-        { name: 'Airtel',  code: 'AIRTEL',   color: '#ff3b30', bg: 'rgba(255,59,48,0.15)'  },
-        { name: 'GLO',     code: 'GLO',      color: '#34c759', bg: 'rgba(52,199,89,0.15)'  },
-        { name: '9mobile', code: 'ETISALAT', color: '#30d158', bg: 'rgba(48,209,88,0.15)'  },
+const HomeScreen = ({ points, claimed, go, openGeohunt, join }) => {
+    const [heroIdx, setHeroIdx] = useState(0);
+    const swipeX = useRef(null);
+    const swipeY = useRef(null);
+    const carouselRef = useRef(null);
+    useEffect(() => {
+        const t = setInterval(() => setHeroIdx(i => (i + 1) % 2), 4500);
+        return () => clearInterval(t);
+    }, []);
+    useEffect(() => {
+        const el = carouselRef.current;
+        if (!el) return;
+        const onStart = (e) => {
+            swipeX.current = e.targetTouches[0].clientX;
+            swipeY.current = e.targetTouches[0].clientY;
+        };
+        const onMove = (e) => {
+            if (swipeX.current === null) return;
+            const dx = Math.abs(e.targetTouches[0].clientX - swipeX.current);
+            const dy = Math.abs(e.targetTouches[0].clientY - swipeY.current);
+            if (dx > dy) e.preventDefault();
+        };
+        const onEnd = (e) => {
+            if (swipeX.current === null) return;
+            const diff = swipeX.current - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 40) setHeroIdx(diff > 0 ? 1 : 0);
+            swipeX.current = null;
+            swipeY.current = null;
+        };
+        el.addEventListener('touchstart', onStart, { passive: true });
+        el.addEventListener('touchmove', onMove, { passive: false });
+        el.addEventListener('touchend', onEnd);
+        return () => {
+            el.removeEventListener('touchstart', onStart);
+            el.removeEventListener('touchmove', onMove);
+            el.removeEventListener('touchend', onEnd);
+        };
+    }, []);
+    const pct = Math.min(100, Math.round(points / POINTS_GOAL * 100));
+    const initials = n => n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const me = { name: 'You · Adebayo T.', ward: 'Ward 04 · Ayetoro I', pts: points, you: true };
+    const ranked = useMemo(() => [...PEERS, me].sort((a, b) => b.pts - a.pts), [points]);
+    const myRank = ranked.findIndex(r => r.you) + 1;
+    const boardPreview = [
+        ...ranked.slice(0, 3),
+        ...(myRank > 3 ? [ranked.find(r => r.you)] : []),
     ];
 
-    // Effective network = manual override if set, otherwise auto-detected
-    const activeNetwork = manualNetwork || detectedNetwork;
+    const sparkline = [34, 48, 30, 62, 55, 78, 46, 84, 60, 92, 70, 100, 82, 96];
 
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth <= 768);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const tiles = [
+        { label: 'QR Verification',  meta: 'Opens Geohunt',    Icon: QrCode,     color: T.accent, onClick: openGeohunt, external: true },
+        { label: 'Empowerment Hub',  meta: '4 programs open',  Icon: Gift,       color: T.gold,   onClick: () => go('hub') },
+        { label: 'Campaign Trivia',  meta: 'Play & win airtime', Icon: HelpCircle, color: T.accent, onClick: () => go('trivia-play'), highlight: true },
+        { label: '100-Day Plan',     meta: 'Ogun 2027 brief',  Icon: FileText,   color: T.gold,   onClick: () => {} },
+    ];
 
-    useEffect(() => {
-        const prev = document.body.style.overflow;
-        document.body.style.overflow = 'auto';
-        return () => { document.body.style.overflow = prev; };
-    }, []);
+    return (
+        <div style={{ padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14, animation: 'yc-fade .3s ease' }}>
+            {/* Hero carousel */}
+            <div ref={carouselRef} style={{ userSelect: 'none' }}>
+                <div style={{ display: 'flex', gap: 12, transform: `translateX(calc(-${heroIdx * 100}% - ${heroIdx * 12}px))`, transition: 'transform .45s cubic-bezier(.4,0,.2,1)' }}>
 
-    useEffect(() => {
-        try {
-            const cachedImages = localStorage.getItem('QUIZ_SLIDESHOW_DATA');
-            if (cachedImages) setSlideshowImages(JSON.parse(cachedImages));
-        } catch (e) { console.error("Failed to load slideshow images", e); }
-    }, []);
-
-    useEffect(() => {
-        try {
-            const stored = localStorage.getItem('slideshow-images');
-            if (stored) setSlideshowImages(JSON.parse(stored));
-        } catch (error) { console.log('No existing slideshow images'); }
-    }, []);
-
-    useEffect(() => {
-        try {
-            const stored = localStorage.getItem('imported-questions');
-            if (stored) setImportedQuestions(JSON.parse(stored));
-        } catch (error) { console.log('No existing imported questions'); }
-    }, []);
-
-    useEffect(() => {
-        if (gameState !== 'slideshow' || !slideshowPlaying || slideshowImages.length === 0) return;
-        const interval = setInterval(() => {
-            setCurrentSlide(prev => (prev + 1) % slideshowImages.length);
-        }, 5000);
-        return () => clearInterval(interval);
-    }, [gameState, slideshowPlaying, slideshowImages.length]);
-
-    useEffect(() => {
-        if (gameState === 'slideshow') { setCurrentSlide(0); setSlideshowPlaying(true); }
-    }, [gameState]);
-
-    useEffect(() => {
-        if (isPresenterMode()) return;
-        const handleStorageChange = (e) => {
-            if (e.key === 'quiziq-sync' && e.newValue) {
-                try {
-                    const s = JSON.parse(e.newValue);
-                    setGameState(s.gameState); setCurrentQuestion(s.currentQuestion);
-                    setSelectedAnswer(s.selectedAnswer); setShowResult(s.showResult);
-                    setTimeLeft(s.timeLeft); setIsTimerRunning(s.isTimerRunning);
-                    setScore(s.score); setShowTransition(s.showTransition);
-                    setEliminatedOptions(s.eliminatedOptions || []);
-                    setLifelinesUsed(s.lifelinesUsed || { fiftyFifty: false, askAudience: false, phoneAFriend: false });
-                    setPlayerName(s.playerName || ''); setSelectedCategory(s.selectedCategory || '');
-                    if (s.currentQuestions) setCurrentQuestions(s.currentQuestions);
-                    if (s.currentSlide !== undefined) setCurrentSlide(s.currentSlide);
-                    if (s.slideshowPlaying !== undefined) setSlideshowPlaying(s.slideshowPlaying);
-                    if (s.slideshowImages) setSlideshowImages(s.slideshowImages);
-                    if (s.showTimeBonus !== undefined) setShowTimeBonus(s.showTimeBonus);
-                    if (s.timeBonusAmount !== undefined) setTimeBonusAmount(s.timeBonusAmount);
-                    if (s.audiencePoll !== undefined) setAudiencePoll(s.audiencePoll);
-                    if (s.showGuide !== undefined) setShowGuide(s.showGuide);
-                    if (s.isValidating !== undefined) setIsValidating(s.isValidating);
-                } catch (error) { console.error('Sync parse error:', error); }
-            }
-        };
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
-
-    useEffect(() => {
-        if (!isPresenterMode()) return;
-        broadcastGameState({ gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, showSafetyBanner, slideshowPlaying, slideshowImages, showTimeBonus, timeBonusAmount, audiencePoll, showGuide, isValidating });
-    }, [gameState, currentQuestion, selectedAnswer, showResult, timeLeft, isTimerRunning, score, showTransition, eliminatedOptions, lifelinesUsed, playerName, selectedCategory, currentQuestions, currentSlide, showSafetyBanner, slideshowPlaying, slideshowImages, showTimeBonus, timeBonusAmount, audiencePoll, showGuide, isValidating]);
-
-    useEffect(() => {
-        let interval;
-        if (isPresenterMode() && isTimerRunning && timeLeft > 0 && gameSettings.timerEnabled && gameState === 'playing') {
-            interval = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) { setIsTimerRunning(false); handleTimeUp(); return 0; }
-                    return prev - 1;
-                });
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [isTimerRunning, timeLeft, gameSettings.timerEnabled, gameState]);
-
-    useEffect(() => {
-        if (!isPresenterMode()) return;
-        const handleKeyPress = (event) => {
-            if (gameState === 'playing' && !showResult && !showTransition) {
-                const key = event.key; const lowerKey = key.toLowerCase();
-                const validIndices = [0, 1, 2, 3].filter(i => !eliminatedOptions.includes(i));
-                if (['a','b','c','d'].includes(lowerKey)) {
-                    handleAnswerSelect(lowerKey.charCodeAt(0) - 97);
-                } else if (key === 'Enter') {
-                    if (selectedAnswer !== null) triggerSubmitAnswer();
-                } else if (key === 'ArrowDown' || key === 'ArrowRight') {
-                    event.preventDefault();
-                    const currentPos = validIndices.indexOf(selectedAnswer);
-                    setSelectedAnswer(validIndices[selectedAnswer === null ? 0 : (currentPos + 1) % validIndices.length]);
-                } else if (key === 'ArrowUp' || key === 'ArrowLeft') {
-                    event.preventDefault();
-                    const currentPos = validIndices.indexOf(selectedAnswer);
-                    setSelectedAnswer(validIndices[selectedAnswer === null ? validIndices.length - 1 : (currentPos - 1 + validIndices.length) % validIndices.length]);
-                }
-            }
-        };
-        window.addEventListener('keydown', handleKeyPress);
-        return () => window.removeEventListener('keydown', handleKeyPress);
-    }, [gameState, showResult, selectedAnswer, showTransition, eliminatedOptions]);
-
-    // ── Flutterwave airtime disbursement (via local proxy server) ───────────────
-    // Calls POST localhost:3001/api/send-airtime — key never touches the browser.
-    // server/server.js uses the Flutterwave Bill Payment API (AIRTIME, country=NG).
-    const sendAirtime = async (phone, networkCode) => {
-        if (claimStatus === 'loading' || claimStatus === 'success') return;
-        if (!phone || phone.length !== 11) { setClaimError('Please complete all 11 phone digits.'); return; }
-        if (!networkCode) { setClaimError('Please select your network above.'); return; }
-        setClaimError('');
-        setClaimStatus('loading');
-        try {
-            const res = await fetch(`${PROXY_BASE}/api/send-airtime`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ playerName, phone, nin: 'N/A', amountNGN: score }),
-            });
-            const data = await res.json();
-            if (!res.ok || data.error) throw new Error(data.error || 'Airtime transfer failed.');
-            setClaimStatus('success');
-        } catch (err) {
-            console.error('Airtime error:', err);
-            setClaimError(err.message || 'Something went wrong. Please try again.');
-            setClaimStatus('error');
-        }
-    };
-
-    // Called when the phone DigitInput is fully complete (all 11 digits entered)
-    const handlePhoneComplete = (fullPhone) => {
-        setClaimPhone(fullPhone);
-        const auto = detectNigerianNetwork(fullPhone);
-        if (auto) { setDetectedNetwork(auto); setManualNetwork(null); }
-        else       { setDetectedNetwork(null); }
-    };
-
-    // Manual send button — also used as fallback if auto-trigger didn't fire
-    const handleAirtimeTransfer = () => sendAirtime(claimPhone, activeNetwork?.code);
-
-    // ── Question helpers ──────────────────────────────────────────────────────
-    const downloadExcelTemplate = () => {
-        const csvContent = 'data:text/csv;charset=utf-8,' +
-            'Question|Option A|Option B|Option C|Option D|Correct Answer (1-4)|Difficulty|Category\n' +
-            'What is the capital of Nigeria?|Lagos|Abuja|Kano|Port Harcourt|2|easy|Geography\n';
-        const link = document.createElement('a');
-        link.setAttribute('href', encodeURI(csvContent));
-        link.setAttribute('download', 'QuizIQ_Questions_Template.csv');
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    };
-
-    const GameGuide = ({ onClose }) => (
-        <>
-            <style>{`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } } .guide-scrollbar::-webkit-scrollbar { width: 8px; } .guide-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; } .guide-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }`}</style>
-            <div onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', animation: 'fadeIn 0.3s ease-out' }}>
-                <div style={{ background: LUXURY_THEME.background, border: `2px solid ${LUXURY_THEME.accent}`, borderRadius: '20px', maxWidth: '900px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-                    <div style={{ padding: '24px', borderBottom: `1px solid ${LUXURY_THEME.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2 style={{ margin: 0, fontSize: '1.8rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>📖 Game Guide & Shortcuts</h2>
-                        <button onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '2rem', color: LUXURY_THEME.textGold, cursor: 'pointer', padding: '0 8px', lineHeight: 1 }}>×</button>
-                    </div>
-                    <div className="guide-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '24px', color: LUXURY_THEME.text }}>
-                        <section style={{ marginBottom: '32px' }}>
-                            <h3 style={{ color: LUXURY_THEME.textGold, marginBottom: '12px', fontSize: '1.3rem' }}>Game Modes</h3>
-                            <div style={{ paddingLeft: '16px', lineHeight: 1.8 }}>
-                                <p><strong>Presenter Mode:</strong> Control the game, see correct answers, use keyboard shortcuts</p>
-                                <p style={{ color: '#888', fontSize: '0.9rem' }}>Access via: <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>?mode=presenter</code></p>
-                                <p style={{ marginTop: '12px' }}><strong>Audience Mode:</strong> View-only mode that syncs with presenter in real-time</p>
-                                <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Note: On PC PROJECTIONS (Win + P) should ALWAYS be set to "EXTEND MODE".</p>
-                                <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Set Your Browser Zoom to 120/125 for best viewing experience.</p>
-                                <p style={{ marginTop: '12px', fontSize: '0.9rem', fontStyle: 'italic', color: '#888' }}>Simply REFRESH the App if you urgently need to restart or go back to the homepage.</p>
+                    {/* ── Slide 1: Progress. Unity. Future. ── */}
+                    <div style={{
+                        flex: 'none', width: '100%', borderRadius: 14, overflow: 'hidden',
+                        background: `linear-gradient(120deg, ${T.heroA} 0%, ${T.heroB} 55%, ${T.heroC} 100%)`,
+                        border: `1px solid rgba(217,180,92,.25)`,
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                            <div style={{ flex: 1, minWidth: 0, padding: '18px 12px 18px 16px', display: 'flex', flexDirection: 'column' }}>
+                                <h2 style={{ margin: 0, fontSize: 28, fontWeight: 600, lineHeight: 1.16, letterSpacing: '-.01em', color: T.text }}>
+                                    Progress. Unity. Future.
+                                </h2>
+                                <div style={{ marginTop: 15, fontSize: 12, lineHeight: 1.4, color: 'rgba(236,243,238,.72)' }}>
+                                    Sen. Solomon Olamilekan Adeola
+                                </div>
+                                <div style={{ marginTop: 4, fontSize: 12, fontWeight: 500, color: T.gold }}>
+                                    Ogun State Governor 2027
+                                </div>
+                                <div style={{ display: 'flex', gap: 8, marginTop: 'auto', paddingTop: 40 }}>
+                                    <button className="yc-btn" onClick={join} style={{
+                                        flex: 1, minHeight: 44, padding: '6px 8px', borderRadius: 8, border: 'none',
+                                        background: T.gold, color: '#101a14',
+                                        fontSize: 'clamp(9px, 2.5vw, 11px)', fontWeight: 700, letterSpacing: '.03em',
+                                        lineHeight: 1.2, textAlign: 'center', wordBreak: 'break-word',
+                                    }}>JOIN THE MOVEMENT</button>
+                                    <button className="yc-btn" onClick={() => {}} style={{
+                                        flex: 1, minHeight: 44, padding: '6px 8px', borderRadius: 8, border: 'none',
+                                        background: '#0d3324', color: T.text,
+                                        fontSize: 'clamp(9px, 2.5vw, 11px)', fontWeight: 700, letterSpacing: '.03em',
+                                        lineHeight: 1.2, textAlign: 'center', wordBreak: 'break-word',
+                                    }}>OUR PLAN</button>
+                                </div>
                             </div>
-                        </section>
-                        <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: `1px solid ${LUXURY_THEME.border}`, textAlign: 'center', color: '#888', fontSize: '0.9rem' }}>
-                            <p><code>Powered by 6TechSolutions</code></p>
-                            <p><code>Contact/WhatsApp: +234 909 725 3310</code></p>
-                            <p><code>EMail: 6techsolutions@gmail.com</code></p>
+                            <div style={{ flex: 'none', width: 110, position: 'relative' }}>
+                                <img src={adeolaPortrait} alt="Sen. Adeola"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Slide 2: Y.A.Y.I Mandate ── */}
+                    <div style={{
+                        flex: 'none', width: '100%', borderRadius: 14, overflow: 'hidden',
+                        background: `linear-gradient(150deg, ${T.heroA} 0%, ${T.heroB} 55%, ${T.heroC} 100%)`,
+                        border: `1px solid rgba(217,180,92,.4)`,
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'stretch', position: 'relative', minHeight: 170 }}>
+                            <div style={{ flex: 1, minWidth: 0, padding: '14px 8px 12px 14px', position: 'relative', zIndex: 1 }}>
+                                <span style={{
+                                    display: 'inline-block', padding: '4px 9px', borderRadius: 20,
+                                    background: T.gold, color: '#101a14',
+                                    fontSize: 8, fontWeight: 700, letterSpacing: '.06em', whiteSpace: 'nowrap',
+                                }}>GATEWAY 2027 • BLUEPRINT</span>
+                                <h2 style={{ margin: '7px 0 0', fontSize: 17, fontWeight: 600, lineHeight: 1.1, letterSpacing: '-.01em', color: '#fff' }}>
+                                    The Y.A.Y.I Mandate
+                                </h2>
+                                <div style={{ marginTop: 3, fontSize: 10, lineHeight: 1.3, color: 'rgba(236,243,238,.65)' }}>
+                                    Engineering Sustainable Governance for Ogun State
+                                </div>
+                                <div style={{ marginTop: 7, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                    {[
+                                        ['Y', 'YIELDING RESULTS',  'Auditable Fiscal Delivery'],
+                                        ['A', 'ACCOUNTABLE',       'Open Budgets & Zero Diversion'],
+                                        ['Y', 'YOUTH-CENTRIC',     'Tech Incubators & Micro-Grants'],
+                                        ['I', 'INFRASTRUCTURE',    '60 Boreholes • 5,360 Solar Lights'],
+                                    ].map(([letter, title, desc], idx) => (
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                            <span style={{
+                                                flex: 'none', width: 18, height: 18, borderRadius: '50%',
+                                                background: T.gold, color: '#101a14',
+                                                fontSize: 10, fontWeight: 700, lineHeight: 1,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            }}>{letter}</span>
+                                            <div style={{ minWidth: 0 }}>
+                                                <div style={{ fontSize: 10, fontWeight: 600, lineHeight: 1.1, letterSpacing: '.02em', color: '#fff' }}>{title}</div>
+                                                <div style={{ fontSize: 9, lineHeight: 1.1, color: 'rgba(236,243,238,.55)' }}>{desc}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 8 }}>
+                                    <button className="yc-btn" onClick={() => {}} style={{
+                                        minHeight: 32, padding: '0 11px', borderRadius: 8, border: 'none',
+                                        background: T.gold, color: '#101a14',
+                                        fontSize: 10, fontWeight: 700, letterSpacing: '.02em', whiteSpace: 'nowrap',
+                                    }}>Explore Blueprint</button>
+                                    <button className="yc-btn" onClick={() => go('projects')} style={{
+                                        minHeight: 32, padding: '0 11px', borderRadius: 8,
+                                        border: '1px solid rgba(255,255,255,.3)',
+                                        background: 'rgba(255,255,255,.06)', color: T.text,
+                                        fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap',
+                                    }}>Track Assets</button>
+                                </div>
+                            </div>
+                            <img src={mandatePortrait} alt="Sen. Yayi" style={{
+                                position: 'absolute', right: -30, bottom: -20,
+                                height: '100%', width: 'auto',
+                                objectFit: 'contain', display: 'block',
+                            }} />
                         </div>
                     </div>
                 </div>
+
+                {/* Dots — below carousel */}
+                <div style={{ display: 'flex', gap: 5, justifyContent: 'center', padding: '8px 0 0' }}>
+                    {[0, 1].map(i => (
+                        <span key={i} onClick={() => setHeroIdx(i)} style={{
+                            width: i === heroIdx ? 16 : 5, height: 5, borderRadius: 999,
+                            background: i === heroIdx ? T.gold : 'rgba(236,243,238,.3)',
+                            cursor: 'pointer', transition: 'width .3s ease, background .3s ease',
+                        }} />
+                    ))}
+                </div>
             </div>
-        </>
+
+            {/* Gateway Quest / Active Citizen Hub — whole card opens GeoQuest */}
+            <div className="yc-tap" onClick={openGeohunt} style={{
+                borderRadius: 12, background: T.card,
+                border: `1px solid ${T.line}`, padding: 14, cursor: 'pointer', marginTop: 8,
+            }}>
+                <SectionLabel right={
+                    <button className="yc-btn" onClick={() => go('quests')} style={{
+                        minHeight: 32, border: 'none', background: 'transparent',
+                        color: T.textDim, fontSize: 12, fontWeight: 500,
+                        display: 'flex', alignItems: 'center', gap: 4,
+                    }}>
+                        All quests <ChevronRight size={13} strokeWidth={2.4} />
+                    </button>
+                }>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <Award size={13} color={T.gold} strokeWidth={2.4} />
+                        GATEWAY QUEST
+                    </span>
+                </SectionLabel>
+                <div style={{ marginTop: 6, display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{ fontSize: 26, fontWeight: 500, color: T.text }}>{points.toLocaleString()}</span>
+                    <span style={{ fontSize: 12, color: T.textDim }}>of {POINTS_GOAL.toLocaleString()} pts to Gold Citizen</span>
+                </div>
+                <div style={{ marginTop: 10, height: 8, borderRadius: 4, background: 'rgba(255,255,255,.08)', overflow: 'hidden' }}>
+                    <div style={{
+                        height: '100%', borderRadius: 4,
+                        background: `linear-gradient(90deg, ${T.accent}, ${T.gold})`,
+                        width: `${pct}%`, transition: 'width .5s ease',
+                    }} />
+                </div>
+                <div style={{
+                    marginTop: 12, display: 'flex', alignItems: 'center', gap: 10,
+                    paddingTop: 12, borderTop: `1px solid ${T.line}`,
+                }}>
+                    <div style={{
+                        width: 36, height: 36, borderRadius: 8,
+                        background: 'rgba(31,168,92,.14)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <QrCode size={18} color={T.accent} strokeWidth={2.2} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: T.text }}>
+                            Active Citizen Hub: Verify &amp; Check-In
+                        </div>
+                        <div style={{ marginTop: 3, fontSize: 11, lineHeight: 1.3, color: T.textDim }}>
+                            {claimed.checkin ? 'Verified today · +50 earned' : 'Opens GeoQuest for ward check-ins'}
+                        </div>
+                    </div>
+                    <button className="yc-btn" onClick={openGeohunt} style={{
+                        minHeight: 36, padding: '0 12px', borderRadius: 8, border: 'none',
+                        background: T.accent, color: '#04140c',
+                        fontSize: 12, fontWeight: 700,
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                    }}>
+                        Scan <ArrowRight size={13} strokeWidth={2.6} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Projects sparkline */}
+            <div style={{
+                borderRadius: 12, background: T.card,
+                border: `1px solid ${T.line}`, padding: 14,
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>Track boreholes &amp; solar lights</span>
+                    <button className="yc-btn" onClick={() => go('projects')} style={{
+                        width: 32, height: 32, borderRadius: 8, border: 'none',
+                        background: 'rgba(255,255,255,.05)', color: T.textDim,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <ArrowRight size={14} strokeWidth={2.4} style={{ transform: 'rotate(-45deg)' }} />
+                    </button>
+                </div>
+                <div style={{ display: 'flex', gap: 18, marginTop: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.accent }} />
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>5,360</span>
+                        <span style={{ fontSize: 12, color: T.textDim }}>solar lights</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: T.gold }} />
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>60</span>
+                        <span style={{ fontSize: 12, color: T.textDim }}>boreholes</span>
+                    </div>
+                </div>
+                <div style={{ marginTop: 12, display: 'flex', gap: 3, height: 34, alignItems: 'flex-end' }}>
+                    {sparkline.map((h, i) => (
+                        <span key={i} style={{
+                            flex: 1, borderRadius: '2px 2px 0 0',
+                            background: 'rgba(31,168,92,.55)',
+                            height: `${h}%`,
+                        }} />
+                    ))}
+                </div>
+                <div style={{ marginTop: 7, fontSize: 11, color: T.textMute }}>Ward-verified deliveries, last 14 weeks</div>
+            </div>
+
+            {/* Tile grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {tiles.map(({ label, meta, Icon, color, onClick, external, highlight }) => (
+                    <button key={label} className="yc-btn" onClick={onClick} style={{
+                        textAlign: 'left', minHeight: 96, padding: 12,
+                        borderRadius: 12,
+                        border: highlight ? `1px solid ${T.gold}` : `1px solid ${T.line}`,
+                        background: highlight ? 'rgba(217,180,92,.06)' : T.card,
+                        cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 6,
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Icon size={20} color={color} strokeWidth={2.2} />
+                            {external && <ArrowRight size={12} color={T.textMute} strokeWidth={2.4} style={{ transform: 'rotate(-45deg)' }} />}
+                        </div>
+                        <div>
+                            <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: T.text }}>{label}</div>
+                            <div style={{ marginTop: 3, fontSize: 11, lineHeight: 1.2, color: T.textMute }}>{meta}</div>
+                        </div>
+                    </button>
+                ))}
+            </div>
+
+            {/* Leaderboard preview */}
+            <div style={{
+                borderRadius: 12, background: T.card,
+                border: `1px solid ${T.line}`, padding: 14,
+            }}>
+                <SectionLabel right={
+                    <button className="yc-btn" onClick={() => go('quests')} style={{
+                        minHeight: 32, border: 'none', background: 'transparent',
+                        color: T.textDim, fontSize: 12, fontWeight: 500,
+                    }}>Full board</button>
+                }>
+                    WARD 04 LEADERBOARD
+                </SectionLabel>
+                <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {boardPreview.map((r) => {
+                        const rank = ranked.indexOf(r) + 1;
+                        return (
+                            <div key={r.name} style={{
+                                display: 'flex', alignItems: 'center', gap: 10, minHeight: 44,
+                                padding: '0 8px', borderRadius: 8,
+                                background: r.you ? 'rgba(31,168,92,.12)' : 'rgba(255,255,255,.03)',
+                            }}>
+                                <span style={{
+                                    width: 20, fontSize: 12, fontWeight: 500,
+                                    color: rank <= 3 ? T.gold : T.textMute,
+                                }}>{rank}</span>
+                                <span style={{
+                                    width: 28, height: 28, borderRadius: '50%',
+                                    background: 'rgba(255,255,255,.07)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: 11, fontWeight: 500, color: 'rgba(236,243,238,.75)',
+                                }}>{initials(r.name)}</span>
+                                <span style={{
+                                    flex: 1, minWidth: 0,
+                                    fontSize: 13, fontWeight: 500,
+                                    color: r.you ? T.text : 'rgba(236,243,238,.85)',
+                                }}>{r.name}</span>
+                                <span style={{
+                                    fontSize: 12, fontWeight: 500,
+                                    color: r.you ? T.accent : 'rgba(236,243,238,.65)',
+                                }}>{r.pts.toLocaleString()}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
     );
+};
 
-    const handleExcelImport = async (event) => {
-        const files = Array.from(event.target.files);
-        if (!files.length) return;
-        const newSets = [];
-        let totalQuestionsCount = 0;
-        for (const file of files) {
-            try {
-                const text = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.onerror = (e) => reject(e);
-                    reader.readAsText(file);
-                });
-                const lines = text.split(/\r?\n/);
-                const firstLine = lines[0].toLowerCase();
-                const hasHeader = firstLine.includes('question') && (firstLine.includes('option') || firstLine.includes('correct'));
-                const startIndex = hasHeader ? 1 : 0;
-                const questions = [];
-                for (let i = startIndex; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (!line) continue;
-                    const cols = line.split('|').map(col => col.trim());
-                    if (cols.length >= 8) {
-                        questions.push({ id: Date.now() + Math.random() + i, question: cols[0], options: [cols[1], cols[2], cols[3], cols[4]], correct: Math.max(0, Math.min(3, parseInt(cols[5], 10) - 1)), difficulty: (cols[6] || 'medium').toLowerCase(), category: (cols[7] || 'Imported') });
-                    }
-                }
-                if (questions.length > 0) {
-                    newSets.push({ id: Date.now() + Math.random(), name: file.name.replace('.csv', '').replace('.txt', ''), questions, createdAt: new Date().toLocaleString() });
-                    totalQuestionsCount += questions.length;
-                }
-            } catch (error) { console.error(`Error parsing file ${file.name}:`, error); }
-        }
-        if (newSets.length > 0) {
-            const updatedSets = [...(importedQuestions.sets || []), ...newSets];
-            setImportedQuestions({ sets: updatedSets });
-            try { localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets })); alert(`✅ Successfully imported ${newSets.length} file(s) with ${totalQuestionsCount} total questions!`); } catch (error) { alert(`Imported questions, but failed to save permanently.`); }
-        } else { alert('⚠️ No valid questions found in the selected files.'); }
-        event.target.value = '';
-    };
+// ═══════════════════════════════════════════════════════════════════════════
+//  QUESTS SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
 
-    const handleImageUpload = async (event) => {
-        const files = Array.from(event.target.files);
-        if (!files.length) return;
-        if (slideshowImages.length >= 10) { alert('Maximum 10 images allowed.'); event.target.value = ''; return; }
-        const remainingSlots = 10 - slideshowImages.length;
-        const filesToProcess = files.slice(0, remainingSlots);
-        const imagePromises = filesToProcess.filter(file => file.type.startsWith('image/')).map(file => new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve({ id: Date.now() + Math.random(), src: e.target.result, name: file.name });
-            reader.readAsDataURL(file);
-        }));
-        try {
-            const processedImages = await Promise.all(imagePromises);
-            setSlideshowImages(prev => {
-                const updatedList = [...prev, ...processedImages];
-                localStorage.setItem('QUIZ_SLIDESHOW_DATA', JSON.stringify(updatedList));
-                localStorage.setItem('slideshow-images', JSON.stringify(updatedList));
-                return updatedList;
-            });
-            event.target.value = '';
-        } catch (error) { alert('Failed to upload images. Please try again.'); }
-    };
+const QuestsScreen = ({ points, claimed, claim, go, openGeohunt }) => {
+    const [tab, setTab] = useState('quests');
+    const initials = n => n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const me = { name: 'You · Adebayo T.', ward: 'Ward 04 · Ayetoro I', pts: points, you: true };
+    const ranked = useMemo(() => [...PEERS, me].sort((a, b) => b.pts - a.pts), [points]);
+    const myRank = ranked.findIndex(r => r.you) + 1;
+    const streak = 12;
 
-    const deleteImage = (imageId) => {
-        const updatedImages = slideshowImages.filter(img => img.id !== imageId);
-        setSlideshowImages(updatedImages);
-        try { localStorage.setItem('slideshow-images', JSON.stringify(updatedImages)); } catch (error) { console.error('Failed to update storage:', error); }
-    };
+    const QUESTS = [
+        { id: 'checkin', label: 'Verify & Check-In at a ward event', sub: 'Opens GeoQuest · scan agent QR at any rally',       pts: 50, Icon: QrCode,     action: openGeohunt },
+        { id: 'trivia',  label: 'Campaign Trivia: 3 questions',       sub: 'Ogun projects & the 2027 plan · earn airtime',    pts: 30, Icon: HelpCircle, action: () => go('trivia-play') },
+        { id: 'invite',  label: 'Invite 3 neighbours',                sub: 'Share your ward referral code',                    pts: 40, Icon: UserPlus },
+        { id: 'report',  label: 'Report a project in your ward',      sub: 'Photo + location of a borehole or solar light',   pts: 60, Icon: Camera,     action: () => go('projects') },
+        { id: 'watch',   label: 'Watch the 100-Day Plan brief',       sub: '3 min from the Senator',                          pts: 20, Icon: Play },
+    ];
 
-    const startSlideshow = () => {
-        if (!isPresenterMode()) return;
-        if (slideshowImages.length === 0) { alert('Please upload images first.'); return; }
-        setGameState('slideshow');
-    };
+    return (
+        <div style={{ padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14, animation: 'yc-fade .3s ease' }}>
+            {/* Standing */}
+            <div style={{
+                borderRadius: 14, padding: 16,
+                background: `linear-gradient(130deg, ${T.heroA}, ${T.heroC})`,
+                border: `1px solid ${T.gold}38`,
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                        <div style={{ fontSize: 11, letterSpacing: '.18em', color: T.gold, fontWeight: 500 }}>YOUR STANDING</div>
+                        <div style={{ marginTop: 10, display: 'flex', alignItems: 'baseline', gap: 7 }}>
+                            <span style={{ fontSize: 30, fontWeight: 500 }}>{points.toLocaleString()}</span>
+                            <span style={{ fontSize: 12, color: T.textDim }}>points</span>
+                        </div>
+                        <div style={{ marginTop: 8, fontSize: 12, color: T.textDim }}>
+                            Rank {myRank} in Ward 04 · {streak}-day streak
+                        </div>
+                    </div>
+                    <div style={{
+                        width: 66, height: 66, borderRadius: '50%',
+                        border: `1px solid ${T.gold}88`,
+                        background: 'rgba(217,180,92,.08)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <Award size={20} color={T.gold} strokeWidth={2.2} />
+                        <span style={{ marginTop: 3, fontSize: 10, fontWeight: 500, letterSpacing: '.08em', color: T.gold }}>
+                            {points >= POINTS_GOAL ? 'GOLD' : 'SILVER'}
+                        </span>
+                    </div>
+                </div>
+            </div>
 
-    const getDefaultQuestions = () => [...(QUESTIONS_DATABASE.nigerian || []), ...(QUESTIONS_DATABASE.worldwide || [])];
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: 6, padding: 4, borderRadius: 10, background: 'rgba(255,255,255,.05)' }}>
+                {[['quests', 'Daily quests'], ['board', 'Leaderboard']].map(([id, label]) => (
+                    <button key={id} className="yc-btn" onClick={() => setTab(id)} style={{
+                        flex: 1, minHeight: 40, border: 'none', borderRadius: 8,
+                        fontSize: 13, fontWeight: 500,
+                        background: tab === id ? T.accent : 'transparent',
+                        color: tab === id ? '#04140c' : T.textDim,
+                    }}>{label}</button>
+                ))}
+            </div>
 
-    const getQuestionsForCategory = (category) => {
-        if (category === 'default') return getDefaultQuestions();
-        if (category === 'custom')  return (importedQuestions.sets || []).flatMap(set => set.questions);
-        return [];
-    };
-
-    const getScoreAfterWrongAnswer = () => {
-        const lastSafetyNet = GAME_CONFIG.safetyNets.filter((net) => net < currentQuestion).sort((a, b) => b - a)[0];
-        return lastSafetyNet !== undefined ? GAME_CONFIG.prizeStructure[lastSafetyNet] : 0;
-    };
-
-    const handleAnswerSelect  = (idx) => { if (!isPresenterMode() || eliminatedOptions.includes(idx)) return; setSelectedAnswer(idx); };
-    const handleFiftyFifty    = () => {
-        if (lifelinesUsed.fiftyFifty) return;
-        const q = currentQuestions[currentQuestion]; if (!q) return;
-        const wrongs = [0,1,2,3].filter(i => i !== q.correct);
-        setEliminatedOptions(wrongs.slice(0, 2));
-        setLifelinesUsed(p => ({ ...p, fiftyFifty: true }));
-        setTimeLeft(prev => prev + 10); setTimeBonusAmount(10); setShowTimeBonus(true);
-        setTimeout(() => setShowTimeBonus(false), 2000);
-    };
-    const handleAskAudience = () => {
-        if (lifelinesUsed.askAudience) return;
-        setLifelinesUsed(p => ({ ...p, askAudience: true }));
-        setTimeLeft(prev => prev + 10); setTimeBonusAmount(10); setShowTimeBonus(true);
-        setTimeout(() => setShowTimeBonus(false), 2000);
-        const q = currentQuestions[currentQuestion]; if (!q) return;
-        const correctAnswer = q.correct;
-        const wrongOptions  = [0,1,2,3].filter(i => i !== correctAnswer);
-        const secondHighest = wrongOptions[Math.floor(Math.random() * wrongOptions.length)];
-        const remaining     = wrongOptions.filter(i => i !== secondHighest);
-        const correctPct    = 45 + Math.floor(Math.random() * 30);
-        const secondPct     = 15 + Math.floor(Math.random() * 20);
-        const leftover      = 100 - correctPct - secondPct;
-        const thirdPct      = Math.floor(leftover / 2) + Math.floor(Math.random() * (leftover / 2));
-        setAudiencePoll({ [correctAnswer]: correctPct, [secondHighest]: secondPct, [remaining[0]]: thirdPct, [remaining[1]]: leftover - thirdPct });
-    };
-    const handlePhoneAFriend = () => {
-        if (lifelinesUsed.phoneAFriend) return;
-        setLifelinesUsed(p => ({ ...p, phoneAFriend: true }));
-        setTimeLeft(prev => prev + 15); setTimeBonusAmount(15); setShowTimeBonus(true);
-        setTimeout(() => setShowTimeBonus(false), 2000);
-    };
-
-    const handleTimeUp = () => {
-        if (selectedAnswer !== null) { triggerSubmitAnswer(); return; }
-        setIsTimerRunning(false); setShowResult(true);
-        setTimeout(() => { onTransitionEnded(); }, 2000);
-    };
-
-    const triggerSubmitAnswer = () => {
-        if (isValidating || gameState !== 'playing') return;
-        setIsTimerRunning(false); setIsValidating(true);
-        setTimeout(() => { setIsValidating(false); setShowResult(true); setTimeout(() => { onTransitionEnded(); }, 2000); }, 3000);
-    };
-
-    const onTransitionEnded = () => {
-        setShowTransition(false);
-        const q = currentQuestions[currentQuestion];
-        const isCorrect = q && selectedAnswer === q.correct;
-        if (isCorrect) {
-            const newScore = GAME_CONFIG.prizeStructure[Math.min(currentQuestion, GAME_CONFIG.prizeStructure.length - 1)];
-            setScore(newScore);
-            if (currentQuestion < currentQuestions.length - 1) {
-                const nextIdx = currentQuestion + 1;
-                if (GAME_CONFIG.safetyNets.includes(nextIdx)) { setShowSafetyBanner(true); setTimeout(() => setShowSafetyBanner(false), 5000); }
-                setCurrentQuestion(nextIdx); setSelectedAnswer(null); setShowResult(false);
-                setTimeLeft(GAME_CONFIG.timePerQuestion); setIsTimerRunning(false);
-                setEliminatedOptions([]); setAudiencePoll(null);
-                setTimeout(() => setIsTimerRunning(true), 10000);
-            } else { setGameState('result'); }
-        } else { setScore(getScoreAfterWrongAnswer()); setGameState('result'); }
-    };
-
-    const playNextUnplayedSet = () => {
-        if (!isPresenterMode()) return;
-        if (!playerName.trim()) { alert("Please enter a player name first!"); return; }
-        const allSets = importedQuestions.sets || [];
-        if (allSets.length === 0) { alert("No custom question sets found! Import some CSVs first."); return; }
-        const unplayedSets = allSets.filter(set => !playedSetIds.includes(set.id));
-        if (unplayedSets.length === 0) {
-            if (window.confirm("You've played all available sets! \n\nClear history and start over?")) { setPlayedSetIds([]); setTimeout(() => playNextUnplayedSet(), 100); }
-            return;
-        }
-        const randomSet = unplayedSets[Math.floor(Math.random() * unplayedSets.length)];
-        setPlayedSetIds(prev => [...prev, randomSet.id]);
-        setCurrentQuestions(randomSet.questions.slice(0, GAME_CONFIG.totalQuestions));
-        setSelectedCategory(`custom: ${randomSet.name}`);
-        setCurrentQuestion(0); setScore(0); setSelectedAnswer(null); setShowResult(false);
-        setTimeLeft(GAME_CONFIG.timePerQuestion); setIsTimerRunning(false);
-        setLifelinesUsed({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
-        setEliminatedOptions([]); setGameState('playing');
-    };
-
-    const resetGame = () => {
-        if (!isPresenterMode()) return;
-        setGameState('registration'); setCurrentQuestion(0); setScore(0); setSelectedAnswer(null);
-        setShowResult(false); setTimeLeft(GAME_CONFIG.timePerQuestion); setIsTimerRunning(false);
-        setLifelinesUsed({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
-        setEliminatedOptions([]); setPlayerName(''); setSelectedCategory(''); setCurrentQuestions([]);
-        setClaimNIN(''); setClaimPhone(''); setClaimStatus('idle'); setClaimError(''); setDetectedNetwork(null); setManualNetwork(null);
-    };
-
-    const deleteQuestionSet = (setId) => {
-        const updatedSets = importedQuestions.sets.filter(set => set.id !== setId);
-        setImportedQuestions({ sets: updatedSets });
-        try { localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets })); } catch (error) { console.error('Failed to update storage:', error); }
-    };
-
-    const deleteAllImportedSets = () => {
-        if (!importedQuestions.sets || importedQuestions.sets.length === 0) { alert("No imported question sets to delete."); return; }
-        if (window.confirm("⚠️ ARE YOU SURE? \nThis will permanently delete ALL imported question sets.")) {
-            setImportedQuestions({ sets: [] });
-            try { localStorage.removeItem('imported-questions'); alert("All imported sets have been deleted."); } catch (error) { console.error('Failed to clear storage:', error); }
-        }
-    };
-
-    const renameQuestionSet = (setId, newName) => {
-        const updatedSets = importedQuestions.sets.map(set => set.id === setId ? { ...set, name: newName } : set);
-        setImportedQuestions({ sets: updatedSets });
-        try { localStorage.setItem('imported-questions', JSON.stringify({ sets: updatedSets })); } catch (error) { console.error('Failed to update storage:', error); }
-    };
-
-    const selectCategory = (category) => {
-        if (!isPresenterMode()) return;
-        setSelectedCategory(category);
-        const questions = getQuestionsForCategory(category);
-        const final = questions && questions.length > 0 ? questions : getDefaultQuestions();
-        setCurrentQuestions(final.slice(0, GAME_CONFIG.totalQuestions));
-        setGameState('menu');
-    };
-
-    const startGame = () => {
-        if (!isPresenterMode()) return;
-        if (!currentQuestions || currentQuestions.length === 0) { alert('No questions loaded.'); return; }
-        setCurrentQuestion(0); setScore(0); setSelectedAnswer(null); setShowResult(false);
-        setTimeLeft(GAME_CONFIG.timePerQuestion); setIsTimerRunning(false);
-        setLifelinesUsed({ fiftyFifty: false, askAudience: false, phoneAFriend: false });
-        setEliminatedOptions([]); setAudiencePoll(null);
-        setGameState('playing');
-        setTimeout(() => setIsTimerRunning(true), 10000);
-    };
-
-    // ── Prize Ladder ──────────────────────────────────────────────────────────
-    const PrizeLadder = React.memo(({ currentQuestion, score, safetyNets, prizeStructure, currency }) => {
-        const totalQuestions = prizeStructure.length;
-        const reversedPrizes = [...prizeStructure].reverse();
-        return (
-            <div style={{ ...styles.card, padding: 0, height: isMobile ? '300px' : 'auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <div style={{ margin: 0, padding: '7px 16px', backgroundColor: LUXURY_THEME.backgroundDark, color: LUXURY_THEME.textGold, textAlign: 'center', fontSize: '1.1rem', fontWeight: '700', borderBottom: `2px solid ${LUXURY_THEME.accent}` }}>Prize Ladder</div>
-                <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-                    <div style={{ padding: '0px 0' }}>
-                        {reversedPrizes.map((prize, index) => {
-                            const actualIndex = totalQuestions - index - 1;
-                            const isSafetyNet = safetyNets.includes(actualIndex);
-                            const isCurrentQuestion = actualIndex === currentQuestion;
-                            const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2.3px 16px', fontSize: '0.95rem', fontWeight: isSafetyNet || isCurrentQuestion ? '700' : '500', background: isCurrentQuestion ? LUXURY_THEME.accent + '33' : isSafetyNet ? 'rgba(0,255,0,0.08)' : 'transparent', color: isCurrentQuestion ? LUXURY_THEME.textGold : isSafetyNet ? '#9bffb0' : LUXURY_THEME.text, borderLeft: isCurrentQuestion ? `4px solid ${LUXURY_THEME.textGold}` : isSafetyNet ? `4px solid #9bffb0` : '4px solid transparent', borderRight: isCurrentQuestion ? `4px solid ${LUXURY_THEME.textGold}` : isSafetyNet ? `4px solid #9bffb0` : '4px solid transparent', transition: 'all 0.3s ease', minHeight: '32px' };
+            {tab === 'quests' && (
+                <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {QUESTS.map(q => {
+                            const done = !!claimed[q.id];
+                            const Icon = q.Icon;
                             return (
-                                <div key={actualIndex} style={rowStyle}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ minWidth: '32px' }}>Q{actualIndex + 1}</span>{isSafetyNet && <span></span>}</span>
-                                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>{currency}{prize.toLocaleString()}</span>
+                                <div key={q.id} style={{
+                                    display: 'flex', alignItems: 'center', gap: 12,
+                                    padding: 13, borderRadius: 12,
+                                    background: T.card,
+                                    border: `1px solid ${done ? T.accent + '77' : T.line}`,
+                                }}>
+                                    <div style={{
+                                        width: 40, height: 40, flex: 'none', borderRadius: 10,
+                                        background: done ? 'rgba(31,168,92,.16)' : 'rgba(255,255,255,.05)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    }}>
+                                        <Icon size={19} color={done ? T.accent : T.gold} strokeWidth={2.2} />
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.35, color: done ? T.textDim : T.text }}>{q.label}</div>
+                                        <div style={{ marginTop: 3, fontSize: 11, lineHeight: 1.35, color: T.textMute }}>{q.sub}</div>
+                                    </div>
+                                    <button className="yc-btn" onClick={() => claim(q)} style={{
+                                        flex: 'none', minHeight: 38, minWidth: 64, padding: '0 12px',
+                                        borderRadius: 8, border: 'none',
+                                        fontSize: 12, fontWeight: 700,
+                                        background: done ? T.accentDark : T.gold,
+                                        color: done ? '#eafff3' : '#12180f',
+                                    }}>{done ? 'Done' : `+${q.pts}`}</button>
                                 </div>
                             );
                         })}
                     </div>
-                </div>
-                <div style={{ padding: '7px 16px', backgroundColor: LUXURY_THEME.backgroundDark, borderTop: `1px solid ${LUXURY_THEME.border}`, textAlign: 'center', color: LUXURY_THEME.textGold, fontSize: '1rem', fontWeight: '700' }}>
-                    Current Score: {currency}{score.toLocaleString()}
-                </div>
-            </div>
-        );
-    });
-
-    // ── Styles ────────────────────────────────────────────────────────────────
-    const styles = {
-        container: { width: '100vw', minHeight: '100vh', height: 'auto', overflowX: 'hidden', overflowY: 'auto', background: LUXURY_THEME.primary, padding: isMobile ? '10px 10px 80px 10px' : '2vh 2vw 70px 2vw', boxSizing: 'border-box', fontFamily: "'Product Sans', 'Georgia', serif", position: 'relative', color: LUXURY_THEME.text, display: 'flex', flexDirection: 'column' },
-        centerArea: { maxWidth: isMobile ? '100%' : '90vw', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' },
-        header: { display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: 12, flexWrap: 'wrap' },
-        lifelineBar: { display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center', marginTop: '1vh', flexWrap: 'wrap' },
-        lifelineBtn: (used) => ({ display: 'flex', alignItems: 'center', gap: 6, padding: isMobile ? '8px 10px' : '10px 12px', borderRadius: 10, cursor: used ? 'not-allowed' : 'pointer', background: used ? 'rgba(255,0,0,0.08)' : 'rgba(0,128,0,0.08)', border: `1px solid ${used ? 'rgba(255,0,0,0.35)' : 'rgba(0,128,0,0.35)'}`, color: used ? '#ff9999' : '#b7ffb7', minWidth: isMobile ? '30%' : 140, justifyContent: 'center', fontWeight: 700, fontSize: 'clamp(0.7rem, 1.5vw, 1rem)' }),
-        mainFlex: { display: 'flex', gap: 22, alignItems: 'stretch', flex: 1, marginTop: '2vh', minHeight: 0, flexDirection: isMobile ? 'column' : 'row' },
-        leftMain: { flex: 3, minHeight: 0, display: 'flex', flexDirection: 'column' },
-        rightSide: { flex: 1, minWidth: isMobile ? '100%' : '20vw', minHeight: 0, marginTop: isMobile ? '20px' : '0' },
-        card: { backgroundColor: LUXURY_THEME.background, backdropFilter: 'blur(12px)', borderRadius: 16, padding: isMobile ? '15px' : '2vh 2vw', marginBottom: '1vh', border: `2px solid ${LUXURY_THEME.border}`, boxShadow: LUXURY_THEME.shadow, overflow: 'auto' },
-        questionText: { fontSize: isMobile ? '1.2rem' : 'clamp(1.2rem, 2.5vw, 1.5rem)', marginBottom: '1vh', lineHeight: 1.4 },
-        optionBtn: (disabled, selected) => ({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '12px' : '1.5vh 2vw', borderRadius: 12, marginBottom: '1vh', cursor: disabled ? 'not-allowed' : 'pointer', background: selected ? 'rgba(212,175,55,0.12)' : 'rgba(0,0,0,0.35)', border: selected ? `2px solid ${LUXURY_THEME.textGold}` : `1px solid rgba(255,255,255,0.06)`, opacity: disabled ? 0.5 : 1, fontSize: isMobile ? '0.95rem' : 'clamp(0.9rem, 1.8vw, 1.1rem)' }),
-        timerBar: { height: '1.2vh', borderRadius: 8, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' },
-        timerFill: (pct) => ({ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg,#ffd700,#ffb347)', transition: 'width 0.9s linear' }),
-    };
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RENDER: Registration
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (gameState === 'registration') {
-        return (
-            <div style={styles.container}>
-                <div style={{ height: 'env(safe-area-inset-top)', backgroundColor: '#000', width: '100%' }} />
-                <div style={styles.centerArea}>
-                    <div style={styles.header}>
-                        <div><img src={xxvLogo} alt="XXV Logo" style={{ width: isMobile ? 90 : 150, height: isMobile ? 90 : 150, objectFit: 'contain' }} /></div>
-                        <img src={Image6ts} alt="6tsTNC" style={{ width: isMobile ? 90 : 150, height: isMobile ? 90 : 150, objectFit: 'contain' }} />
-                    </div>
-                    <div style={{ ...styles.card, maxWidth: 600, marginTop: isMobile ? '16px' : '32px', marginLeft: 'auto', marginRight: 'auto', width: '100%' }}>
-                        <h3 style={{ color: LUXURY_THEME.textGold }}>Enter Player Name</h3>
-                        <input autoFocus type="text" placeholder="Player name..." value={playerName}
-                               onChange={(e) => setPlayerName(e.target.value)}
-                               onKeyDown={(e) => e.key === 'Enter' && playerName.trim() && setGameState('category-selection')}
-                               style={{ width: 'auto', padding: '20px 30px', borderRadius: 10, border: `1px solid ${LUXURY_THEME.border}`, backgroundColor: 'rgba(0,0,0,0.45)', color: LUXURY_THEME.text, fontSize: 16, marginTop: -2, marginBottom: 12 }}
-                        />
-                        <div style={{ display: 'flex', gap: 12 }}>
-                            <button onClick={() => { if (!isPresenterMode()) return; if (playerName.trim()) setGameState('category-selection'); }} disabled={!playerName.trim()}
-                                    style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}>
-                                Start Game
-                            </button>
-                            <button onClick={() => { if (!isPresenterMode()) return; setPlayerName('Guest'); setGameState('category-selection'); }}
-                                    style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${LUXURY_THEME.border}` }}>
-                                Guest
-                            </button>
+                    <div style={{
+                        marginTop: 4, padding: 14, borderRadius: 12,
+                        border: `1px dashed ${T.gold}55`,
+                        background: 'rgba(217,180,92,.05)',
+                    }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: T.gold }}>
+                            Ward bonus: {5 - Object.keys(claimed).length} quests left this week
+                        </div>
+                        <div style={{ marginTop: 5, fontSize: 11, lineHeight: 1.45, color: T.textDim }}>
+                            Finish all 5 quests before Sunday to unlock the Gateway Ambassador badge and a slot in the empowerment ballot.
                         </div>
                     </div>
-                </div>
-                {!isPresenterMode() && (
-                    <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, pointerEvents: 'none', textAlign: 'center' }}>
-                        <h2 style={{ fontSize: '3rem', color: '#d4af37', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '15px', opacity: 0.25, margin: 0 }}>Audience</h2>
-                    </div>
-                )}
-                <video src={TRANSITION_VIDEO_PATH} preload="auto" style={{ display: 'none' }} />
-                <AnimatedBanner />
-            </div>
-        );
-    }
+                </>
+            )}
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RENDER: Category Selection
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (gameState === 'category-selection') {
-        return (
-            <div style={styles.container}>
-                <div style={{ height: 'env(safe-area-inset-top)', backgroundColor: '#000', width: '100%' }} />
-                <div style={styles.centerArea}>
-                    <div style={styles.header}>
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: '2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Choose Category</h1>
-                            <div style={{ color: 'rgba(255,255,255,0.9)' }}>Welcome {playerName}</div>
-                        </div>
-                        <div><button onClick={() => setGameState('registration')} style={{ padding: '8px 12px', borderRadius: 8 }}>Back</button></div>
-                    </div>
-                    <NewsCardWidget />
-                    <div style={{ marginTop: 18 }}>
-                        <div style={{ ...styles.card, cursor: 'pointer', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', gap: 20, padding: isMobile ? '20px' : '24px 32px' }}
-                             onClick={() => { selectCategory('default'); setTimeout(() => startGame(), 100); }}>
-                            <div style={{ fontSize: 48, flexShrink: 0 }}>🌍</div>
-                            <div style={{ flex: 1 }}>
-                                <h3 style={{ color: LUXURY_THEME.textGold, marginTop: 0, marginBottom: 8, fontSize: '1.2rem' }}>Default + Custom Questions</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: '0.9rem' }}>Mixed Nigerian &amp; Global question set. CSV imports included.</p>
-                                <div style={{ marginTop: 10, color: '#bcd', fontWeight: 600, fontSize: '0.85rem' }}>{getDefaultQuestions().length} default questions • {(importedQuestions.sets || []).length} custom sets loaded</div>
+            {tab === 'board' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {ranked.map((r, i) => (
+                        <div key={r.name} style={{
+                            display: 'flex', alignItems: 'center', gap: 11,
+                            minHeight: 52, padding: '0 10px', borderRadius: 10,
+                            background: r.you ? 'rgba(31,168,92,.12)' : 'rgba(255,255,255,.03)',
+                            border: `1px solid ${r.you ? T.accent + '77' : T.line}`,
+                        }}>
+                            <span style={{ width: 22, fontSize: 13, fontWeight: 500, color: i < 3 ? T.gold : T.textMute }}>{i + 1}</span>
+                            <span style={{
+                                width: 32, height: 32, borderRadius: '50%',
+                                background: 'rgba(255,255,255,.07)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 12, fontWeight: 500, color: 'rgba(236,243,238,.8)',
+                            }}>{initials(r.name)}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: r.you ? T.text : 'rgba(236,243,238,.85)' }}>{r.name}</div>
+                                <div style={{ marginTop: 3, fontSize: 11, color: T.textMute }}>{r.ward}</div>
                             </div>
-                            <div style={{ padding: '10px 20px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', color: '#1a1a1a', fontWeight: 800, fontSize: '0.95rem', flexShrink: 0 }}>Select →</div>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: r.you ? T.accent : 'rgba(236,243,238,.7)' }}>{r.pts.toLocaleString()}</span>
                         </div>
-                    </div>
-                    {!isPresenterMode() && (
-                        <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, pointerEvents: 'none', textAlign: 'center' }}>
-                            <h2 style={{ fontSize: '3rem', color: '#d4af37', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '15px', opacity: 0.25, margin: 0 }}>Audience</h2>
-                        </div>
-                    )}
-                    {showGuide && <GameGuide onClose={() => setShowGuide(false)} />}
+                    ))}
                 </div>
-                <AnimatedBanner />
-            </div>
-        );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RENDER: Menu
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (gameState === 'menu') {
-        return (
-            <div style={styles.container}>
-                <div style={{ height: 'env(safe-area-inset-top)', backgroundColor: '#000', width: '100%' }} />
-                <div style={styles.centerArea}>
-                    <div style={styles.header}>
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: '2rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Choose Question Set</h1>
-                            <div style={{ color: 'rgba(255,255,255,0.9)' }}>Welcome {playerName}</div>
-                        </div>
-                        <div>
-                            <button onClick={deleteAllImportedSets} style={{ padding: '8px 12px', borderRadius: 8, marginRight: 10 }}>Delete All Question Sets!</button>
-                            <button onClick={() => setGameState('category-selection')} style={{ padding: '8px 12px', borderRadius: 8 }}>Back</button>
-                        </div>
-                    </div>
-                    <NewsCardWidget />
-                    <div style={{ ...styles.card, marginTop: 18 }}>
-                        <h3 style={{ borderBottom: `1px solid ${LUXURY_THEME.border}`, paddingBottom: 10, color: LUXURY_THEME.textGold, marginBottom: 20 }}>Available Question Sets</h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20, maxHeight: '60vh', overflowY: 'auto', paddingRight: 10 }}>
-                            <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', border: `2px solid ${LUXURY_THEME.accent}`, minHeight: 280 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: LUXURY_THEME.textGold }}>🌍 Default Set</div>
-                                    <div style={{ fontSize: '0.8rem', background: 'rgba(212,175,55,0.2)', padding: '4px 10px', borderRadius: 6, color: LUXURY_THEME.textGold }}>Built-in</div>
-                                </div>
-                                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 12 }}>{getDefaultQuestions().length} questions • Mixed Nigerian + Global</div>
-                                <div style={{ flex: 1, fontSize: '0.85rem', color: '#aaa', marginBottom: 15, background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 8, maxHeight: 140, overflowY: 'auto' }}>
-                                    <div style={{ marginBottom: 8, fontStyle: 'italic', color: '#bbb' }}>Preview:</div>
-                                    {getDefaultQuestions().slice(0, 3).map((q, i) => (
-                                        <div key={i} style={{ marginBottom: 6, paddingLeft: 8, borderLeft: '2px solid rgba(255,255,255,0.2)' }}>• {q.question.substring(0, 60)}...</div>
-                                    ))}
-                                    {getDefaultQuestions().length > 3 && <div style={{ marginTop: 8, color: LUXURY_THEME.accent, fontSize: '0.8rem' }}>+ {getDefaultQuestions().length - 3} more questions</div>}
-                                </div>
-                                <button onClick={() => { selectCategory('default'); setTimeout(() => startGame(), 100); }}
-                                        style={{ padding: '12px', borderRadius: 8, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', fontWeight: 'bold', cursor: 'pointer', color: '#1a1a1a', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                                    <Play size={18} /> Play Default Set
-                                </button>
-                            </div>
-                            {(importedQuestions.sets || []).map((set) => (
-                                <div key={set.id} style={{ ...styles.card, display: 'flex', flexDirection: 'column', border: `2px solid ${LUXURY_THEME.accent}`, minHeight: 280 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: LUXURY_THEME.textGold }}>📚 {set.name}</div>
-                                    </div>
-                                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: 12 }}>{set.questions.length} questions • Created: {set.createdAt}</div>
-                                    <div style={{ flex: 1, fontSize: '0.85rem', color: '#aaa', marginBottom: 15, background: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 8, maxHeight: 140, overflowY: 'auto' }}>
-                                        <div style={{ marginBottom: 8, fontStyle: 'italic', color: '#bbb' }}>Preview:</div>
-                                        {set.questions.slice(0, 3).map((q, i) => (
-                                            <div key={i} style={{ marginBottom: 6, paddingLeft: 8, borderLeft: '2px solid rgba(255,255,255,0.2)' }}>• {q.question.substring(0, 60)}...</div>
-                                        ))}
-                                        {set.questions.length > 3 && <div style={{ marginTop: 8, color: LUXURY_THEME.accent, fontSize: '0.8rem' }}>+ {set.questions.length - 3} more questions</div>}
-                                    </div>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <button onClick={() => { setCurrentQuestions(set.questions.slice(0, GAME_CONFIG.totalQuestions)); setSelectedCategory(`custom: ${set.name}`); setPlayedSetIds(prev => [...prev, set.id]); setTimeout(() => startGame(), 100); }}
-                                                style={{ flex: 1, padding: '10px', borderRadius: 8, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', fontWeight: 'bold', cursor: 'pointer', color: '#1a1a1a', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                            <Play size={16} /> Play
-                                        </button>
-                                        <button title="Rename Set" onClick={(e) => { e.stopPropagation(); const n = prompt("Rename this set:", set.name); if (n && n.trim()) renameQuestionSet(set.id, n.trim()); }}
-                                                style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontSize: '1.1rem' }}>✏️</button>
-                                        <button title="Delete Set" onClick={(e) => { e.stopPropagation(); if (window.confirm(`Delete "${set.name}"?`)) deleteQuestionSet(set.id); }}
-                                                style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)', cursor: 'pointer', fontSize: '1.1rem' }}>🗑️</button>
-                                    </div>
-                                </div>
-                            ))}
-                            {(importedQuestions.sets || []).length === 0 && (
-                                <div style={{ ...styles.card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 280, border: '2px dashed rgba(255,255,255,0.2)' }}>
-                                    <div style={{ fontSize: '3rem', marginBottom: 12 }}>📂</div>
-                                    <div style={{ color: '#888', fontSize: '0.95rem', textAlign: 'center', marginBottom: 12 }}>No custom question sets yet</div>
-                                    <label style={{ padding: '8px 16px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', color: '#bbb', cursor: 'pointer', display: 'inline-block' }}>
-                                        Upload CSV
-                                        <input type="file" accept=".csv,.txt" multiple onChange={handleExcelImport} style={{ display: 'none' }} />
-                                    </label>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-                {!isPresenterMode() && (
-                    <div style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, pointerEvents: 'none', textAlign: 'center' }}>
-                        <h2 style={{ fontSize: '3rem', color: '#d4af37', textTransform: 'uppercase', fontWeight: '900', letterSpacing: '15px', opacity: 0.25, margin: 0 }}>Audience</h2>
-                    </div>
-                )}
-                <AnimatedBanner />
-            </div>
-        );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RENDER: Playing
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (gameState === 'playing') {
-        const q = currentQuestions[currentQuestion] || { question: 'Question not found', options: ['', '', '', ''], correct: 0 };
-        const isUrgent = timeLeft <= 10;
-        const clockStyle = { fontSize: isUrgent ? '5rem' : '3rem', fontWeight: '800', color: isUrgent ? '#ff4d4d' : LUXURY_THEME.textGold, textShadow: isUrgent ? '0 0 30px rgba(255,0,0,0.6)' : '0 2px 10px rgba(0,0,0,0.3)', transition: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)', textAlign: 'center', lineHeight: 1 };
-        const potentialSecure = GAME_CONFIG.prizeStructure[currentQuestion];
-        const dropAmount = getScoreAfterWrongAnswer();
-        return (
-            <div style={styles.container}>
-                <BounceKeyframes />
-                <div style={styles.centerArea}>
-                    {showSafetyBanner && (
-                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 9998, width: '80%', maxWidth: '1000px', height: '80%', maxHeight: '500px', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', border: `2px solid ${LUXURY_THEME.textGold}`, borderRadius: '20px', padding: '40px', textAlign: 'center', boxShadow: '0 0 50px rgba(212,175,55,0.5)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🔒</div>
-                            <h2 style={{ color: LUXURY_THEME.textGold, textTransform: 'uppercase', fontSize: '2.5rem', margin: '0 0 20px 0', letterSpacing: '4px' }}>Safety Net Announcement</h2>
-                            <div style={{ fontSize: '1.6rem', opacity: 0.9, lineHeight: 1.4 }}>Right answer secures <strong>{GAME_CONFIG.currency}{potentialSecure.toLocaleString()}</strong>. (Wrong answer drops you to {GAME_CONFIG.currency}{dropAmount.toLocaleString()})</div>
-                        </div>
-                    )}
-                    <div style={styles.header}>
-                        <div>
-                            <h1 style={{ margin: 0, fontSize: '1.6rem', background: LUXURY_THEME.secondary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Question {currentQuestion + 1} / {currentQuestions.length}</h1>
-                            <div style={{ color: 'rgba(255,255,255,0.9)' }}>{playerName} • Score: {GAME_CONFIG.currency}{score}</div>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
-                            <div style={styles.lifelineBar}>
-                                <div title="50/50" onClick={() => isPresenterMode() && handleFiftyFifty()} style={{ ...styles.lifelineBtn(lifelinesUsed.fiftyFifty), cursor: !isPresenterMode() || lifelinesUsed.fiftyFifty ? 'not-allowed' : 'pointer' }}>
-                                    <Scissors size={18} /> <span>50/50</span>
-                                </div>
-                                <div title="Ask Audience" onClick={() => isPresenterMode() && handleAskAudience()} style={{ ...styles.lifelineBtn(lifelinesUsed.askAudience), cursor: !isPresenterMode() || lifelinesUsed.askAudience ? 'not-allowed' : 'pointer' }}>
-                                    <Users size={18} /> <span>Ask Audience</span>
-                                </div>
-                                <div title="Phone a Friend" onClick={() => isPresenterMode() && handlePhoneAFriend()} style={{ ...styles.lifelineBtn(lifelinesUsed.phoneAFriend), cursor: !isPresenterMode() || lifelinesUsed.phoneAFriend ? 'not-allowed' : 'pointer' }}>
-                                    <Phone size={18} /> <span>Phone a Friend</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div style={styles.mainFlex}>
-                        <div style={styles.leftMain}>
-                            <div style={styles.card}>
-                                <div style={styles.questionText}>{q.question}</div>
-                                <div style={{ color: 'rgba(255,255,255,0.75)', marginBottom: 12 }}>{q.category || 'General'} • {q.difficulty}</div>
-                                <div>
-                                    {(q.options || []).map((opt, idx) => {
-                                        const isElim = eliminatedOptions.includes(idx);
-                                        const isSelected = selectedAnswer === idx;
-                                        const isCorrect = idx === q.correct;
-                                        const hasAudiencePoll = audiencePoll !== null;
-                                        const pollPercentage = hasAudiencePoll ? audiencePoll[idx] : 0;
-                                        const isTopOption = hasAudiencePoll && pollPercentage >= 15;
-                                        let backgroundStyle = isSelected ? `${LUXURY_THEME.border}` : 'rgba(0,0,0,0.3)';
-                                        let borderStyle = isSelected ? `2px solid ${LUXURY_THEME.textGold}` : 'rgba(0,0,0,0.45)';
-                                        let animStyle = 'none';
-                                        if (isValidating && isSelected) { animStyle = 'blinkOption 1s linear infinite'; borderStyle = '2px solid #fff'; }
-                                        if (showResult) {
-                                            if (isCorrect)                    { backgroundStyle = 'linear-gradient(90deg, #004d00, #006400)'; borderStyle = '2px solid #00ff00'; }
-                                            else if (isSelected && !isCorrect){ backgroundStyle = 'linear-gradient(90deg, #8b0000, #a00000)'; borderStyle = '2px solid #ff0000'; }
-                                            else                              { backgroundStyle = 'rgba(0,0,0,0.3)'; borderStyle = '1px solid rgba(255,255,255,0.05)'; }
-                                        }
-                                        return (
-                                            <div key={`question-${currentQuestion}-option-${idx}`}
-                                                 onClick={() => { if (isElim || showResult || showTransition || isValidating) return; setSelectedAnswer(idx); }}
-                                                 style={{ ...styles.optionBtn(isElim, isSelected), position: 'relative', overflow: 'hidden', background: backgroundStyle, border: borderStyle, animation: animStyle, animationFillMode: 'both', transition: 'background 0.3s', transform: 'none', margin: '0 0 1vh 0' }}>
-                                                {hasAudiencePoll && (<div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: `${pollPercentage}%`, background: isTopOption ? 'rgba(0,255,0,0.15)' : 'rgba(255,255,255,0.08)', transition: 'width 1.5s ease-out', zIndex: 0, borderRadius: '0 12px 12px 0' }} />)}
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
-                                                    <div style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.03)', flexShrink: 0, color: (isValidating && isSelected) ? '#000' : 'inherit' }}>
-                                                        {['A','B','C','D'][idx]}
-                                                    </div>
-                                                    <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', width: (showResult || isValidating) ? '100%' : '0', animation: (showResult || isValidating) ? 'none' : 'typewriterEffect 1.5s steps(30) forwards', animationDelay: `${idx * 3}s`, animationFillMode: 'forwards', color: (isValidating && isSelected) ? '#000' : 'inherit' }}>
-                                                        {opt}
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
-                                                    {hasAudiencePoll && (<span style={{ fontSize: '0.9rem', fontWeight: '700', color: isTopOption ? '#00ff00' : 'rgba(255,255,255,0.5)', minWidth: '45px', textAlign: 'right' }}>{pollPercentage}%</span>)}
-                                                    {isCorrect && isPresenterMode() && <Crown size={18} color={LUXURY_THEME.textGold} />}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                <div style={{ marginTop: 20, padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <div style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '2px', color: '#888', marginBottom: 10 }}>Time Remaining</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', position: 'relative' }}>
-                                        <div style={{ position: 'relative', display: 'inline-block' }}>
-                                            <div style={clockStyle}>{timeLeft}</div>
-                                            {showTimeBonus && (
-                                                <div style={{ position: 'absolute', top: '15%', left: '-80px', fontSize: '2rem', fontWeight: '800', color: '#00ff00', textShadow: '0 0 20px rgba(0,255,0,0.8)', animation: 'slideInBonus 0.8s ease-out, fadeOut 0.5s ease-out 1.5s', zIndex: 10 }}>
-                                                    +{timeBonusAmount}s
-                                                </div>
-                                            )}
-                                        </div>
-                                        {isPresenterMode() && (
-                                            <button onClick={() => triggerSubmitAnswer()} disabled={selectedAnswer === null || showTransition}
-                                                    style={{ position: 'absolute', right: 0, padding: '12px 18px', borderRadius: 10, background: selectedAnswer === null ? 'rgba(255,255,255,0.04)' : `${LUXURY_THEME.secondary}`, border: 'none', cursor: selectedAnswer === null ? 'not-allowed' : 'pointer', fontWeight: 700, color: selectedAnswer === null ? '#aaa' : '#000' }}>
-                                                Submit Answer
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div style={{ color: isUrgent ? '#ff4d4d' : 'rgba(255,255,255,0.6)', fontSize: '0.9rem', marginTop: 8 }}>
-                                        {timeLeft === 0 ? "TIME'S UP!" : "SECONDS"}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div style={styles.rightSide}>
-                            <PrizeLadder currentQuestion={currentQuestion} score={score} safetyNets={GAME_CONFIG.safetyNets} prizeStructure={GAME_CONFIG.prizeStructure} currency={GAME_CONFIG.currency} />
-                            <div style={{ marginTop: 12 }}><NewsCardWidget /></div>
-                        </div>
-                    </div>
-                </div>
-                <AnimatedBanner />
-            </div>
-        );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RENDER: Result  (Flutterwave airtime claim)
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (gameState === 'result') {
-        const isWinner      = score === 1000;
-        const isLoading     = claimStatus === 'loading';
-        const isSuccess     = claimStatus === 'success';
-        const isError       = claimStatus === 'error';
-        const phoneComplete = claimPhone.length === 11;
-        // Network picker appears once the player has typed 4+ digits
-        const showNetworkPicker = claimPhone.length >= 4 && !isSuccess;
-
-        return (
-            <div style={styles.container}>
-                <BounceKeyframes />
-                {isWinner && <Confetti />}
-                <div style={styles.centerArea}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: 8, paddingBottom: 12 }}>
-                        <button onClick={() => { if (!isPresenterMode()) return; setPlayerName(''); setGameState('play_next'); }} style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: `1px solid ${LUXURY_THEME.border}`, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Play Next Game</button>
-                        <button onClick={() => resetGame()} style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: `1px solid ${LUXURY_THEME.border}`, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Restart Game</button>
-                        <button onClick={() => startSlideshow()} style={{ padding: '8px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.08)', border: `1px solid ${LUXURY_THEME.border}`, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Start Slideshow</button>
-                    </div>
-
-                    <div style={{ ...styles.card, marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: 32, paddingBottom: 32 }}>
-                        <div style={{ fontSize: '6rem', marginBottom: 20, animation: 'float 3s ease-in-out infinite' }}>
-                            {score === 1000 ? '🤑' : score >= 250 ? '😉' : '😔'}
-                        </div>
-                        <h3 style={{ color: LUXURY_THEME.textGold, fontSize: '2rem', margin: '10px 0' }}>
-                            {score === 1000 ? 'Congratulations!' : score >= 250 ? 'Great Job!' : 'Game Over'}
-                        </h3>
-                        <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.2rem', maxWidth: 600, lineHeight: 1.5 }}>
-                            {score === 1000 ? `Incredible job, ${playerName}! You've secured the top prize!` : score >= 250 ? `Great work, ${playerName}! You're taking home ${GAME_CONFIG.currency}${score.toLocaleString()}` : `Good effort, ${playerName}. Try again next time.`}
-                        </p>
-                        <div style={{ marginTop: 20, padding: '15px 30px', border: `1px solid ${LUXURY_THEME.accent}`, borderRadius: 12 }}>
-                            <span style={{ color: '#aaa' }}>Final Score:</span>
-                            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: LUXURY_THEME.textGold }}>{GAME_CONFIG.currency}{score.toLocaleString()}</div>
-                        </div>
-
-                        {/* ── Airtime Claim Form — shown when score > 0 ── */}
-                        {score > 0 && (
-                            <div style={{ marginTop: 28, width: '100%', maxWidth: 520, background: 'rgba(0,0,0,0.5)', border: `1.5px solid ${LUXURY_THEME.border}`, borderRadius: 18, padding: '26px 28px', textAlign: 'left', boxShadow: '0 8px 40px rgba(0,0,0,0.4)' }}>
-                                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
-                                {/* header */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                                    <span style={{ fontSize: '1.5rem' }}>📱</span>
-                                    <h3 style={{ color: LUXURY_THEME.textGold, margin: 0, fontSize: '1.15rem' }}>Claim Your Airtime Prize</h3>
-                                </div>
-                                <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem', margin: '0 0 20px 0' }}>
-                                    Enter your phone number, airtime is sent automatically once complete.
-                                </p>
-
-                                {isSuccess ? (
-                                    /* SUCCESS */
-                                    <div style={{ textAlign: 'center', padding: '24px 0' }}>
-                                        <div style={{ fontSize: '3rem', marginBottom: 10 }}>🎉</div>
-                                        <div style={{ color: '#00e676', fontWeight: 800, fontSize: '1.3rem', marginBottom: 8 }}>Airtime Sent!</div>
-                                        <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', lineHeight: 1.9 }}>
-                                            <strong style={{ color: LUXURY_THEME.textGold }}>{GAME_CONFIG.currency}{score.toLocaleString()}</strong> airtime dispatched to<br />
-                                            <span style={{ color: LUXURY_THEME.textGold, fontWeight: 700, letterSpacing: '2px' }}>{claimPhone}</span>
-                                            {activeNetwork && (
-                                                <span style={{ marginLeft: 8, fontSize: '0.8rem', background: activeNetwork.bg, color: activeNetwork.color, padding: '2px 10px', borderRadius: 20, border: `1px solid ${activeNetwork.color}55`, fontWeight: 700 }}>
-                                                    {activeNetwork.name}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div style={{ marginTop: 14, color: 'rgba(255,255,255,0.25)', fontSize: '0.7rem' }}>Powered by Flutterwave</div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {/* NIN INPUT */}
-                                        <div style={{ marginBottom: 16 }}>
-                                            <label style={{ display: 'block', color: 'rgba(255,255,255,0.65)', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 8 }}>
-                                                NIN — National Identity Number
-                                            </label>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                maxLength={11}
-                                                placeholder="Enter your 11-digit NIN"
-                                                value={claimNIN}
-                                                onChange={(e) => setClaimNIN(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                                                disabled={isLoading || isSuccess}
-                                                style={{
-                                                    width: '100%', boxSizing: 'border-box',
-                                                    padding: '12px 14px', borderRadius: 10,
-                                                    background: 'rgba(255,255,255,0.06)',
-                                                    border: claimNIN.length === 11 ? '1.5px solid #00e676' : '1.5px solid rgba(255,255,255,0.12)',
-                                                    color: '#fff', fontSize: '1rem', letterSpacing: '2px',
-                                                    outline: 'none', fontFamily: 'monospace',
-                                                    opacity: (isLoading || isSuccess) ? 0.5 : 1,
-                                                }}
-                                            />
-                                            <div style={{ marginTop: 5, fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)' }}>
-                                                 digits 11·
-                                            </div>
-                                        </div>
-
-                                        {/* PHONE INPUT */}
-                                        <div style={{ marginBottom: 16 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                <label style={{ color: phoneComplete ? '#00e676' : 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                                                    Phone Number
-                                                </label>
-                                                {phoneComplete && <span style={{ fontSize: '0.75rem', color: '#00e676' }}>✓ Complete</span>}
-                                            </div>
-                                            <DigitInput
-                                                length={11}
-                                                prefixDigit="0"
-                                                value={claimPhone}
-                                                onChange={(v) => {
-                                                    setClaimPhone(v);
-                                                    if (v.length >= 4) {
-                                                        const auto = detectNigerianNetwork(v);
-                                                        if (auto) { setDetectedNetwork(auto); setManualNetwork(null); }
-                                                        else setDetectedNetwork(null);
-                                                    } else {
-                                                        setDetectedNetwork(null);
-                                                    }
-                                                }}
-                                                onComplete={handlePhoneComplete}
-                                                disabled={isLoading || isSuccess}
-                                            />
-                                            <div style={{ marginTop: 5, fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)' }}>
-                                                "0" Type your remaining 10 digits
-                                            </div>
-                                        </div>
-
-                                        {/* NETWORK PICKER — slides in after 4 digits */}
-                                        {showNetworkPicker && (
-                                            <div style={{ marginBottom: 18, padding: '14px', background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                                                    <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Network</span>
-                                                    {activeNetwork && !manualNetwork && <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontStyle: 'italic' }}>auto-detected</span>}
-                                                    {manualNetwork && <span style={{ fontSize: '0.68rem', color: activeNetwork.color, fontStyle: 'italic' }}>manually selected</span>}
-                                                </div>
-                                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                                    {NETWORK_OPTIONS.map(net => {
-                                                        const isActive = activeNetwork?.code === net.code;
-                                                        return (
-                                                            <button key={net.code}
-                                                                    onClick={() => {
-                                                                        if (isLoading) return;
-                                                                        setManualNetwork(net);
-                                                                        if (isError) { setClaimStatus('idle'); setClaimError(''); }
-                                                                    }}
-                                                                    style={{
-                                                                        padding: '7px 16px', borderRadius: 20, fontSize: '0.85rem', fontWeight: 700,
-                                                                        cursor: isLoading ? 'not-allowed' : 'pointer',
-                                                                        background: isActive ? net.bg : 'rgba(255,255,255,0.04)',
-                                                                        border: `1.5px solid ${isActive ? net.color : 'rgba(255,255,255,0.1)'}`,
-                                                                        color: isActive ? net.color : 'rgba(255,255,255,0.4)',
-                                                                        transition: 'all 0.15s ease',
-                                                                    }}>
-                                                                {net.name}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                                {!activeNetwork && (
-                                                    <div style={{ marginTop: 8, fontSize: '0.72rem', color: '#ff9f43' }}>
-                                                        ⚠️ Could not auto-detect — please select your network above.
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* ERROR */}
-                                        {isError && claimError && (
-                                            <div style={{ background: 'rgba(255,0,60,0.1)', border: '1px solid rgba(255,0,60,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, color: '#ff6b8a', fontSize: '0.82rem', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                                                <span style={{ flexShrink: 0 }}>⚠️</span>
-                                                <span>{claimError}</span>
-                                            </div>
-                                        )}
-
-                                        {/* LOADING or SEND BUTTON */}
-                                        {isLoading ? (
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '16px', background: 'rgba(212,175,55,0.08)', borderRadius: 12, border: `1px solid ${LUXURY_THEME.border}` }}>
-                                                <div style={{ width: 22, height: 22, borderRadius: '50%', border: '3px solid rgba(212,175,55,0.2)', borderTopColor: LUXURY_THEME.textGold, animation: 'spin 0.8s linear infinite' }} />
-                                                <span style={{ color: LUXURY_THEME.textGold, fontWeight: 700 }}>
-                                                    Sending {GAME_CONFIG.currency}{score.toLocaleString()} to {activeNetwork?.name || ''}…
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={handleAirtimeTransfer}
-                                                disabled={!phoneComplete || !activeNetwork || isLoading}
-                                                style={{
-                                                    width: '100%', padding: '14px', borderRadius: 12, border: 'none', fontWeight: 800, fontSize: '1rem',
-                                                    background: (phoneComplete && activeNetwork) ? 'linear-gradient(90deg,#ffd700,#ffb347)' : 'rgba(255,255,255,0.06)',
-                                                    color:      (phoneComplete && activeNetwork) ? '#1a1a1a' : 'rgba(255,255,255,0.25)',
-                                                    cursor:     (phoneComplete && activeNetwork) ? 'pointer' : 'not-allowed',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                                    animation: (phoneComplete && activeNetwork && !isLoading) ? 'pulseGreen 2s ease-in-out infinite' : 'none',
-                                                    transition: 'all 0.2s ease',
-                                                }}>
-                                                📲 Send {GAME_CONFIG.currency}{score.toLocaleString()} Airtime{activeNetwork ? ` → ${activeNetwork.name}` : ''}
-                                            </button>
-                                        )}
-
-                                        {/* RETRY */}
-                                        {isError && (
-                                            <button onClick={() => { setClaimStatus('idle'); setClaimError(''); }}
-                                                    style={{ width: '100%', marginTop: 10, padding: '10px', borderRadius: 10, background: 'transparent', border: `1px solid ${LUXURY_THEME.border}`, color: LUXURY_THEME.textGold, cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}>
-                                                ↩ Try Again
-                                            </button>
-                                        )}
-
-                                        <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: '0.68rem', textAlign: 'center', margin: '14px 0 0 0' }}>
-                                            Powered by Flutterwave · Airtime disbursed instantly
-                                        </p>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <AnimatedBanner />
-            </div>
-        );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RENDER: Play Next
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (gameState === 'play_next') {
-        return (
-            <div style={styles.container}>
-                <div style={styles.centerArea}>
-                    <div style={styles.header}>
-                        <div><img src={xxvLogo} alt="XXV Logo" style={{ width: isMobile ? 100 : 150, height: isMobile ? 100 : 150, objectFit: 'contain' }} /></div>
-                        <img src={Image6ts} alt="6ts" style={{ width: isMobile ? 100 : 150, height: isMobile ? 100 : 150, objectFit: 'contain' }} />
-                    </div>
-                    <div style={{ ...styles.card, maxWidth: 1500, marginBottom: 'auto', marginTop: 120, marginLeft: 'auto', marginRight: 'auto' }}>
-                        <h3 style={{ color: LUXURY_THEME.textGold }}>Enter Player Name</h3>
-                        <input autoFocus type="text" placeholder="Player name..." value={playerName}
-                               onChange={(e) => setPlayerName(e.target.value)}
-                               onKeyDown={(e) => e.key === 'Enter' && playerName.trim() && playNextUnplayedSet()}
-                               style={{ width: 'auto', padding: '20px 30px', borderRadius: 10, border: `1px solid ${LUXURY_THEME.border}`, backgroundColor: 'rgba(0,0,0,0.45)', color: LUXURY_THEME.text, fontSize: 16, marginTop: -2, marginBottom: 12 }}
-                        />
-                        <div style={{ display: 'flex', gap: 12 }}>
-                            <button onClick={() => { if (!isPresenterMode()) return; setPlayerName(''); playNextUnplayedSet(); }} disabled={!playerName.trim()}
-                                    style={{ flex: 1, padding: '12px 14px', borderRadius: 10, background: 'linear-gradient(90deg,#ffd700,#ffb347)', border: 'none', cursor: playerName.trim() ? 'pointer' : 'not-allowed', fontWeight: 700 }}>
-                                Proceed to Next Game
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <AnimatedBanner />
-            </div>
-        );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // RENDER: Slideshow
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (gameState === 'slideshow') {
-        return (
-            <div style={{ ...styles.container, padding: 0, background: '#000' }}>
-                <div style={{ position: 'relative', width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {isPresenterMode() && (
-                        <button onClick={() => setGameState('registration')}
-                                style={{ position: 'absolute', top: '30px', right: '30px', zIndex: 10000, padding: '14px 30px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', border: `1px solid ${LUXURY_THEME.accent}`, color: LUXURY_THEME.textGold, borderRadius: '30px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            ✕ Exit Slideshow
-                        </button>
-                    )}
-                    {slideshowImages.length > 0 && (
-                        <img src={slideshowImages[currentSlide].src} alt="Slideshow"
-                             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', transition: 'opacity 0.5s ease-in-out' }} />
-                    )}
-                </div>
-                <AnimatedBanner />
-            </div>
-        );
-    }
-
-    return null;
+            )}
+        </div>
+    );
 };
 
-export default QuizIQGame;
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCAN SCREEN (opens Geohunt on scan)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ScanScreen = ({ openGeohunt }) => (
+    <div style={{ padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14, animation: 'yc-fade .3s ease' }}>
+        <div style={{
+            position: 'relative', borderRadius: 14, overflow: 'hidden',
+            background: '#07120d', border: `1px solid ${T.line}`,
+            height: 330, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 40%,rgba(31,168,92,.14),transparent 70%)' }} />
+            <div style={{ position: 'relative', width: 212, height: 212 }}>
+                {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map(pos => {
+                    const t = pos.includes('top'), l = pos.includes('left');
+                    return (
+                        <span key={pos} style={{
+                            position: 'absolute',
+                            left: l ? 0 : undefined, right: !l ? 0 : undefined,
+                            top: t ? 0 : undefined, bottom: !t ? 0 : undefined,
+                            width: 34, height: 34,
+                            borderTop: t ? `2px solid ${T.gold}` : 'none',
+                            borderBottom: !t ? `2px solid ${T.gold}` : 'none',
+                            borderLeft: l ? `2px solid ${T.gold}` : 'none',
+                            borderRight: !l ? `2px solid ${T.gold}` : 'none',
+                            borderRadius: t && l ? '6px 0 0 0' : t && !l ? '0 6px 0 0' : !t && l ? '0 0 0 6px' : '0 0 6px 0',
+                        }} />
+                    );
+                })}
+                <div style={{
+                    position: 'absolute', left: 8, right: 8,
+                    height: 2, background: `linear-gradient(90deg,transparent,${T.accent},transparent)`,
+                    boxShadow: '0 0 14px rgba(31,168,92,.8)',
+                    animation: 'yc-scan 2s linear infinite',
+                }} />
+            </div>
+            <div style={{
+                position: 'absolute', left: 0, right: 0, bottom: 14,
+                textAlign: 'center', fontSize: 12, lineHeight: 1.4, color: T.textDim,
+            }}>
+                Point at the agent QR code on the event banner
+            </div>
+        </div>
+
+        <button className="yc-btn" onClick={openGeohunt} style={{
+            minHeight: 52, borderRadius: 10, border: 'none',
+            background: T.accent, color: '#04140c',
+            fontSize: 14, fontWeight: 700, letterSpacing: '.04em',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        }}>
+            OPEN GEOHUNT <ArrowRight size={16} strokeWidth={2.6} />
+        </button>
+
+        <div>
+            <div style={{ fontSize: 11, letterSpacing: '.18em', color: T.textMute, margin: '4px 0 10px', fontWeight: 500 }}>
+                RECENT CHECK-INS
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {RECENT_CHECKINS.map((c, i) => (
+                    <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 11,
+                        padding: '11px 12px', borderRadius: 10,
+                        background: 'rgba(255,255,255,.03)',
+                        border: `1px solid ${T.line}`,
+                    }}>
+                        <MapPin size={16} color={T.gold} strokeWidth={2.2} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3, color: T.text }}>{c.place}</div>
+                            <div style={{ marginTop: 3, fontSize: 11, color: T.textMute }}>{c.when}</div>
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 500, color: T.accent }}>{c.pts}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PROJECTS SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
+
+const ProjectsScreen = ({ flash }) => {
+    const [filter, setFilter] = useState('All');
+    const filters = ['All', 'Boreholes', 'Solar', 'Roads', 'Health'];
+    const shown = filter === 'All' ? PROJECTS : PROJECTS.filter(p => p.type === filter);
+    const statA = filter === 'All' ? '5,360' : shown.length.toString();
+    const statALabel = filter === 'All' ? 'Solar lights verified' : `${filter} projects tracked`;
+    const statB = filter === 'All' ? '60' : `${shown.filter(p => p.status === 'DELIVERED').length}/${shown.length}`;
+    const statBLabel = filter === 'All' ? 'Boreholes delivered' : 'Delivered in this filter';
+    const pillFor = (status) => ({
+        DELIVERED: { bg: 'rgba(31,168,92,.18)', color: T.accent },
+        ACTIVE:    { bg: 'rgba(217,180,92,.18)', color: T.gold },
+        PLANNED:   { bg: 'rgba(255,255,255,.08)', color: 'rgba(236,243,238,.65)' },
+    }[status]);
+
+    return (
+        <div style={{ padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14, animation: 'yc-fade .3s ease' }}>
+            <div>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 500, lineHeight: 1.2 }}>Project tracker</h2>
+                <p style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.5, color: T.textDim }}>
+                    Every borehole and solar light, ward by ward — reported by citizens, confirmed by agents.
+                </p>
+            </div>
+
+            <div className="yc-hide-scroll" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+                {filters.map(f => (
+                    <button key={f} className="yc-btn" onClick={() => setFilter(f)} style={{
+                        flex: 'none', minHeight: 38, padding: '0 14px',
+                        borderRadius: 8, border: 'none',
+                        fontSize: 12, fontWeight: 500,
+                        background: filter === f ? T.accent : '#16241d',
+                        color: filter === f ? '#04140c' : 'rgba(236,243,238,.8)',
+                    }}>{f}</button>
+                ))}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div style={{ padding: 13, borderRadius: 12, background: T.card, border: `1px solid ${T.line}` }}>
+                    <div style={{ fontSize: 22, fontWeight: 500, color: T.accent }}>{statA}</div>
+                    <div style={{ marginTop: 6, fontSize: 11, lineHeight: 1.3, color: T.textDim }}>{statALabel}</div>
+                </div>
+                <div style={{ padding: 13, borderRadius: 12, background: T.card, border: `1px solid ${T.line}` }}>
+                    <div style={{ fontSize: 22, fontWeight: 500, color: T.gold }}>{statB}</div>
+                    <div style={{ marginTop: 6, fontSize: 11, lineHeight: 1.3, color: T.textDim }}>{statBLabel}</div>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {shown.map(p => {
+                    const pill = pillFor(p.status);
+                    return (
+                        <div key={p.id} style={{
+                            borderRadius: 12, background: T.card,
+                            border: `1px solid ${T.line}`, overflow: 'hidden',
+                        }}>
+                            <div style={{ display: 'flex', gap: 12, padding: 12 }}>
+                                <div style={{
+                                    width: 72, height: 72, flex: 'none', borderRadius: 9,
+                                    background: `linear-gradient(135deg, ${T.heroA}, ${T.heroC})`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: T.gold,
+                                }}>
+                                    {p.type === 'Solar' ? <Sun size={30} strokeWidth={1.8} />
+                                        : p.type === 'Boreholes' ? <Gift size={28} strokeWidth={1.8} />
+                                        : p.type === 'Roads' ? <Map size={28} strokeWidth={1.8} />
+                                        : <Star size={28} strokeWidth={1.8} />}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{p.name}</span>
+                                        <span style={{
+                                            flex: 'none', padding: '4px 8px', borderRadius: 6,
+                                            fontSize: 10, fontWeight: 600, letterSpacing: '.04em',
+                                            background: pill.bg, color: pill.color,
+                                        }}>{p.status}</span>
+                                    </div>
+                                    <div style={{ marginTop: 5, fontSize: 11, lineHeight: 1.4, color: T.textMute }}>{p.meta}</div>
+                                    <div style={{ marginTop: 9, height: 6, borderRadius: 3, background: 'rgba(255,255,255,.08)', overflow: 'hidden' }}>
+                                        <div style={{
+                                            height: '100%', borderRadius: 3,
+                                            background: p.status === 'DELIVERED' ? T.accent : T.gold,
+                                            width: `${p.pct}%`,
+                                        }} />
+                                    </div>
+                                    <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', fontSize: 10, color: T.textMute }}>
+                                        <span>{p.pct}% delivered</span>
+                                        <span>{p.reports} citizen reports</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button className="yc-btn" onClick={() => flash('Report queued for agent review · +60 points')} style={{
+                                width: '100%', minHeight: 42, border: 'none',
+                                borderTop: `1px solid ${T.line}`,
+                                background: T.accentDark, color: '#eafff3',
+                                fontSize: 12, fontWeight: 700,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            }}>
+                                <Camera size={14} strokeWidth={2.4} />
+                                Report status in my ward · +60 pts
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  HUB SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
+
+const HubScreen = ({ points, flash }) => {
+    const [view, setView] = useState('list');
+    const [program, setProgram] = useState(null);
+
+    if (view === 'form' && program) {
+        return (
+            <div style={{ padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14, animation: 'yc-fade .3s ease' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button className="yc-btn" onClick={() => { setView('list'); setProgram(null); }} style={{
+                        width: 40, height: 40, borderRadius: 8, border: 'none',
+                        background: '#18271f', color: T.text,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <ArrowLeft size={16} strokeWidth={2.4} />
+                    </button>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 500, lineHeight: 1.2 }}>{program.name}</div>
+                        <div style={{ marginTop: 3, fontSize: 11, color: T.textMute }}>Application · step 1 of 2</div>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {[
+                        ['Full name', 'Adebayo T. Oluwaseun'],
+                        ['Trade or business', 'Tailoring · 4 years'],
+                    ].map(([label, val]) => (
+                        <div key={label}>
+                            <div style={{ fontSize: 12, color: T.textDim, marginBottom: 7 }}>{label}</div>
+                            <div style={{
+                                minHeight: 46, display: 'flex', alignItems: 'center', padding: '0 13px',
+                                border: `1px solid ${T.lineStrong}`, borderRadius: 8,
+                                background: 'rgba(255,255,255,.04)', fontSize: 13, fontWeight: 500,
+                            }}>{val}</div>
+                        </div>
+                    ))}
+                    <div>
+                        <div style={{ fontSize: 12, color: T.textDim, marginBottom: 7 }}>What will the support buy?</div>
+                        <div style={{
+                            minHeight: 82, padding: '12px 13px',
+                            border: `1px solid ${T.lineStrong}`, borderRadius: 8,
+                            background: 'rgba(255,255,255,.04)', fontSize: 13, lineHeight: 1.5,
+                            color: 'rgba(236,243,238,.8)',
+                        }}>
+                            Two industrial machines so I can take school uniform contracts in Ayetoro and train three apprentices.
+                        </div>
+                    </div>
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: 11, padding: 12,
+                        borderRadius: 8, background: 'rgba(31,168,92,.08)',
+                        border: `1px solid ${T.accent}44`,
+                    }}>
+                        <CheckCircle size={18} color={T.accent} strokeWidth={2.2} />
+                        <span style={{ fontSize: 11, lineHeight: 1.45, color: 'rgba(236,243,238,.7)' }}>
+                            Ward 04 verified · your check-in history counts as community reference
+                        </span>
+                    </div>
+                    <button className="yc-btn" onClick={() => { setView('done'); flash('Application submitted · ballot entry added'); }} style={{
+                        minHeight: 52, borderRadius: 10, border: 'none',
+                        background: T.gold, color: '#101a14',
+                        fontSize: 14, fontWeight: 700, letterSpacing: '.05em',
+                    }}>SUBMIT APPLICATION</button>
+                </div>
+            </div>
+        );
+    }
+
+    if (view === 'done') {
+        return (
+            <div style={{ padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14, animation: 'yc-fade .3s ease' }}>
+                <div style={{
+                    padding: '22px 16px', borderRadius: 14,
+                    background: `linear-gradient(140deg, ${T.heroA}, ${T.heroC})`,
+                    border: `1px solid ${T.accent}66`,
+                    textAlign: 'center',
+                }}>
+                    <div style={{
+                        width: 58, height: 58, margin: '0 auto', borderRadius: '50%',
+                        background: 'rgba(31,168,92,.18)',
+                        border: `1px solid ${T.accent}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <CheckCircle size={26} color={T.accent} strokeWidth={2.2} />
+                    </div>
+                    <h3 style={{ margin: '14px 0 0', fontSize: 19, fontWeight: 500, lineHeight: 1.25 }}>Application received</h3>
+                    <p style={{ margin: '8px 0 0', fontSize: 12, lineHeight: 1.6, color: T.textDim }}>
+                        Reference YW04-8821. Ward screening holds on 28 Sep at Ayetoro I town hall — you'll get a push and an SMS.
+                    </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                    {HUB_STEPS.map((s, i) => {
+                        const Icon = s.Icon;
+                        return (
+                            <div key={i} style={{
+                                display: 'flex', alignItems: 'center', gap: 11,
+                                padding: 12, borderRadius: 10,
+                                background: 'rgba(255,255,255,.03)',
+                                border: `1px solid ${s.done ? T.accent + '55' : T.line}`,
+                            }}>
+                                <Icon size={17} color={s.color} strokeWidth={2.2} />
+                                <span style={{ flex: 1, fontSize: 12, fontWeight: 500, lineHeight: 1.3, color: s.done ? T.text : T.textDim }}>{s.label}</span>
+                                <span style={{ fontSize: 11, color: T.textMute }}>{s.when}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+                <button className="yc-btn" onClick={() => { setView('list'); setProgram(null); }} style={{
+                    minHeight: 46, borderRadius: 10, border: 'none',
+                    background: '#18271f', color: T.text,
+                    fontSize: 13, fontWeight: 700,
+                }}>Back to the hub</button>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14, animation: 'yc-fade .3s ease' }}>
+            <div>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 500, lineHeight: 1.2 }}>Empowerment Hub</h2>
+                <p style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.5, color: T.textDim }}>
+                    Grants, tools and training. Points move you up the ballot — they never buy a slot.
+                </p>
+            </div>
+            <div style={{
+                display: 'flex', alignItems: 'center', gap: 11, padding: 13,
+                borderRadius: 12, background: 'rgba(217,180,92,.07)',
+                border: `1px solid ${T.gold}44`,
+            }}>
+                <Ticket size={20} color={T.gold} strokeWidth={2.2} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 500, lineHeight: 1.3, color: T.gold }}>You hold 3 ballot entries</div>
+                    <div style={{ marginTop: 3, fontSize: 11, lineHeight: 1.3, color: T.textDim }}>
+                        Earned from {points.toLocaleString()} quest points
+                    </div>
+                </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {PROGRAMS.map(pr => {
+                    const Icon = pr.Icon;
+                    const isAccent = pr.tint === 'accent';
+                    return (
+                        <div key={pr.id} style={{
+                            borderRadius: 12, background: T.card,
+                            border: `1px solid ${T.line}`, padding: 13,
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{
+                                    width: 38, height: 38, flex: 'none', borderRadius: 10,
+                                    background: isAccent ? 'rgba(31,168,92,.14)' : 'rgba(217,180,92,.14)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                    <Icon size={18} color={isAccent ? T.accent : T.gold} strokeWidth={2.2} />
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3 }}>{pr.name}</div>
+                                    <div style={{ marginTop: 3, fontSize: 11, lineHeight: 1.3, color: T.textDim }}>{pr.meta}</div>
+                                </div>
+                            </div>
+                            <div style={{ marginTop: 11, display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ height: 5, borderRadius: 3, background: 'rgba(255,255,255,.08)', overflow: 'hidden' }}>
+                                        <div style={{ height: '100%', borderRadius: 3, background: T.gold, width: `${pr.pct}%` }} />
+                                    </div>
+                                    <div style={{ marginTop: 5, fontSize: 10, color: T.textMute }}>{pr.slots}</div>
+                                </div>
+                                <button className="yc-btn" onClick={() => { setProgram(pr); setView('form'); }} style={{
+                                    flex: 'none', minHeight: 40, padding: '0 14px',
+                                    borderRadius: 8, border: 'none',
+                                    fontSize: 12, fontWeight: 700,
+                                    background: T.accent, color: '#04140c',
+                                }}>Apply</button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TRIVIA — internal quiz game (triggered from Campaign Trivia tile)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TriviaPlayScreen = ({ onExit, onComplete }) => {
+    const [qIdx, setQIdx] = useState(0);
+    const [selected, setSelected] = useState(null);
+    const [showResult, setShowResult] = useState(false);
+    const [validating, setValidating] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(TIME_PER_QUESTION);
+    const [running, setRunning] = useState(true);
+    const [eliminated, setEliminated] = useState([]);
+    const [audiencePoll, setAudiencePoll] = useState(null);
+    const [lifelines, setLifelines] = useState({ fiftyFifty: false, askAudience: false, phoneFriend: false });
+    const [runningScore, setRunningScore] = useState(0);
+    const [timeBonus, setTimeBonus] = useState(null);
+
+    const q = QUESTIONS[qIdx];
+
+    useEffect(() => {
+        if (!running || showResult) return;
+        const t = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(t);
+                    handleTimeUp();
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(t);
+    }, [running, showResult, qIdx]);
+
+    useEffect(() => {
+        if (timeBonus === null) return;
+        const t = setTimeout(() => setTimeBonus(null), 1400);
+        return () => clearTimeout(t);
+    }, [timeBonus]);
+
+    const handleTimeUp = () => {
+        if (selected !== null) { submit(); return; }
+        setRunning(false);
+        setShowResult(true);
+        setTimeout(() => finalize(false), 1600);
+    };
+
+    const submit = () => {
+        if (validating || showResult || selected === null) return;
+        setRunning(false); setValidating(true);
+        setTimeout(() => {
+            setValidating(false);
+            setShowResult(true);
+            const correct = selected === q.correct;
+            setTimeout(() => finalize(correct), 1400);
+        }, 1200);
+    };
+
+    const finalize = (wasCorrect) => {
+        let newScore = runningScore;
+        if (wasCorrect) newScore = PRIZE_STRUCTURE[Math.min(qIdx, PRIZE_STRUCTURE.length - 1)];
+        setRunningScore(newScore);
+        if (wasCorrect && qIdx < QUESTIONS.length - 1) {
+            setQIdx(qIdx + 1);
+            setSelected(null); setShowResult(false);
+            setTimeLeft(TIME_PER_QUESTION); setRunning(true);
+            setEliminated([]); setAudiencePoll(null);
+        } else {
+            onComplete(newScore);
+        }
+    };
+
+    const useFiftyFifty = () => {
+        if (lifelines.fiftyFifty) return;
+        setLifelines(p => ({ ...p, fiftyFifty: true }));
+        const wrongs = [0, 1, 2, 3].filter(i => i !== q.correct);
+        setEliminated(wrongs.slice(0, 2));
+        setTimeLeft(t => t + 10); setTimeBonus(10);
+    };
+
+    const useAskAudience = () => {
+        if (lifelines.askAudience) return;
+        setLifelines(p => ({ ...p, askAudience: true }));
+        setTimeLeft(t => t + 10); setTimeBonus(10);
+        const wrongs = [0, 1, 2, 3].filter(i => i !== q.correct);
+        const secondHighest = wrongs[Math.floor(Math.random() * wrongs.length)];
+        const rest = wrongs.filter(i => i !== secondHighest);
+        const correctPct = 45 + Math.floor(Math.random() * 30);
+        const secondPct = 15 + Math.floor(Math.random() * 20);
+        const leftover = 100 - correctPct - secondPct;
+        const thirdPct = Math.floor(leftover / 2) + Math.floor(Math.random() * (leftover / 2));
+        setAudiencePoll({
+            [q.correct]: correctPct,
+            [secondHighest]: secondPct,
+            [rest[0]]: thirdPct,
+            [rest[1]]: leftover - thirdPct,
+        });
+    };
+
+    const usePhoneFriend = () => {
+        if (lifelines.phoneFriend) return;
+        setLifelines(p => ({ ...p, phoneFriend: true }));
+        setTimeLeft(t => t + 15); setTimeBonus(15);
+    };
+
+    const timerCirc = 2 * Math.PI * 42;
+    const timerDash = timerCirc * (timeLeft / TIME_PER_QUESTION);
+    const timerColor = timeLeft <= 10 ? '#e35d5b' : T.accent;
+
+    return (
+        <div style={{
+            width: '100%', flex: 1, minHeight: 0,
+            display: 'flex', flexDirection: 'column',
+            background: T.ground, color: T.text,
+            animation: 'yc-fade .3s ease',
+        }}>
+            {/* Trivia header */}
+            <div style={{
+                flex: 'none', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '12px 14px', background: T.header,
+                borderBottom: `1px solid ${T.line}`,
+            }}>
+                <button className="yc-btn" onClick={onExit} style={{
+                    width: 36, height: 36, borderRadius: 8, border: 'none',
+                    background: '#18271f', color: T.text,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                    <ArrowLeft size={16} strokeWidth={2.4} />
+                </button>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, letterSpacing: '.16em', color: T.gold, fontWeight: 500 }}>
+                        CAMPAIGN TRIVIA · Q{qIdx + 1} of {QUESTIONS.length}
+                    </div>
+                    <div style={{ marginTop: 2, fontSize: 13, fontWeight: 500 }}>
+                        Bank ₦{PRIZE_STRUCTURE[qIdx]} on this question
+                    </div>
+                </div>
+                <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '6px 10px', borderRadius: 999,
+                    background: 'rgba(31,168,92,.14)', color: T.accent,
+                    fontSize: 12, fontWeight: 700,
+                }}>
+                    ₦{runningScore.toLocaleString()}
+                </div>
+            </div>
+
+            <div className="yc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Lifelines */}
+                <div style={{
+                    display: 'flex', gap: 8, padding: '8px 10px',
+                    borderRadius: 999, background: T.card, border: `1px solid ${T.line}`,
+                }}>
+                    {[
+                        { key: 'fiftyFifty',  label: '50/50',    Icon: Scissors, onUse: useFiftyFifty },
+                        { key: 'askAudience', label: 'Audience', Icon: Users,    onUse: useAskAudience },
+                        { key: 'phoneFriend', label: 'Phone',    Icon: Phone,    onUse: usePhoneFriend },
+                    ].map(({ key, label, Icon, onUse }) => {
+                        const used = lifelines[key];
+                        return (
+                            <button key={key} className="yc-btn" disabled={used} onClick={onUse} style={{
+                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                                padding: '8px 6px', borderRadius: 999, border: 'none',
+                                background: used ? 'transparent' : 'rgba(255,255,255,.04)',
+                                color: used ? T.textMute : T.text,
+                                opacity: used ? .5 : 1, fontSize: 11.5, fontWeight: 600,
+                                cursor: used ? 'not-allowed' : 'pointer',
+                            }}>
+                                <Icon size={14} strokeWidth={2.4} />
+                                {label}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Question card */}
+                <div style={{
+                    background: T.card, borderRadius: 14,
+                    border: `1px solid ${T.line}`, padding: '16px 14px',
+                }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 10 }}>
+                        <Chip color={T.accent} bg="rgba(31,168,92,.14)">{q.category}</Chip>
+                        <Chip color={T.gold} bg="rgba(217,180,92,.14)">{q.difficulty}</Chip>
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.4, color: T.text, marginBottom: 16 }}>
+                        {q.question}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {q.options.map((opt, idx) => {
+                            const isElim = eliminated.includes(idx);
+                            const isSel = selected === idx;
+                            const isCorrect = idx === q.correct;
+                            let state = 'idle';
+                            if (isElim) state = 'elim';
+                            else if (validating && isSel) state = 'validating';
+                            else if (isSel) state = 'selected';
+                            if (showResult) {
+                                if (isCorrect) state = 'correct';
+                                else if (isSel) state = 'incorrect';
+                            }
+                            const clickable = !isElim && !showResult && !validating;
+                            const styles = ({
+                                idle:       { bg: 'rgba(255,255,255,.04)', border: T.line,          text: T.text,      badgeBg: 'rgba(255,255,255,.08)', badgeText: T.textDim },
+                                selected:   { bg: 'rgba(31,168,92,.10)',   border: T.accent,        text: T.text,      badgeBg: T.accent,                badgeText: '#04140c' },
+                                validating: { bg: 'rgba(217,180,92,.08)',  border: T.gold,          text: T.text,      badgeBg: T.gold,                  badgeText: '#12180f' },
+                                correct:    { bg: 'rgba(31,168,92,.16)',   border: T.accent,        text: T.text,      badgeBg: T.accent,                badgeText: '#04140c' },
+                                incorrect:  { bg: 'rgba(227,93,91,.14)',   border: '#e35d5b',       text: T.text,      badgeBg: '#e35d5b',               badgeText: '#150606' },
+                                elim:       { bg: 'transparent',           border: T.line,          text: T.textMute,  badgeBg: 'rgba(255,255,255,.04)', badgeText: T.textMute },
+                            })[state];
+                            const poll = audiencePoll ? audiencePoll[idx] : 0;
+                            return (
+                                <div key={idx}
+                                    onClick={() => clickable && setSelected(idx)}
+                                    className={clickable ? 'yc-tap' : ''}
+                                    style={{
+                                        position: 'relative', overflow: 'hidden',
+                                        display: 'flex', alignItems: 'center', gap: 12,
+                                        padding: '12px 14px', borderRadius: 12,
+                                        background: styles.bg,
+                                        border: `1.5px solid ${styles.border}`,
+                                        cursor: clickable ? 'pointer' : 'default',
+                                        opacity: isElim ? .45 : 1,
+                                    }}>
+                                    {audiencePoll && (
+                                        <div style={{
+                                            position: 'absolute', right: 0, top: 0, bottom: 0,
+                                            width: `${poll}%`,
+                                            background: isCorrect ? 'rgba(31,168,92,.18)' : 'rgba(217,180,92,.10)',
+                                            transition: 'width 1.2s ease-out',
+                                        }} />
+                                    )}
+                                    <div style={{
+                                        position: 'relative', zIndex: 1, flex: 'none',
+                                        width: 32, height: 32, borderRadius: '50%',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        background: styles.badgeBg, color: styles.badgeText,
+                                        fontSize: 13, fontWeight: 700,
+                                    }}>{['A', 'B', 'C', 'D'][idx]}</div>
+                                    <div style={{
+                                        position: 'relative', zIndex: 1, flex: 1, minWidth: 0,
+                                        fontSize: 13.5, lineHeight: 1.4, fontWeight: 500, color: styles.text,
+                                    }}>{opt}</div>
+                                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 6, flex: 'none' }}>
+                                        {audiencePoll && <span style={{ fontSize: 12, fontWeight: 700, color: isCorrect ? T.accent : T.textDim }}>{poll}%</span>}
+                                        {state === 'correct' && <Check size={16} color={T.accent} strokeWidth={3} />}
+                                        {state === 'incorrect' && <XIcon size={16} color="#e35d5b" strokeWidth={3} />}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Timer + submit */}
+                    <div style={{
+                        marginTop: 18, paddingTop: 16,
+                        borderTop: `1px dashed ${T.lineStrong}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ position: 'relative', width: 66, height: 66 }}>
+                                <svg width="66" height="66" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="8" />
+                                    <circle cx="50" cy="50" r="42" fill="none" stroke={timerColor} strokeWidth="8"
+                                        strokeLinecap="round"
+                                        strokeDasharray={`${timerDash} ${timerCirc}`}
+                                        transform="rotate(-90 50 50)"
+                                        style={{ transition: 'stroke-dasharray .9s linear, stroke .3s' }} />
+                                </svg>
+                                <div style={{
+                                    position: 'absolute', inset: 0,
+                                    display: 'flex', flexDirection: 'column',
+                                    alignItems: 'center', justifyContent: 'center',
+                                }}>
+                                    <div style={{ fontSize: 20, fontWeight: 700, lineHeight: 1, color: timerColor }}>{timeLeft}</div>
+                                    <div style={{ fontSize: 8.5, fontWeight: 600, letterSpacing: '.1em', color: T.textMute, textTransform: 'uppercase', marginTop: 2 }}>seconds</div>
+                                </div>
+                                {timeBonus !== null && (
+                                    <div style={{
+                                        position: 'absolute', top: -6, right: -18,
+                                        fontSize: 14, fontWeight: 700, color: T.accent,
+                                        animation: 'yc-fade-up .5s ease',
+                                    }}>+{timeBonus}s</div>
+                                )}
+                            </div>
+                            <div style={{ fontSize: 12, color: T.textDim, lineHeight: 1.4 }}>
+                                <div style={{ fontWeight: 600, color: T.text }}>Answer to bank</div>
+                                <div style={{ fontSize: 15, fontWeight: 600, color: T.accent }}>₦{PRIZE_STRUCTURE[qIdx].toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <button className="yc-btn" onClick={submit} disabled={selected === null || validating || showResult} style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 8,
+                            padding: '12px 20px', borderRadius: 999, border: 'none',
+                            background: (selected === null || validating || showResult) ? '#18271f' : T.gold,
+                            color: (selected === null || validating || showResult) ? T.textMute : '#101a14',
+                            fontSize: 13, fontWeight: 700, cursor: (selected === null || validating || showResult) ? 'not-allowed' : 'pointer',
+                        }}>
+                            Submit <ArrowRight size={15} strokeWidth={2.6} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TRIVIA RESULT (airtime claim / Flutterwave)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TriviaResultScreen = ({ score, onDone }) => {
+    const [nin, setNin] = useState('');
+    const [phone, setPhone] = useState('');
+    const [detected, setDetected] = useState(null);
+    const [manual, setManual] = useState(null);
+    const [status, setStatus] = useState('idle');
+    const [err, setErr] = useState('');
+    const active = manual || detected;
+    const phoneComplete = phone.length === 11;
+    const topPrize = Math.max(...PRIZE_STRUCTURE);
+
+    const send = async () => {
+        if (status === 'loading' || status === 'success') return;
+        if (!phoneComplete) { setErr('Please complete all 11 phone digits.'); return; }
+        if (!active) { setErr('Please select your network above.'); return; }
+        setErr(''); setStatus('loading');
+        try {
+            const res = await fetch(`${PROXY_BASE}/api/send-airtime`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerName: 'Yayi Connect Player', phone, nin: nin || 'N/A', amountNGN: score }),
+            });
+            const data = await res.json();
+            if (!res.ok || data.error) throw new Error(data.error || 'Airtime transfer failed.');
+            setStatus('success');
+        } catch (e) {
+            console.error('Airtime error:', e);
+            setErr(e.message || 'Something went wrong. Please try again.');
+            setStatus('error');
+        }
+    };
+
+    const tone = score === topPrize
+        ? { title: 'Congratulations!', msg: `You banked the top prize. Ogun rises when citizens engage.`, color: T.accent }
+        : score >= 50
+        ? { title: 'Nicely done!',     msg: `You banked ₦${score.toLocaleString()}. Claim it as airtime below.`, color: T.gold }
+        : { title: 'Good effort',      msg: `Come back tomorrow and try again — every quest earns points.`, color: '#e35d5b' };
+
+    return (
+        <div style={{
+            width: '100%', flex: 1, minHeight: 0,
+            display: 'flex', flexDirection: 'column',
+            background: T.ground, color: T.text,
+            animation: 'yc-fade .3s ease',
+        }}>
+            <div style={{
+                flex: 'none', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '12px 14px', background: T.header,
+                borderBottom: `1px solid ${T.line}`,
+            }}>
+                <button className="yc-btn" onClick={onDone} style={{
+                    width: 36, height: 36, borderRadius: 8, border: 'none',
+                    background: '#18271f', color: T.text,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                    <ArrowLeft size={16} strokeWidth={2.4} />
+                </button>
+                <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, letterSpacing: '.16em', color: T.gold, fontWeight: 500 }}>TRIVIA COMPLETE</div>
+                    <div style={{ marginTop: 2, fontSize: 13, fontWeight: 500 }}>Claim your airtime</div>
+                </div>
+            </div>
+
+            <div className="yc-scroll" style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Result banner */}
+                <div style={{
+                    padding: '22px 18px', borderRadius: 14, textAlign: 'center',
+                    background: `linear-gradient(140deg, ${T.heroA}, ${T.heroC})`,
+                    border: `1px solid ${tone.color}55`,
+                }}>
+                    <div style={{
+                        width: 62, height: 62, margin: '0 auto', borderRadius: '50%',
+                        background: `${tone.color}22`, border: `1px solid ${tone.color}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        {score >= 50 ? <Trophy size={28} color={tone.color} strokeWidth={2.2} />
+                            : <XIcon size={28} color={tone.color} strokeWidth={2.2} />}
+                    </div>
+                    <h3 style={{ margin: '14px 0 6px', fontSize: 20, fontWeight: 500 }}>{tone.title}</h3>
+                    <p style={{ margin: '0 0 12px', fontSize: 12, lineHeight: 1.5, color: T.textDim }}>{tone.msg}</p>
+                    <div style={{
+                        display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+                        padding: '10px 22px', borderRadius: 14,
+                        background: 'rgba(255,255,255,.05)',
+                        border: `1px solid ${tone.color}44`,
+                    }}>
+                        <span style={{ fontSize: 10, letterSpacing: '.16em', color: T.textMute, fontWeight: 500 }}>FINAL SCORE</span>
+                        <span style={{ fontSize: 26, fontWeight: 600, color: tone.color, lineHeight: 1.1, marginTop: 3 }}>₦{score.toLocaleString()}</span>
+                    </div>
+                </div>
+
+                {score > 0 && (
+                    <div style={{
+                        background: T.card, borderRadius: 14,
+                        border: `1px solid ${T.line}`, padding: 16,
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                            <div style={{
+                                width: 38, height: 38, borderRadius: 10,
+                                background: 'rgba(31,168,92,.14)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                                <Phone size={18} color={T.accent} strokeWidth={2.2} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.2 }}>Claim your airtime</div>
+                                <div style={{ marginTop: 3, fontSize: 11, color: T.textMute }}>Enter your phone, we'll dispatch it instantly.</div>
+                            </div>
+                        </div>
+
+                        {status === 'success' ? (
+                            <div style={{
+                                padding: '22px 14px', borderRadius: 12, textAlign: 'center',
+                                background: 'rgba(31,168,92,.10)',
+                                border: `1px solid ${T.accent}55`,
+                            }}>
+                                <div style={{
+                                    width: 52, height: 52, margin: '0 auto 10px',
+                                    borderRadius: '50%', background: T.accent,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#04140c',
+                                }}><Check size={26} strokeWidth={3} /></div>
+                                <div style={{ fontSize: 16, fontWeight: 600, color: T.accent, marginBottom: 6 }}>Airtime sent</div>
+                                <div style={{ fontSize: 12, lineHeight: 1.6, color: T.textDim }}>
+                                    <span style={{ fontWeight: 700, color: T.text }}>₦{score.toLocaleString()}</span> dispatched to<br />
+                                    <span style={{ fontWeight: 700, color: T.text, letterSpacing: '1px' }}>{phone}</span>
+                                    {active && (
+                                        <span style={{
+                                            display: 'inline-flex', marginLeft: 8, padding: '3px 10px',
+                                            borderRadius: 999, background: 'rgba(255,255,255,.06)',
+                                            border: `1px solid ${T.lineStrong}`,
+                                            fontSize: 11, color: T.text, fontWeight: 600,
+                                        }}>{active.name}</span>
+                                    )}
+                                </div>
+                                <div style={{ marginTop: 12, fontSize: 10.5, color: T.textMute }}>Powered by Flutterwave</div>
+                            </div>
+                        ) : (
+                            <>
+                                <div style={{ marginBottom: 14 }}>
+                                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, letterSpacing: '.06em', color: T.textDim, marginBottom: 7 }}>
+                                        NIN — National Identity Number (optional)
+                                    </label>
+                                    <input
+                                        type="text" inputMode="numeric" maxLength={11}
+                                        placeholder="11-digit NIN"
+                                        value={nin}
+                                        onChange={e => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                                        disabled={status === 'loading'}
+                                        style={{
+                                            width: '100%', boxSizing: 'border-box',
+                                            padding: '12px 14px', borderRadius: 10,
+                                            background: 'rgba(255,255,255,.04)',
+                                            border: `1px solid ${nin.length === 11 ? T.accent : T.lineStrong}`,
+                                            color: T.text, fontSize: 14, letterSpacing: '2px',
+                                            outline: 'none', fontFamily: 'ui-monospace, monospace',
+                                        }} />
+                                    <div style={{ marginTop: 5, fontSize: 11, color: T.textMute }}>{nin.length}/11 digits</div>
+                                </div>
+
+                                <div style={{ marginBottom: 14 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
+                                        <label style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '.06em', color: phoneComplete ? T.accent : T.textDim }}>
+                                            Phone Number
+                                        </label>
+                                        {phoneComplete && (
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: T.accent, fontWeight: 600 }}>
+                                                <Check size={12} strokeWidth={3} /> Complete
+                                            </span>
+                                        )}
+                                    </div>
+                                    <DigitInput
+                                        length={11} prefixDigit="0"
+                                        value={phone}
+                                        onChange={(v) => {
+                                            setPhone(v);
+                                            if (v.length >= 4) {
+                                                const auto = detectNigerianNetwork(v);
+                                                if (auto) { setDetected(auto); setManual(null); }
+                                                else setDetected(null);
+                                            } else {
+                                                setDetected(null);
+                                            }
+                                        }}
+                                        onComplete={(full) => {
+                                            const auto = detectNigerianNetwork(full);
+                                            if (auto) { setDetected(auto); setManual(null); }
+                                            else setDetected(null);
+                                        }}
+                                        disabled={status === 'loading'}
+                                    />
+                                    <div style={{ marginTop: 6, fontSize: 11, color: T.textMute }}>Starts with 0, then 10 more digits</div>
+                                </div>
+
+                                {phone.length >= 4 && (
+                                    <div style={{
+                                        marginBottom: 14, padding: '12px 14px', borderRadius: 12,
+                                        background: 'rgba(255,255,255,.03)',
+                                        border: `1px solid ${T.line}`,
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                            <span style={{ fontSize: 11, letterSpacing: '.14em', color: T.textDim, fontWeight: 600, textTransform: 'uppercase' }}>Network</span>
+                                            {active && !manual && <span style={{ fontSize: 10, color: T.textMute, fontStyle: 'italic' }}>auto-detected</span>}
+                                            {manual && <span style={{ fontSize: 10, color: T.textMute, fontStyle: 'italic' }}>manually selected</span>}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                            {NETWORK_OPTIONS.map(net => {
+                                                const on = active?.code === net.code;
+                                                return (
+                                                    <button key={net.code} className="yc-btn"
+                                                        onClick={() => {
+                                                            if (status === 'loading') return;
+                                                            setManual(net);
+                                                            if (status === 'error') { setStatus('idle'); setErr(''); }
+                                                        }}
+                                                        style={{
+                                                            padding: '7px 14px', borderRadius: 999,
+                                                            fontSize: 12, fontWeight: 600,
+                                                            background: on ? 'rgba(31,168,92,.14)' : 'rgba(255,255,255,.04)',
+                                                            border: on ? `1px solid ${T.accent}` : `1px solid ${T.line}`,
+                                                            color: on ? T.accent : T.textDim,
+                                                        }}>{net.name}</button>
+                                                );
+                                            })}
+                                        </div>
+                                        {!active && phone.length >= 4 && (
+                                            <div style={{ marginTop: 8, fontSize: 11, color: '#e35d5b' }}>
+                                                Could not auto-detect. Please pick your network above.
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {status === 'error' && err && (
+                                    <div style={{
+                                        marginBottom: 12, padding: '11px 14px', borderRadius: 10,
+                                        background: 'rgba(227,93,91,.10)',
+                                        border: '1px solid rgba(227,93,91,.4)',
+                                        color: '#f5a4a2', fontSize: 12,
+                                        display: 'flex', gap: 10, alignItems: 'flex-start',
+                                    }}>
+                                        <XIcon size={15} strokeWidth={2.5} style={{ flex: 'none', marginTop: 2 }} />
+                                        <span>{err}</span>
+                                    </div>
+                                )}
+
+                                {status === 'loading' ? (
+                                    <div style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                                        padding: 14, borderRadius: 10,
+                                        background: 'rgba(31,168,92,.10)',
+                                        border: `1px solid ${T.accent}55`,
+                                    }}>
+                                        <div style={{
+                                            width: 20, height: 20, borderRadius: '50%',
+                                            border: `3px solid rgba(31,168,92,.3)`,
+                                            borderTopColor: T.accent,
+                                            animation: 'yc-spin .8s linear infinite',
+                                        }} />
+                                        <span style={{ color: T.accent, fontWeight: 600, fontSize: 12 }}>
+                                            Sending ₦{score.toLocaleString()} to {active?.name || ''}…
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <button className="yc-btn" onClick={send} disabled={!phoneComplete || !active} style={{
+                                        width: '100%', padding: '14px 18px', borderRadius: 999, border: 'none',
+                                        background: (phoneComplete && active) ? T.gold : '#18271f',
+                                        color: (phoneComplete && active) ? '#101a14' : T.textMute,
+                                        cursor: (phoneComplete && active) ? 'pointer' : 'not-allowed',
+                                        fontSize: 13.5, fontWeight: 700,
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                                    }}>
+                                        Send ₦{score.toLocaleString()} airtime
+                                        {active && <span style={{ opacity: .85 }}>· {active.name}</span>}
+                                        <ArrowRight size={15} strokeWidth={2.6} />
+                                    </button>
+                                )}
+
+                                {status === 'error' && (
+                                    <button className="yc-btn" onClick={() => { setStatus('idle'); setErr(''); }} style={{
+                                        width: '100%', marginTop: 10, padding: '10px 18px',
+                                        borderRadius: 999, border: `1px solid ${T.lineStrong}`,
+                                        background: 'transparent', color: T.textDim,
+                                        fontSize: 12, fontWeight: 700,
+                                    }}>Try again</button>
+                                )}
+
+                                <p style={{ margin: '14px 0 0', fontSize: 10.5, textAlign: 'center', color: T.textMute }}>
+                                    Powered by Flutterwave · Airtime disbursed instantly
+                                </p>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                <button className="yc-btn" onClick={onDone} style={{
+                    minHeight: 46, borderRadius: 10, border: 'none',
+                    background: '#18271f', color: T.text,
+                    fontSize: 13, fontWeight: 600,
+                }}>Back to Yayi Connect</button>
+            </div>
+        </div>
+    );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAIN APP
+// ═══════════════════════════════════════════════════════════════════════════
+
+const App = () => {
+    const [screen, setScreen] = useState('home');
+    const [points, setPoints] = useState(1240);
+    const [claimed, setClaimed] = useState({});
+    const [toast, setToast] = useState(null);
+    const toastTimer = useRef(null);
+
+    const flash = (msg) => {
+        clearTimeout(toastTimer.current);
+        setToast(msg);
+        toastTimer.current = setTimeout(() => setToast(null), 2600);
+    };
+
+    const openGeohunt = () => {
+        window.open(GEOHUNT_URL, '_blank', 'noopener,noreferrer');
+        flash('Opening Geohunt in a new tab');
+    };
+
+    const claim = (q) => {
+        if (claimed[q.id]) return;
+        if (q.action) { q.action(); return; }
+        setClaimed(c => ({ ...c, [q.id]: true }));
+        setPoints(p => p + q.pts);
+        flash(`+${q.pts} points — ${q.label}`);
+    };
+
+    const go = (s) => setScreen(s);
+    const join = () => flash('Welcome to the movement — ward agent will call you.');
+
+    const onTriviaComplete = (score) => {
+        if (score > 0 && !claimed.trivia) {
+            setClaimed(c => ({ ...c, trivia: true }));
+            setPoints(p => p + 30);
+        }
+        setScreen('trivia-result-' + score);
+    };
+
+    return (
+        <PhoneShell>
+            <GlobalStyles />
+
+            {/* Full-screen (no shell) trivia screens */}
+            {screen === 'trivia-play' && (
+                <TriviaPlayScreen
+                    onExit={() => setScreen('home')}
+                    onComplete={onTriviaComplete}
+                />
+            )}
+            {screen.startsWith('trivia-result-') && (
+                <TriviaResultScreen
+                    score={parseInt(screen.replace('trivia-result-', ''), 10)}
+                    onDone={() => setScreen('home')}
+                />
+            )}
+
+            {/* Yayi Connect shell */}
+            {!screen.startsWith('trivia') && (
+                <>
+                    <AppHeader />
+                    <div className="yc-hide-scroll" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                        {screen === 'home'     && <HomeScreen     points={points} claimed={claimed} go={go} openGeohunt={openGeohunt} join={join} />}
+                        {screen === 'quests'   && <QuestsScreen   points={points} claimed={claimed} claim={claim} go={go} openGeohunt={openGeohunt} />}
+                        {screen === 'scan'     && <ScanScreen     openGeohunt={openGeohunt} />}
+                        {screen === 'projects' && <ProjectsScreen flash={flash} />}
+                        {screen === 'hub'      && <HubScreen      points={points} flash={flash} />}
+                    </div>
+                    <Toast msg={toast} />
+                    <BottomNav screen={screen} go={go} />
+                </>
+            )}
+        </PhoneShell>
+    );
+};
+
+export default App;

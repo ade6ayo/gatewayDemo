@@ -1,0 +1,124 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: YAYI GATEWAY
+      - generic [ref=e8]: CONNECT
+    - button "Search" [ref=e9] [cursor=pointer]
+    - generic [ref=e13]: AT
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - heading "Progress. Unity. Future." [level=2] [ref=e21]
+            - generic [ref=e22]: Sen. Solomon Olamilekan Adeola
+            - generic [ref=e23]: Ogun State Governor 2027
+            - generic [ref=e24]:
+              - button "JOIN THE MOVEMENT" [ref=e25] [cursor=pointer]
+              - button "OUR PLAN" [ref=e26] [cursor=pointer]
+          - img "Sen. Adeola" [ref=e28]
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: GATEWAY 2027 • BLUEPRINT
+            - heading "The Y.A.Y.I Mandate" [level=2] [ref=e33]
+            - generic [ref=e34]: Engineering Sustainable Governance for Ogun State
+            - generic [ref=e35]:
+              - generic [ref=e36]:
+                - generic [ref=e37]: "Y"
+                - generic [ref=e38]:
+                  - generic [ref=e39]: YIELDING RESULTS
+                  - generic [ref=e40]: Auditable Fiscal Delivery
+              - generic [ref=e41]:
+                - generic [ref=e42]: A
+                - generic [ref=e43]:
+                  - generic [ref=e44]: ACCOUNTABLE
+                  - generic [ref=e45]: Open Budgets & Zero Diversion
+              - generic [ref=e46]:
+                - generic [ref=e47]: "Y"
+                - generic [ref=e48]:
+                  - generic [ref=e49]: YOUTH-CENTRIC
+                  - generic [ref=e50]: Tech Incubators & Micro-Grants
+              - generic [ref=e51]:
+                - generic [ref=e52]: I
+                - generic [ref=e53]:
+                  - generic [ref=e54]: INFRASTRUCTURE
+                  - generic [ref=e55]: 60 Boreholes • 5,360 Solar Lights
+            - generic [ref=e56]:
+              - button "Explore Blueprint" [ref=e57] [cursor=pointer]
+              - button "Track Assets" [ref=e58] [cursor=pointer]
+          - img "Sen. Yayi" [ref=e59]
+      - generic [ref=e60]:
+        - generic [ref=e61] [cursor=pointer]
+        - generic [ref=e62] [cursor=pointer]
+    - generic [ref=e63] [cursor=pointer]:
+      - generic [ref=e64]:
+        - generic [ref=e65]: GATEWAY QUEST
+        - button "All quests" [ref=e70]
+      - generic [ref=e73]:
+        - generic [ref=e74]: 1,240
+        - generic [ref=e75]: of 2,000 pts to Gold Citizen
+      - generic [ref=e78]:
+        - generic [ref=e86]:
+          - generic [ref=e87]: "Active Citizen Hub: Verify & Check-In"
+          - generic [ref=e88]: Opens GeoQuest for ward check-ins
+        - button "Scan" [ref=e89]
+    - generic [ref=e92]:
+      - generic [ref=e93]:
+        - generic [ref=e94]: Track boreholes & solar lights
+        - button [ref=e95] [cursor=pointer]
+      - generic [ref=e99]:
+        - generic [ref=e100]:
+          - generic [ref=e102]: 5,360
+          - generic [ref=e103]: solar lights
+        - generic [ref=e104]:
+          - generic [ref=e106]: "60"
+          - generic [ref=e107]: boreholes
+      - generic [ref=e123]: Ward-verified deliveries, last 14 weeks
+    - generic [ref=e124]:
+      - button "QR Verification Opens Geohunt" [ref=e125] [cursor=pointer]:
+        - generic [ref=e136]:
+          - generic [ref=e137]: QR Verification
+          - generic [ref=e138]: Opens Geohunt
+      - button "Empowerment Hub 4 programs open" [ref=e139] [cursor=pointer]:
+        - generic [ref=e145]:
+          - generic [ref=e146]: Empowerment Hub
+          - generic [ref=e147]: 4 programs open
+      - button "Campaign Trivia Play & win airtime" [ref=e148] [cursor=pointer]:
+        - generic [ref=e153]:
+          - generic [ref=e154]: Campaign Trivia
+          - generic [ref=e155]: Play & win airtime
+      - button "100-Day Plan Ogun 2027 brief" [ref=e156] [cursor=pointer]:
+        - generic [ref=e161]:
+          - generic [ref=e162]: 100-Day Plan
+          - generic [ref=e163]: Ogun 2027 brief
+    - generic [ref=e164]:
+      - generic [ref=e165]:
+        - generic [ref=e166]: WARD 04 LEADERBOARD
+        - button "Full board" [ref=e167] [cursor=pointer]
+      - generic [ref=e168]:
+        - generic [ref=e169]:
+          - generic [ref=e170]: "1"
+          - generic [ref=e171]: FA
+          - generic [ref=e172]: Folashade A.
+          - generic [ref=e173]: 2,180
+        - generic [ref=e174]:
+          - generic [ref=e175]: "2"
+          - generic [ref=e176]: TB
+          - generic [ref=e177]: Tunde Bakare
+          - generic [ref=e178]: 1,860
+        - generic [ref=e179]:
+          - generic [ref=e180]: "3"
+          - generic [ref=e181]: HY
+          - generic [ref=e182]: Halima Yusuf
+          - generic [ref=e183]: 1,495
+        - generic [ref=e184]:
+          - generic [ref=e185]: "4"
+          - generic [ref=e186]: Y·
+          - generic [ref=e187]: You · Adebayo T.
+          - generic [ref=e188]: 1,240
+  - generic [ref=e189]:
+    - button "Home" [ref=e190] [cursor=pointer]
+    - button "Quests" [ref=e196] [cursor=pointer]
+    - button "Scan" [ref=e202] [cursor=pointer]
+    - button "Projects" [ref=e211] [cursor=pointer]
+    - button "Hub" [ref=e216] [cursor=pointer]

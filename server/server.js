@@ -73,7 +73,7 @@ async function flwGet(path) {
 // POST /api/send-airtime
 // Body: { playerName, phone, nin, amountNGN }
 app.post('/api/send-airtime', async (req, res) => {
-    const { playerName, phone, nin, amountNGN } = req.body;
+    const { phone, amountNGN } = req.body;
 
     if (!phone || !/^\d{11}$/.test(phone))
         return res.status(400).json({ error: 'Invalid phone number. Must be 11 digits.' });
@@ -129,7 +129,7 @@ app.get('/api/balance', async (_req, res) => {
     try {
         const data = await flwGet('/balances/NGN');
         return res.json({ balance: data.data?.available_balance, currency: 'NGN' });
-    } catch (err) {
+    } catch {
         return res.status(500).json({ error: 'Could not fetch balance.' });
     }
 });

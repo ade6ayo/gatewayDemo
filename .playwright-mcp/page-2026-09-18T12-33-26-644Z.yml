@@ -1,0 +1,34 @@
+- generic [ref=e3]:
+  - generic [ref=e540]:
+    - generic [ref=e541]:
+      - generic [ref=e542]: YAYI GATEWAY
+      - generic [ref=e543]: CONNECT
+    - button "Search" [ref=e544] [cursor=pointer]
+    - generic [ref=e548]: AT
+  - generic [ref=e796]:
+    - generic [ref=e797]: Point at the agent QR code on the event banner
+    - button "OPEN GEOHUNT" [ref=e806] [cursor=pointer]
+    - generic [ref=e809]:
+      - generic [ref=e810]: RECENT CHECK-INS
+      - generic [ref=e811]:
+        - generic [ref=e812]:
+          - generic [ref=e816]:
+            - generic [ref=e817]: Ilaro Ward 02 · Youth Town Hall
+            - generic [ref=e818]: 14 Sep, 16:05
+          - generic [ref=e819]: "+50"
+        - generic [ref=e820]:
+          - generic [ref=e824]:
+            - generic [ref=e825]: Abeokuta South · Market Walk
+            - generic [ref=e826]: 09 Sep, 09:12
+          - generic [ref=e827]: "+50"
+        - generic [ref=e828]:
+          - generic [ref=e832]:
+            - generic [ref=e833]: Ayetoro I · Borehole Commissioning
+            - generic [ref=e834]: 31 Aug, 11:40
+          - generic [ref=e835]: "+60"
+  - generic [ref=e694]:
+    - button "Home" [ref=e695] [cursor=pointer]
+    - button "Quests" [ref=e701] [cursor=pointer]
+    - button "Scan" [active] [ref=e707] [cursor=pointer]
+    - button "Projects" [ref=e716] [cursor=pointer]
+    - button "Hub" [ref=e721] [cursor=pointer]

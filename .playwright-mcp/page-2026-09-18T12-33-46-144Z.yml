@@ -1,0 +1,49 @@
+- generic [ref=e3]:
+  - generic [ref=e540]:
+    - generic [ref=e541]:
+      - generic [ref=e542]: YAYI GATEWAY
+      - generic [ref=e543]: CONNECT
+    - button "Search" [ref=e544] [cursor=pointer]
+    - generic [ref=e548]: AT
+  - generic [ref=e836]:
+    - generic [ref=e837]:
+      - heading "Empowerment Hub" [level=2] [ref=e838]
+      - paragraph [ref=e839]: Grants, tools and training. Points move you up the ballot — they never buy a slot.
+    - generic [ref=e843]:
+      - generic [ref=e844]: You hold 3 ballot entries
+      - generic [ref=e845]: Earned from 1,240 quest points
+    - generic [ref=e846]:
+      - generic [ref=e847]:
+        - generic [ref=e853]:
+          - generic [ref=e854]: Artisan tools grant
+          - generic [ref=e855]: ₦250,000 equipment support · Ogun West
+        - generic [ref=e856]:
+          - generic [ref=e857]: 180 of 250 slots screened
+          - button "Apply" [ref=e861] [cursor=pointer]
+      - generic [ref=e862]:
+        - generic [ref=e867]:
+          - generic [ref=e868]: Gateway digital skills
+          - generic [ref=e869]: 8-week training + device · 500 seats
+        - generic [ref=e870]:
+          - generic [ref=e871]: 225 of 500 seats filled
+          - button "Apply" [ref=e875] [cursor=pointer]
+      - generic [ref=e876]:
+        - generic [ref=e885]:
+          - generic [ref=e886]: Agro input package
+          - generic [ref=e887]: Seedlings, fertiliser, offtake guarantee
+        - generic [ref=e888]:
+          - generic [ref=e889]: 440 of 500 farmers cleared
+          - button "Apply" [ref=e893] [cursor=pointer]
+      - generic [ref=e894]:
+        - generic [ref=e901]:
+          - generic [ref=e902]: Market women revolving fund
+          - generic [ref=e903]: 0% interest · ward cooperative model
+        - generic [ref=e904]:
+          - generic [ref=e905]: 150 of 500 groups onboarded
+          - button "Apply" [ref=e909] [cursor=pointer]
+  - generic [ref=e694]:
+    - button "Home" [ref=e695] [cursor=pointer]
+    - button "Quests" [ref=e701] [cursor=pointer]
+    - button "Scan" [ref=e707] [cursor=pointer]
+    - button "Projects" [ref=e716] [cursor=pointer]
+    - button "Hub" [active] [ref=e721] [cursor=pointer]

@@ -1,0 +1,24 @@
+- generic [ref=e3]:
+  - navigation [ref=e4]:
+    - img "Gateway Quest" [ref=e5]
+    - link "Go to Geohunt" [ref=e6] [cursor=pointer]:
+      - /url: https://geohunt-production.up.railway.app/
+  - img "Ogun State" [ref=e19]
+  - generic [ref=e21]:
+    - generic [ref=e22]: Ogun State · Gateway to Nigeria
+    - heading "Welcome to Gateway Trivia" [level=1] [ref=e24]
+    - paragraph [ref=e25]: Ogun stories, Nigerian history, world knowledge. Three questions, real airtime.
+    - generic [ref=e26]: Your name
+    - textbox "Enter your name" [active] [ref=e32]
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - generic [ref=e35]: Q1
+        - generic [ref=e36]: ₦50
+      - generic [ref=e37]:
+        - generic [ref=e38]: Q2
+        - generic [ref=e39]: ₦100
+      - generic [ref=e40]:
+        - generic [ref=e41]: Q3
+        - generic [ref=e42]: ₦250
+    - button "Get Started" [disabled] [ref=e43]
+    - generic [ref=e46]: Powered by Ogun Ma YaYi Strategic Group · YaYI 2027

@@ -1,0 +1,81 @@
+- generic [ref=e3]:
+  - generic [ref=e540]:
+    - generic [ref=e541]:
+      - generic [ref=e542]: YAYI GATEWAY
+      - generic [ref=e543]: CONNECT
+    - button "Search" [ref=e544] [cursor=pointer]
+    - generic [ref=e548]: AT
+  - generic [ref=e910]:
+    - generic [ref=e911]:
+      - heading "Project tracker" [level=2] [ref=e912]
+      - paragraph [ref=e913]: Every borehole and solar light, ward by ward — reported by citizens, confirmed by agents.
+    - generic [ref=e914]:
+      - button "All" [ref=e915] [cursor=pointer]
+      - button "Boreholes" [ref=e916] [cursor=pointer]
+      - button "Solar" [ref=e917] [cursor=pointer]
+      - button "Roads" [ref=e918] [cursor=pointer]
+      - button "Health" [ref=e919] [cursor=pointer]
+    - generic [ref=e920]:
+      - generic [ref=e921]:
+        - generic [ref=e922]: 5,360
+        - generic [ref=e923]: Solar lights verified
+      - generic [ref=e924]:
+        - generic [ref=e925]: "60"
+        - generic [ref=e926]: Boreholes delivered
+    - generic [ref=e927]:
+      - generic [ref=e928]:
+        - generic [ref=e937]:
+          - generic [ref=e938]:
+            - generic [ref=e939]: Solar street lights — Yewa North
+            - generic [ref=e940]: DELIVERED
+          - generic [ref=e941]: Ward 04 · 220 poles · commissioned Jul 2026
+          - generic [ref=e944]:
+            - generic [ref=e945]: 100% delivered
+            - generic [ref=e946]: 412 citizen reports
+        - button "Report status in my ward · +60 pts" [ref=e947] [cursor=pointer]
+      - generic [ref=e951]:
+        - generic [ref=e958]:
+          - generic [ref=e959]:
+            - generic [ref=e960]: Motorised borehole — Ayetoro I
+            - generic [ref=e961]: ACTIVE
+          - generic [ref=e962]: Ward 04 · 1 of 3 phases · 2,400 households
+          - generic [ref=e965]:
+            - generic [ref=e966]: 62% delivered
+            - generic [ref=e967]: 138 citizen reports
+        - button "Report status in my ward · +60 pts" [ref=e968] [cursor=pointer]
+      - generic [ref=e972]:
+        - generic [ref=e977]:
+          - generic [ref=e978]:
+            - generic [ref=e979]: Ilaro–Owode road rehabilitation
+            - generic [ref=e980]: ACTIVE
+          - generic [ref=e981]: Ogun West · 11.4 km · contractor on site
+          - generic [ref=e984]:
+            - generic [ref=e985]: 41% delivered
+            - generic [ref=e986]: 96 citizen reports
+        - button "Report status in my ward · +60 pts" [ref=e987] [cursor=pointer]
+      - generic [ref=e991]:
+        - generic [ref=e996]:
+          - generic [ref=e997]:
+            - generic [ref=e998]: Primary health centre upgrade
+            - generic [ref=e999]: PLANNED
+          - generic [ref=e1000]: Imeko Afon · equipment tender open
+          - generic [ref=e1003]:
+            - generic [ref=e1004]: 12% delivered
+            - generic [ref=e1005]: 24 citizen reports
+        - button "Report status in my ward · +60 pts" [ref=e1006] [cursor=pointer]
+      - generic [ref=e1010]:
+        - generic [ref=e1017]:
+          - generic [ref=e1018]:
+            - generic [ref=e1019]: Solar boreholes — Imeko cluster
+            - generic [ref=e1020]: ACTIVE
+          - generic [ref=e1021]: 6 communities · water committees trained
+          - generic [ref=e1024]:
+            - generic [ref=e1025]: 78% delivered
+            - generic [ref=e1026]: 201 citizen reports
+        - button "Report status in my ward · +60 pts" [ref=e1027] [cursor=pointer]
+  - generic [ref=e694]:
+    - button "Home" [ref=e695] [cursor=pointer]
+    - button "Quests" [ref=e701] [cursor=pointer]
+    - button "Scan" [ref=e707] [cursor=pointer]
+    - button "Projects" [active] [ref=e716] [cursor=pointer]
+    - button "Hub" [ref=e721] [cursor=pointer]
