@@ -53,7 +53,7 @@ function compressImage(file: File, maxPx = 1200, quality = 0.85): Promise<File> 
       canvas.height = height;
       canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
       canvas.toBlob(
-        (blob) => resolve(new File([blob!], `geohunt-${Date.now()}.jpg`, { type: 'image/jpeg' })),
+        (blob) => resolve(new File([blob!], `geoquest-${Date.now()}.jpg`, { type: 'image/jpeg' })),
         'image/jpeg',
         quality,
       );
@@ -97,7 +97,7 @@ export default function QuestSubmitFlow({ quest }: Props) {
       const origUrl = URL.createObjectURL(nextFile);
       const a = document.createElement('a');
       a.href = origUrl;
-      a.download = `geohunt-${Date.now()}.jpg`;
+      a.download = `geoquest-${Date.now()}.jpg`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(origUrl), 5000);
 

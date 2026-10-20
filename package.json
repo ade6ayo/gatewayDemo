@@ -9,9 +9,9 @@
   ],
   "scripts": {
     "dev:web": "npm run dev -w @gateway/web",
-    "dev:geohunt": "npm run dev -w @gateway/geohunt",
+    "dev:geoquest": "npm run dev -w @gateway/geoquest",
     "dev:api": "npm run dev -w @gateway/payments-api",
-    "build": "npm run build -w @gateway/web && npm run build -w @gateway/geohunt",
-    "lint": "npm run lint -w @gateway/web && npm run lint -w @gateway/geohunt"
+    "build": "npm run build -w @gateway/web && npm run build -w @gateway/geoquest",
+    "lint": "npm run lint -w @gateway/web && npm run lint -w @gateway/geoquest"
   }
 }

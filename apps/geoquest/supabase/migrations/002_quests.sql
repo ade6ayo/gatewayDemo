@@ -63,7 +63,7 @@ insert into app_settings (key, value) values
   ('final_instructions',
    'Thanks for your submission! Once our moderators approve it, your reward will be disbursed to the phone number on your profile within 24 hours.'),
   ('post_template',
-   'Just solved a #GeoHuntNG quest! Find yours at geohunt.app 🏆');
+   'Just solved a #GeoQuestNG quest! Find yours at geoquest.app 🏆');
 
 alter table app_settings enable row level security;
 create policy "settings_public_read" on app_settings for select using (true);

@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'GeoHunt',
-        short_name: 'GeoHunt',
+        name: 'GeoQuest',
+        short_name: 'GeoQuest',
         theme_color: '#8B6914',
         background_color: '#1a1a2e',
         display: 'standalone',

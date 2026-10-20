@@ -47,7 +47,7 @@ function normaliseToJpeg(file: File): Promise<File> {
         (blob) => {
           URL.revokeObjectURL(objectUrl);
           if (blob) {
-            resolve(new File([blob], `geohunt-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+            resolve(new File([blob], `geoquest-${Date.now()}.jpg`, { type: 'image/jpeg' }));
           } else {
             resolve(file);
           }
@@ -104,7 +104,7 @@ export default function SubmitFlow({ clue }: Props) {
       // Save photo to device so user can repost it on social media
       const a = document.createElement('a');
       a.href = objectUrl;
-      a.download = `geohunt-${Date.now()}.jpg`;
+      a.download = `geoquest-${Date.now()}.jpg`;
       a.click();
     }
   };

@@ -127,7 +127,7 @@ export default function AdminConsole() {
   return (
     <main className="admin-console">
       <header className="admin-header">
-        <h1>GeoHunt Admin</h1>
+        <h1>GeoQuest Admin</h1>
         <div className="admin-header-right">
           <nav className="admin-tabs" aria-label="Main tabs">
             <button

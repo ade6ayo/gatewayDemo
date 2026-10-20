@@ -8,7 +8,7 @@ export interface AppSettings {
 const DEFAULTS: AppSettings = {
   final_instructions:
     'Thanks for your submission! Once our moderators approve it, your reward will be disbursed to the phone number on your profile within 24 hours.',
-  post_template: 'Just solved a #GeoHuntNG quest! Find yours at geohunt.app 🏆',
+  post_template: 'Just solved a #GeoQuestNG quest! Find yours at geoquest.app 🏆',
 };
 
 export async function fetchAppSettings(): Promise<AppSettings> {

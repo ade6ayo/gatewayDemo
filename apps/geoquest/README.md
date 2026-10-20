@@ -1,6 +1,6 @@
-# GeoHunt
+# GeoQuest
 
-GeoHunt is a mobile-first PWA for location-based scavenger hunts in Nigeria. Players load nearby clue regions on a MapLibre map, travel into a region, read a parchment-style riddle, take a verification selfie at the answer location, and earn airtime after an admin approves the submission.
+GeoQuest is a mobile-first PWA for location-based scavenger hunts in Nigeria. Players load nearby clue regions on a MapLibre map, travel into a region, read a parchment-style riddle, take a verification selfie at the answer location, and earn airtime after an admin approves the submission.
 
 ## Stack
 
@@ -42,7 +42,7 @@ The app routes `/` to the game and `/admin` to the admin console.
 1. Create a Supabase project.
 2. Run `supabase/migrations/001_initial.sql` in SQL Editor.
 3. Run `supabase/seed.sql` for test clues.
-4. In Auth settings, disable email confirmation. This is required because player auth uses generated internal emails like `username@geohunt.app`.
+4. In Auth settings, disable email confirmation. This is required because player auth uses generated internal emails like `username@geoquest.app`.
 5. Confirm the private Storage bucket `submission-photos` exists.
 6. Keep the service role key private. It is required for the iteration 1 admin console to read answer fields and approve submissions.
 

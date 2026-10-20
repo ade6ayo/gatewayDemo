@@ -57,7 +57,7 @@ const T = {
 
 const FONT = "'Inter', system-ui, -apple-system, sans-serif";
 const PROXY_BASE = import.meta.env.VITE_PAYMENTS_API_URL || 'https://gatewaybe-production.up.railway.app';
-const GEOHUNT_URL = import.meta.env.VITE_GEOHUNT_URL || 'https://geohunt-production.up.railway.app/';
+const GEOQUEST_URL = import.meta.env.VITE_GEOQUEST_URL || 'https://geohunt-production.up.railway.app/';
 
 const POINTS_GOAL = 2000;
 
@@ -453,7 +453,7 @@ const Toast = ({ msg }) => msg ? (
 //  HOME SCREEN
 // ═══════════════════════════════════════════════════════════════════════════
 
-const HomeScreen = ({ points, claimed, go, openGeohunt, join }) => {
+const HomeScreen = ({ points, claimed, go, openGeoQuest, join }) => {
     const [heroIdx, setHeroIdx] = useState(0);
     const swipeX = useRef(null);
     const swipeY = useRef(null);
@@ -504,7 +504,7 @@ const HomeScreen = ({ points, claimed, go, openGeohunt, join }) => {
     const sparkline = [34, 48, 30, 62, 55, 78, 46, 84, 60, 92, 70, 100, 82, 96];
 
     const tiles = [
-        { label: 'QR Verification',  meta: 'Opens Geohunt',    Icon: QrCode,     color: T.accent, onClick: openGeohunt, external: true },
+        { label: 'QR Verification',  meta: 'Opens GeoQuest',    Icon: QrCode,     color: T.accent, onClick: openGeoQuest, external: true },
         { label: 'Empowerment Hub',  meta: '4 programs open',  Icon: Gift,       color: T.gold,   onClick: () => go('hub') },
         { label: 'Campaign Trivia',  meta: 'Play & win airtime', Icon: HelpCircle, color: T.accent, onClick: () => go('trivia-play'), highlight: true },
         { label: '100-Day Plan',     meta: 'Ogun 2027 brief',  Icon: FileText,   color: T.gold,   onClick: () => {} },
@@ -631,7 +631,7 @@ const HomeScreen = ({ points, claimed, go, openGeohunt, join }) => {
             </div>
 
             {/* Gateway Quest / Active Citizen Hub — whole card opens GeoQuest */}
-            <div className="yc-tap" onClick={openGeohunt} style={{
+            <div className="yc-tap" onClick={openGeoQuest} style={{
                 borderRadius: 12, background: T.card,
                 border: `1px solid ${T.line}`, padding: 14, cursor: 'pointer', marginTop: 8,
             }}>
@@ -679,7 +679,7 @@ const HomeScreen = ({ points, claimed, go, openGeohunt, join }) => {
                             {claimed.checkin ? 'Verified today · +50 earned' : 'Opens GeoQuest for ward check-ins'}
                         </div>
                     </div>
-                    <button className="yc-btn" onClick={openGeohunt} style={{
+                    <button className="yc-btn" onClick={openGeoQuest} style={{
                         minHeight: 36, padding: '0 12px', borderRadius: 8, border: 'none',
                         background: T.accent, color: '#04140c',
                         fontSize: 12, fontWeight: 700,
@@ -806,7 +806,7 @@ const HomeScreen = ({ points, claimed, go, openGeohunt, join }) => {
 //  QUESTS SCREEN
 // ═══════════════════════════════════════════════════════════════════════════
 
-const QuestsScreen = ({ points, claimed, claim, go, openGeohunt }) => {
+const QuestsScreen = ({ points, claimed, claim, go, openGeoQuest }) => {
     const [tab, setTab] = useState('quests');
     const initials = n => n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
     const me = { name: 'You · Adebayo T.', ward: 'Ward 04 · Ayetoro I', pts: points, you: true };
@@ -815,7 +815,7 @@ const QuestsScreen = ({ points, claimed, claim, go, openGeohunt }) => {
     const streak = 12;
 
     const QUESTS = [
-        { id: 'checkin', label: 'Verify & Check-In at a ward event', sub: 'Opens GeoQuest · scan agent QR at any rally',       pts: 50, Icon: QrCode,     action: openGeohunt },
+        { id: 'checkin', label: 'Verify & Check-In at a ward event', sub: 'Opens GeoQuest · scan agent QR at any rally',       pts: 50, Icon: QrCode,     action: openGeoQuest },
         { id: 'trivia',  label: 'Campaign Trivia: 3 questions',       sub: 'Ogun projects & the 2027 plan · earn airtime',    pts: 30, Icon: HelpCircle, action: () => go('trivia-play') },
         { id: 'invite',  label: 'Invite 3 neighbours',                sub: 'Share your ward referral code',                    pts: 40, Icon: UserPlus },
         { id: 'report',  label: 'Report a project in your ward',      sub: 'Photo + location of a borehole or solar light',   pts: 60, Icon: Camera,     action: () => go('projects') },
@@ -947,10 +947,10 @@ const QuestsScreen = ({ points, claimed, claim, go, openGeohunt }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  SCAN SCREEN (opens Geohunt on scan)
+//  SCAN SCREEN (opens GeoQuest on scan)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const ScanScreen = ({ openGeohunt }) => (
+const ScanScreen = ({ openGeoQuest }) => (
     <div style={{ padding: '14px 14px 22px', display: 'flex', flexDirection: 'column', gap: 14, animation: 'yc-fade .3s ease' }}>
         <div style={{
             position: 'relative', borderRadius: 14, overflow: 'hidden',
@@ -990,13 +990,13 @@ const ScanScreen = ({ openGeohunt }) => (
             </div>
         </div>
 
-        <button className="yc-btn" onClick={openGeohunt} style={{
+        <button className="yc-btn" onClick={openGeoQuest} style={{
             minHeight: 52, borderRadius: 10, border: 'none',
             background: T.accent, color: '#04140c',
             fontSize: 14, fontWeight: 700, letterSpacing: '.04em',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10,
         }}>
-            OPEN GEOHUNT <ArrowRight size={16} strokeWidth={2.6} />
+            OPEN GEOQUEST <ArrowRight size={16} strokeWidth={2.6} />
         </button>
 
         <div>
@@ -1949,9 +1949,9 @@ const App = () => {
         toastTimer.current = setTimeout(() => setToast(null), 2600);
     };
 
-    const openGeohunt = () => {
-        window.open(GEOHUNT_URL, '_blank', 'noopener,noreferrer');
-        flash('Opening Geohunt in a new tab');
+    const openGeoQuest = () => {
+        window.open(GEOQUEST_URL, '_blank', 'noopener,noreferrer');
+        flash('Opening GeoQuest in a new tab');
     };
 
     const claim = (q) => {
@@ -1996,9 +1996,9 @@ const App = () => {
                 <>
                     <AppHeader />
                     <div className="yc-hide-scroll" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                        {screen === 'home'     && <HomeScreen     points={points} claimed={claimed} go={go} openGeohunt={openGeohunt} join={join} />}
-                        {screen === 'quests'   && <QuestsScreen   points={points} claimed={claimed} claim={claim} go={go} openGeohunt={openGeohunt} />}
-                        {screen === 'scan'     && <ScanScreen     openGeohunt={openGeohunt} />}
+                        {screen === 'home'     && <HomeScreen     points={points} claimed={claimed} go={go} openGeoQuest={openGeoQuest} join={join} />}
+                        {screen === 'quests'   && <QuestsScreen   points={points} claimed={claimed} claim={claim} go={go} openGeoQuest={openGeoQuest} />}
+                        {screen === 'scan'     && <ScanScreen     openGeoQuest={openGeoQuest} />}
                         {screen === 'projects' && <ProjectsScreen flash={flash} />}
                         {screen === 'hub'      && <HubScreen      points={points} flash={flash} />}
                     </div>
