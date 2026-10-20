@@ -9,10 +9,20 @@ Order matters — doing these out of order locks you out of the admin console.
 - [ ] Flag the admin account:
       `update profiles set is_admin = true where id = '09d0133a-b568-44fc-beca-9871074137bc';`
 - [ ] Confirm `select id, username, is_admin from profiles where is_admin;` returns a row
-- [ ] Admin logs in as `adbay24gmailcom@example.com`, not a real address. GeoHunt signup
-      takes a username and fabricates an auth email from it (`fakeEmailForUsername`), so
-      every account sits on the reserved `example.com` domain and password recovery can
-      never work. Worth moving admin to a real address eventually.
+- [ ] Move admin onto a real email address. `AdminGuard` already passes the email
+      through untransformed, so no code change is needed — but do NOT just edit the
+      existing account's email: `AvatarDrawer` logs players in via
+      `fakeEmailForUsername(username)`, so changing it breaks that account's player
+      login. Create a separate admin user instead, give it a `profiles` row with
+      `is_admin = true`, and demote `09d0133a-b568-44fc-beca-9871074137bc`.
+
+## 1b. Open question: real emails for players
+
+GeoHunt signup takes a username and fabricates `<sanitized>@example.com` for Supabase
+Auth. `example.com` is IANA-reserved and can never receive mail, so no player can ever
+reset a password. Switching to real emails would invalidate all 9 existing accounts,
+require SMTP configuration, and add confirmation friction to a casual game. Product
+decision, not cleanup — deliberately deferred.
 - [ ] **Rotate the Supabase `service_role` key** (Settings → API). The old key has been
       public in the geohunt bundle since deploy; rotation is what actually invalidates it.
 - [ ] Verify the admin console still loads and approve/reject works
