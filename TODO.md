@@ -49,6 +49,33 @@ decision, not cleanup — deliberately deferred.
 - [ ] Export the remaining values to a password manager before any service teardown.
       Deleting a Railway service destroys its variables.
 
+## 2b. Leftover references to the old deployment
+
+- [ ] `apps/web/src/App.jsx:60` still falls back to
+      `https://geohunt-production.up.railway.app`. It was left pointing at the real live
+      host on purpose — renaming the string during the GeoQuest rename would have aimed
+      it at a domain that does not exist. Replace it with the new Railway URL once that
+      service is up. **The old GeoQuest service cannot be deleted until
+      `VITE_GEOQUEST_URL` is set on the web service**, or the fallback is all that is
+      holding the link together.
+- [ ] Same for `VITE_PAYMENTS_API_URL`, which falls back to
+      `https://gatewaybe-production.up.railway.app`.
+- [ ] Decide whether `geoquest.app` is a domain you actually own. The social post
+      template points users at it (`settings.ts`, migration 002, and migration 005 which
+      rewrites the live row). It was `geohunt.app` before and may never have been real —
+      worth confirming before players start sharing posts that link to it.
+- [ ] `apps/geoquest/docs/iteration-2-handover.md` still says GeoHunt. Left as a
+      historical record; its references point at files in ~/Downloads that still carry
+      the old name. Rename only if those files are renamed too.
+
+## 2c. Migrations to apply
+
+- [ ] `005_rename_to_geoquest.sql` — rewrites the live `post_template` row. Migration 002
+      already ran, so editing that file alone would only affect a fresh database.
+- [ ] `006_public_stats.sql` — adds `homepage_stats()` and `public_leaderboard`, the
+      PII-free surface the web app reads. Nothing on the homepage shows live data until
+      this is applied and the Supabase vars are set on the web service.
+
 ## 3. Wire up airtime disbursement
 
 `apps/geoquest/src/services/RewardService.ts` — `disburseAirtime()` is a stub. It logs,
@@ -98,6 +125,6 @@ a submission pays nobody.
 
 - [ ] `src/assets/6ts.png` and `src/assets/xxv.png` show as unstaged deletions, unrelated
       to this work. Intentional?
-- [ ] The Flutterwave key `FLWSECK-f50115f9...` was public in git history for ~7 months
+- [ ] The old Flutterwave secret key was public in git history for ~7 months
       before the history rewrite. Rotated — but if the repo was ever forked, the old
       history persists in those forks.
