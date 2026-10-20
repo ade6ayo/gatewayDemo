@@ -6,10 +6,13 @@ The code fix is committed (`6efe0f0`), but the leaked key is still valid until r
 Order matters — doing these out of order locks you out of the admin console.
 
 - [ ] Apply `apps/geohunt/supabase/migrations/004_admin_rls.sql` to Supabase
-- [ ] Create a dedicated admin user (Auth → Users → Add user, real email, auto-confirm)
-- [ ] Insert its `profiles` row with `is_admin = true` — dashboard-created users have no
-      profile row, and `is_admin()` reads from `profiles`
+- [ ] Flag the admin account:
+      `update profiles set is_admin = true where id = '09d0133a-b568-44fc-beca-9871074137bc';`
 - [ ] Confirm `select id, username, is_admin from profiles where is_admin;` returns a row
+- [ ] Admin logs in as `adbay24gmailcom@example.com`, not a real address. GeoHunt signup
+      takes a username and fabricates an auth email from it (`fakeEmailForUsername`), so
+      every account sits on the reserved `example.com` domain and password recovery can
+      never work. Worth moving admin to a real address eventually.
 - [ ] **Rotate the Supabase `service_role` key** (Settings → API). The old key has been
       public in the geohunt bundle since deploy; rotation is what actually invalidates it.
 - [ ] Verify the admin console still loads and approve/reject works
