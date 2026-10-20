@@ -1,5 +1,19 @@
 # Monorepo consolidation — outstanding work
 
+Phase 1 (Sprint 1) of the Yayi Gateway 2027 roadmap: Infrastructure Consolidation
+& Core Backend Merge.
+
+## 0. Homepage stats are not real data
+
+`apps/web` has no `@supabase/supabase-js` dependency — it cannot read the database at
+all. Every figure on the homepage is a hardcoded literal in `App.jsx` (the `PROJECTS`
+array around line 131: `reports: 412`, `pct: 100`, and so on). The app's only network
+call is `POST /api/send-airtime` at line 1647.
+
+Making the stats live needs: the Supabase client added to `apps/web`, pointed at the
+same instance GeoHunt uses, and the hardcoded arrays replaced with queries. That
+depends on roadmap Task 1.2 (schema harmonization) settling what the tables look like.
+
 ## 1. Finish the service_role remediation
 
 The code fix is committed (`6efe0f0`), but the leaked key is still valid until rotated.
