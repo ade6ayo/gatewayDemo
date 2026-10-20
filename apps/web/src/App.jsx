@@ -56,8 +56,8 @@ const T = {
 };
 
 const FONT = "'Inter', system-ui, -apple-system, sans-serif";
-const PROXY_BASE = 'https://gatewaybe-production.up.railway.app';
-const GEOHUNT_URL = 'https://geohunt-production.up.railway.app/';
+const PROXY_BASE = import.meta.env.VITE_PAYMENTS_API_URL || 'https://gatewaybe-production.up.railway.app';
+const GEOHUNT_URL = import.meta.env.VITE_GEOHUNT_URL || 'https://geohunt-production.up.railway.app/';
 
 const POINTS_GOAL = 2000;
 
