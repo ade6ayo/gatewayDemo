@@ -1,5 +1,5 @@
 {
-  "name": "quiziq-server",
+  "name": "@gateway/payments-api",
   "version": "1.0.0",
   "description": "Flutterwave proxy server for QuizIQ",
   "main": "server.js",
