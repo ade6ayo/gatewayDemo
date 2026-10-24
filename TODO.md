@@ -76,6 +76,29 @@ decision, not cleanup — deliberately deferred.
       PII-free surface the web app reads. Nothing on the homepage shows live data until
       this is applied and the Supabase vars are set on the web service.
 
+## 2d. Downscale verification photos before upload
+
+`normaliseToJpeg()` in `apps/geoquest/src/components/ui/SubmitFlow.tsx` (and the same
+function duplicated in `QuestSubmitFlow.tsx`) converts camera output to JPEG at quality
+0.85 but keeps full resolution:
+
+```js
+canvas.width  = img.naturalWidth;   // 4032px on a modern phone
+canvas.height = img.naturalHeight;
+```
+
+That lands roughly 2–4MB in Supabase Storage per submission, against ~1GB on the free
+tier — about 250–500 photos total. 50 testers doing a handful of quests each would
+approach that during a 3-month pilot; 1000 users would exceed it roughly 12x.
+
+- [ ] Cap the long edge at ~1600px, scaling the short edge proportionally. A moderator
+      only needs to recognise a face and a location, so this costs nothing in practice
+      and cuts each photo to roughly 300–500KB.
+- [ ] Factor the function out — it is currently duplicated verbatim in both flows, so a
+      fix applied to one silently misses the other.
+- [ ] Worth doing before real submissions accumulate; photos already stored at full size
+      would need a separate backfill.
+
 ## 3. Wire up airtime disbursement
 
 `apps/geoquest/src/services/RewardService.ts` — `disburseAirtime()` is a stub. It logs,
