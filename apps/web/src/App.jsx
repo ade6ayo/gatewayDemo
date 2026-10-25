@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import yayiMark from './assets/yayi-mark.png';
 import adeolaPortrait from './assets/adeola-portrait.png';
-import mandatePortrait from './assets/yayi-portrait-new.png';
+import jointTicket from './assets/yayi-kaab-joint-ticket.jpg';
 import {
     Home,
     Award,
@@ -250,15 +250,19 @@ const DigitInput = ({ length, prefixDigit, value, onChange, onComplete, disabled
 
     const onChg = (e, idx) => {
         if (disabled) return;
-        const raw = e.target.value.replace(/\D/g, '');
+        // Prefer what the user just typed over the box's whole value. A box that
+        // already holds a digit reads back as two characters when overtyped, and
+        // spreading that would push the stale digit into the next box.
+        const typed = e.nativeEvent && e.nativeEvent.data;
+        const raw = (typed || e.target.value).replace(/\D/g, '');
         if (!raw) return;
         const arr = [...digits];
-        raw.split('').slice(0, boxCount - idx).forEach((ch, off) => {
-            if (idx + off < boxCount) arr[idx + off] = ch;
-        });
+        const chars = raw.split('').slice(0, boxCount - idx);
+        chars.forEach((ch, off) => { arr[idx + off] = ch; });
         commit(arr);
-        const nextEmpty = arr.findIndex((d, i) => i >= idx && !d);
-        const focusIdx = nextEmpty === -1 ? boxCount - 1 : nextEmpty;
+        // Advance one box per digit entered. Jumping to the first empty box sent
+        // the caret to the end whenever a filled digit in the middle was corrected.
+        const focusIdx = Math.min(idx + chars.length, boxCount - 1);
         setTimeout(() => refs.current[focusIdx]?.focus(), 0);
     };
 
@@ -292,7 +296,7 @@ const DigitInput = ({ length, prefixDigit, value, onChange, onComplete, disabled
                 <input
                     key={i}
                     ref={el => refs.current[i] = el}
-                    type="text" inputMode="numeric" maxLength={1}
+                    type="text" inputMode="numeric"
                     value={d}
                     onChange={e => onChg(e, i)}
                     onKeyDown={e => onKey(e, i)}
@@ -504,9 +508,9 @@ const HomeScreen = ({ points, claimed, go, openGeoQuest, join }) => {
     const sparkline = [34, 48, 30, 62, 55, 78, 46, 84, 60, 92, 70, 100, 82, 96];
 
     const tiles = [
-        { label: 'QR Verification',  meta: 'Opens GeoQuest',    Icon: QrCode,     color: T.accent, onClick: openGeoQuest, external: true },
-        { label: 'Empowerment Hub',  meta: '4 programs open',  Icon: Gift,       color: T.gold,   onClick: () => go('hub') },
         { label: 'Campaign Trivia',  meta: 'Play & win airtime', Icon: HelpCircle, color: T.accent, onClick: () => go('trivia-play'), highlight: true },
+        { label: 'Empowerment Hub',  meta: '4 programs open',  Icon: Gift,       color: T.gold,   onClick: () => go('hub') },
+        { label: 'QR Verification',  meta: 'Opens GeoQuest',    Icon: QrCode,     color: T.accent, onClick: openGeoQuest, external: true },
         { label: '100-Day Plan',     meta: 'Ogun 2027 brief',  Icon: FileText,   color: T.gold,   onClick: () => {} },
     ];
 
@@ -555,65 +559,29 @@ const HomeScreen = ({ points, claimed, go, openGeoQuest, join }) => {
                         </div>
                     </div>
 
-                    {/* ── Slide 2: Y.A.Y.I Mandate ── */}
+                    {/* ── Slide 2: Yayi & Kaab joint ticket ── */}
                     <div style={{
                         flex: 'none', width: '100%', borderRadius: 14, overflow: 'hidden',
-                        background: `linear-gradient(150deg, ${T.heroA} 0%, ${T.heroB} 55%, ${T.heroC} 100%)`,
+                        background: T.heroA,
                         border: `1px solid rgba(217,180,92,.4)`,
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'stretch', position: 'relative', minHeight: 170 }}>
-                            <div style={{ flex: 1, minWidth: 0, padding: '14px 8px 12px 14px', position: 'relative', zIndex: 1 }}>
-                                <span style={{
-                                    display: 'inline-block', padding: '4px 9px', borderRadius: 20,
-                                    background: T.gold, color: '#101a14',
-                                    fontSize: 8, fontWeight: 700, letterSpacing: '.06em', whiteSpace: 'nowrap',
-                                }}>GATEWAY 2027 • BLUEPRINT</span>
-                                <h2 style={{ margin: '7px 0 0', fontSize: 17, fontWeight: 600, lineHeight: 1.1, letterSpacing: '-.01em', color: '#fff' }}>
-                                    The Y.A.Y.I Mandate
-                                </h2>
-                                <div style={{ marginTop: 3, fontSize: 10, lineHeight: 1.3, color: 'rgba(236,243,238,.65)' }}>
-                                    Engineering Sustainable Governance for Ogun State
-                                </div>
-                                <div style={{ marginTop: 7, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                    {[
-                                        ['Y', 'YIELDING RESULTS',  'Auditable Fiscal Delivery'],
-                                        ['A', 'ACCOUNTABLE',       'Open Budgets & Zero Diversion'],
-                                        ['Y', 'YOUTH-CENTRIC',     'Tech Incubators & Micro-Grants'],
-                                        ['I', 'INFRASTRUCTURE',    '60 Boreholes • 5,360 Solar Lights'],
-                                    ].map(([letter, title, desc], idx) => (
-                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                                            <span style={{
-                                                flex: 'none', width: 18, height: 18, borderRadius: '50%',
-                                                background: T.gold, color: '#101a14',
-                                                fontSize: 10, fontWeight: 700, lineHeight: 1,
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            }}>{letter}</span>
-                                            <div style={{ minWidth: 0 }}>
-                                                <div style={{ fontSize: 10, fontWeight: 600, lineHeight: 1.1, letterSpacing: '.02em', color: '#fff' }}>{title}</div>
-                                                <div style={{ fontSize: 9, lineHeight: 1.1, color: 'rgba(236,243,238,.55)' }}>{desc}</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 8 }}>
-                                    <button className="yc-btn" onClick={() => {}} style={{
-                                        minHeight: 32, padding: '0 11px', borderRadius: 8, border: 'none',
-                                        background: T.gold, color: '#101a14',
-                                        fontSize: 10, fontWeight: 700, letterSpacing: '.02em', whiteSpace: 'nowrap',
-                                    }}>Explore Blueprint</button>
-                                    <button className="yc-btn" onClick={() => go('projects')} style={{
-                                        minHeight: 32, padding: '0 11px', borderRadius: 8,
-                                        border: '1px solid rgba(255,255,255,.3)',
-                                        background: 'rgba(255,255,255,.06)', color: T.text,
-                                        fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap',
-                                    }}>Track Assets</button>
-                                </div>
-                            </div>
-                            <img src={mandatePortrait} alt="Sen. Yayi" style={{
-                                position: 'absolute', right: -30, bottom: -20,
-                                height: '100%', width: 'auto',
-                                objectFit: 'contain', display: 'block',
-                            }} />
+                        {/* The artwork already carries the Y.A.Y.I / K.A.A.B breakdown,
+                            so the slide is the image plus the two actions. */}
+                        <img src={jointTicket} alt="Gateway 2027 joint ticket — Yayi & Kaab" style={{
+                            width: '100%', display: 'block', objectFit: 'cover',
+                        }} />
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, padding: '10px 14px 12px' }}>
+                            <button className="yc-btn" onClick={() => {}} style={{
+                                minHeight: 32, padding: '0 11px', borderRadius: 8, border: 'none',
+                                background: T.gold, color: '#101a14',
+                                fontSize: 10, fontWeight: 700, letterSpacing: '.02em', whiteSpace: 'nowrap',
+                            }}>Explore Blueprint</button>
+                            <button className="yc-btn" onClick={() => go('projects')} style={{
+                                minHeight: 32, padding: '0 11px', borderRadius: 8,
+                                border: '1px solid rgba(255,255,255,.3)',
+                                background: 'rgba(255,255,255,.06)', color: T.text,
+                                fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap',
+                            }}>Track Assets</button>
                         </div>
                     </div>
                 </div>
@@ -696,7 +664,7 @@ const HomeScreen = ({ points, claimed, go, openGeoQuest, join }) => {
                 border: `1px solid ${T.line}`, padding: 14,
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>Track boreholes &amp; solar lights</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>Light Up Ogun (GeoQuest)</span>
                     <button className="yc-btn" onClick={() => go('projects')} style={{
                         width: 32, height: 32, borderRadius: 8, border: 'none',
                         background: 'rgba(255,255,255,.05)', color: T.textDim,
@@ -1628,7 +1596,6 @@ const TriviaPlayScreen = ({ onExit, onComplete }) => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const TriviaResultScreen = ({ score, onDone }) => {
-    const [nin, setNin] = useState('');
     const [phone, setPhone] = useState('');
     const [detected, setDetected] = useState(null);
     const [manual, setManual] = useState(null);
@@ -1647,7 +1614,7 @@ const TriviaResultScreen = ({ score, onDone }) => {
             const res = await fetch(`${PROXY_BASE}/api/send-airtime`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ playerName: 'Yayi Connect Player', phone, nin: nin || 'N/A', amountNGN: score }),
+                body: JSON.stringify({ playerName: 'Yayi Connect Player', phone, amountNGN: score }),
             });
             const data = await res.json();
             if (!res.ok || data.error) throw new Error(data.error || 'Airtime transfer failed.');
@@ -1766,27 +1733,6 @@ const TriviaResultScreen = ({ score, onDone }) => {
                             </div>
                         ) : (
                             <>
-                                <div style={{ marginBottom: 14 }}>
-                                    <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, letterSpacing: '.06em', color: T.textDim, marginBottom: 7 }}>
-                                        NIN — National Identity Number (optional)
-                                    </label>
-                                    <input
-                                        type="text" inputMode="numeric" maxLength={11}
-                                        placeholder="11-digit NIN"
-                                        value={nin}
-                                        onChange={e => setNin(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                                        disabled={status === 'loading'}
-                                        style={{
-                                            width: '100%', boxSizing: 'border-box',
-                                            padding: '12px 14px', borderRadius: 10,
-                                            background: 'rgba(255,255,255,.04)',
-                                            border: `1px solid ${nin.length === 11 ? T.accent : T.lineStrong}`,
-                                            color: T.text, fontSize: 14, letterSpacing: '2px',
-                                            outline: 'none', fontFamily: 'ui-monospace, monospace',
-                                        }} />
-                                    <div style={{ marginTop: 5, fontSize: 11, color: T.textMute }}>{nin.length}/11 digits</div>
-                                </div>
-
                                 <div style={{ marginBottom: 14 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 7 }}>
                                         <label style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '.06em', color: phoneComplete ? T.accent : T.textDim }}>

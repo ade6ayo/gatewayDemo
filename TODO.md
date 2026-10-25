@@ -99,6 +99,33 @@ approach that during a 3-month pilot; 1000 users would exceed it roughly 12x.
 - [ ] Worth doing before real submissions accumulate; photos already stored at full size
       would need a separate backfill.
 
+## 2e. "Light Up Ogun" — GeoQuest infrastructure map
+
+Agreed to start immediately after the monorepo migration lands, not before.
+
+The homepage card formerly labelled "Track boreholes & solar lights" is now
+**"Light Up Ogun (GeoQuest)"** (`apps/web/src/App.jsx`, the sparkline card). Its
+arrow currently still calls `go('projects')`, the existing in-app project list.
+The target is a different screen: the filtered infrastructure map from the mockup
+(`~/Downloads/IMG-20261024-WA0031.jpg`) — a map of Ogun with pins per asset,
+senatorial-district counts (West / Central / East), a "nearest borehole" readout,
+a district filter row, and a per-asset card with *Get Directions* and
+*Verify & Check-In*.
+
+Open questions to settle before building:
+- [ ] Does this live in `apps/web` or in GeoQuest? The mockup's *Verify & Check-In*
+      is GeoQuest's existing submission flow, which argues for GeoQuest — but the
+      chrome in the mockup is Yayi Connect's. Deciding this decides whether the
+      card navigates in-app or opens `GEOQUEST_URL` at a deep link.
+- [ ] GeoQuest's current UI is a scavenger-hunt/clue layout. A district-filtered
+      asset map is a different information architecture, so this is a redesign of
+      GeoQuest's main screen, not a new tab on it.
+- [ ] Where does asset data come from? `PROJECTS` in `App.jsx` is hardcoded and has
+      no coordinates. A real map needs a table with lat/lng, type, status, ward and
+      district — related to roadmap Task 1.2 (schema harmonization).
+- [ ] Pick a map renderer. Leaflet + OpenStreetMap tiles is free; Mapbox and Google
+      Maps both bill per load and would break the $0-until-revenue constraint.
+
 ## 3. Wire up airtime disbursement
 
 `apps/geoquest/src/services/RewardService.ts` — `disburseAirtime()` is a stub. It logs,
