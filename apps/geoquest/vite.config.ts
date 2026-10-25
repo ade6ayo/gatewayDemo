@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // Pinned so this and the web app (5173) never race for the same port.
+  server: { port: 5174, strictPort: true },
   plugins: [
     react(),
     VitePWA({

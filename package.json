@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "npm run dev -w @gateway/web",
     "dev:web": "npm run dev -w @gateway/web",
     "dev:geoquest": "npm run dev -w @gateway/geoquest",
     "dev:api": "npm run dev -w @gateway/payments-api",
