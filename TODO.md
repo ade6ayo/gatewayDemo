@@ -101,7 +101,30 @@ approach that during a 3-month pilot; 1000 users would exceed it roughly 12x.
 
 ## 2e. "Light Up Ogun" — GeoQuest infrastructure map
 
-Agreed to start immediately after the monorepo migration lands, not before.
+**A placeholder version is now shipped** in `apps/web/src/components/InfrastructureSheet.jsx`,
+opened by the homepage card. It is self-contained and meant to be replaced, not
+extended. What is still fake, and what the restructure has to supply:
+
+- [ ] **The data.** `apps/web/src/data/infrastructure.js` holds 20 invented asset
+      records. Coordinates are real Ogun locations so the pin geometry is honest,
+      but names, statuses, allocations and site contacts are made up. These must
+      not be shown to real users as if they were delivery records.
+- [ ] **The table.** GeoQuest's `quests` table has lat/lng, title, instructions
+      and a reward — no asset kind, delivery status, progress, allocation count
+      or contact. An `assets` table is needed (roadmap Task 1.2). `loadAssets()`
+      documents the exact select the UI expects.
+- [ ] **The map.** The panel is a schematic: pins projected from lat/lng onto a
+      graticule, with a decorative nearest-neighbour network for the solar view.
+      No basemap, no state outline, no real routes. GeoQuest already depends on
+      maplibre-gl + react-map-gl and has a working `MapView`; that is the thing
+      to reuse once both apps share a package, rather than adding ~800KB of tile
+      renderer to apps/web for placeholder pins.
+- [ ] **Verify & Check-In** opens GeoQuest in a new tab. Once the apps share a
+      router it should deep-link to that asset's submission flow.
+- [ ] `PROGRAMME_TOTALS` (3,505 / 2,330 solar, 38 / 22 boreholes) are campaign
+      headline figures hardcoded to match the mockups, not counts of the rows.
+
+Original scoping notes follow.
 
 The homepage card formerly labelled "Track boreholes & solar lights" is now
 **"Light Up Ogun (GeoQuest)"** (`apps/web/src/App.jsx`, the sparkline card). Its

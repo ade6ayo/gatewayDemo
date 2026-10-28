@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import yayiMark from './assets/yayi-mark.png';
 import adeolaPortrait from './assets/adeola-portrait.png';
 import jointTicket from './assets/yayi-kaab-joint-ticket.jpg';
+import { T, FONT } from './theme';
+import { InfrastructureSheet } from './components/InfrastructureSheet';
 import {
     Home,
     Award,
@@ -37,25 +39,6 @@ import {
 //  THEME + CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-const T = {
-    ground: '#0b1510',
-    header: '#0d1d16',
-    card: '#12241b',
-    heroA: '#0f3a26',
-    heroB: '#0c2a1c',
-    heroC: '#0a1f16',
-    accent: '#1fa85c',
-    accentDark: '#14734a',
-    gold: '#d9b45c',
-    goldLight: '#f0cf85',
-    text: '#ecf3ee',
-    textDim: 'rgba(236,243,238,.62)',
-    textMute: 'rgba(236,243,238,.5)',
-    line: 'rgba(255,255,255,.07)',
-    lineStrong: 'rgba(255,255,255,.12)',
-};
-
-const FONT = "'Inter', system-ui, -apple-system, sans-serif";
 const PROXY_BASE = import.meta.env.VITE_PAYMENTS_API_URL || 'https://gatewaybe-production.up.railway.app';
 const GEOQUEST_URL = import.meta.env.VITE_GEOQUEST_URL || 'https://geohunt-production.up.railway.app/';
 
@@ -457,7 +440,7 @@ const Toast = ({ msg }) => msg ? (
 //  HOME SCREEN
 // ═══════════════════════════════════════════════════════════════════════════
 
-const HomeScreen = ({ points, claimed, go, openGeoQuest, join }) => {
+const HomeScreen = ({ points, claimed, go, openGeoQuest, join, openMap }) => {
     const [heroIdx, setHeroIdx] = useState(0);
     const swipeX = useRef(null);
     const swipeY = useRef(null);
@@ -658,14 +641,14 @@ const HomeScreen = ({ points, claimed, go, openGeoQuest, join }) => {
                 </div>
             </div>
 
-            {/* Projects sparkline */}
-            <div style={{
+            {/* Light Up Ogun — opens the infrastructure map sheet */}
+            <div className="yc-tap" onClick={openMap} style={{
                 borderRadius: 12, background: T.card,
-                border: `1px solid ${T.line}`, padding: 14,
+                border: `1px solid ${T.line}`, padding: 14, cursor: 'pointer',
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: 13, fontWeight: 500, color: T.text }}>Light Up Ogun (GeoQuest)</span>
-                    <button className="yc-btn" onClick={() => go('projects')} style={{
+                    <button className="yc-btn" onClick={openMap} aria-label="Open the Light Up Ogun map" style={{
                         width: 32, height: 32, borderRadius: 8, border: 'none',
                         background: 'rgba(255,255,255,.05)', color: T.textDim,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1909,6 +1892,7 @@ const App = () => {
     };
 
     const go = (s) => setScreen(s);
+    const [mapOpen, setMapOpen] = useState(false);
     const join = () => flash('Welcome to the movement — ward agent will call you.');
 
     const onTriviaComplete = (score) => {
@@ -1942,7 +1926,7 @@ const App = () => {
                 <>
                     <AppHeader />
                     <div className="yc-hide-scroll" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                        {screen === 'home'     && <HomeScreen     points={points} claimed={claimed} go={go} openGeoQuest={openGeoQuest} join={join} />}
+                        {screen === 'home'     && <HomeScreen     points={points} claimed={claimed} go={go} openGeoQuest={openGeoQuest} join={join} openMap={() => setMapOpen(true)} />}
                         {screen === 'quests'   && <QuestsScreen   points={points} claimed={claimed} claim={claim} go={go} openGeoQuest={openGeoQuest} />}
                         {screen === 'scan'     && <ScanScreen     openGeoQuest={openGeoQuest} />}
                         {screen === 'projects' && <ProjectsScreen flash={flash} />}
@@ -1950,6 +1934,12 @@ const App = () => {
                     </div>
                     <Toast msg={toast} />
                     <BottomNav screen={screen} go={go} />
+                    {mapOpen && (
+                        <InfrastructureSheet
+                            onClose={() => setMapOpen(false)}
+                            openGeoQuest={openGeoQuest}
+                        />
+                    )}
                 </>
             )}
         </PhoneShell>
