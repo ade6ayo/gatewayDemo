@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import yayiMark from './assets/yayi-mark.png';
 import adeolaPortrait from './assets/adeola-portrait.png';
 import jointTicket from './assets/yayi-kaab-joint-ticket.jpg';
 import { T, FONT } from './theme';
-import { InfrastructureSheet } from './components/InfrastructureSheet';
+// Split out: maplibre is ~264KB gzipped, and only map users should pay for it.
+const InfrastructureSheet = lazy(() => import('./components/InfrastructureSheet'));
 import {
     Home,
     Award,
@@ -296,6 +297,20 @@ const DigitInput = ({ length, prefixDigit, value, onChange, onComplete, disabled
 // ═══════════════════════════════════════════════════════════════════════════
 //  PHONE SHELL — wraps app on desktop as a phone frame, full-bleed on mobile
 // ═══════════════════════════════════════════════════════════════════════════
+
+const MapLoading = () => (
+    <div style={{
+        position: 'absolute', inset: 0, zIndex: 40, background: T.ground,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14,
+    }}>
+        <div style={{
+            width: 26, height: 26, borderRadius: '50%',
+            border: `3px solid rgba(31,168,92,.25)`, borderTopColor: T.accent,
+            animation: 'yc-spin .8s linear infinite',
+        }} />
+        <span style={{ fontSize: 12, color: T.textDim }}>Loading map…</span>
+    </div>
+);
 
 const PhoneShell = ({ children }) => {
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 480);
@@ -1935,10 +1950,12 @@ const App = () => {
                     <Toast msg={toast} />
                     <BottomNav screen={screen} go={go} />
                     {mapOpen && (
-                        <InfrastructureSheet
-                            onClose={() => setMapOpen(false)}
-                            openGeoQuest={openGeoQuest}
-                        />
+                        <Suspense fallback={<MapLoading />}>
+                            <InfrastructureSheet
+                                onClose={() => setMapOpen(false)}
+                                openGeoQuest={openGeoQuest}
+                            />
+                        </Suspense>
                     )}
                 </>
             )}

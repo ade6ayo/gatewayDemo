@@ -16,9 +16,6 @@
 //       .select('id, name, kind, status, district, lga, lat, lng, allocated, unit, pct, contact_name, contact_phone');
 //   return data;
 
-// Ogun State bounding box, used to project lat/lng into the map panel.
-export const OGUN_BOUNDS = { minLng: 2.65, maxLng: 4.55, minLat: 6.35, maxLat: 7.85 };
-
 export const DISTRICTS = ['Ogun West', 'Ogun Central', 'Ogun East'];
 
 const ASSETS = [
@@ -54,6 +51,7 @@ export const PROGRAMME_TOTALS = {
     borehole: { completed: 38,   ongoing: 22,   label: 'Borehole Network' },
 };
 
-export function loadAssets(kind) {
-    return ASSETS.filter(a => a.kind === kind);
+// Both kinds, in one list. The map shows them together and the sheet filters.
+export function loadAssets() {
+    return ASSETS;
 }

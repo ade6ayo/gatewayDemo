@@ -113,14 +113,25 @@ extended. What is still fake, and what the restructure has to supply:
       and a reward — no asset kind, delivery status, progress, allocation count
       or contact. An `assets` table is needed (roadmap Task 1.2). `loadAssets()`
       documents the exact select the UI expects.
-- [ ] **The map.** The panel is a schematic: pins projected from lat/lng onto a
-      graticule, with a decorative nearest-neighbour network for the solar view.
-      No basemap, no state outline, no real routes. GeoQuest already depends on
-      maplibre-gl + react-map-gl and has a working `MapView`; that is the thing
-      to reuse once both apps share a package, rather than adding ~800KB of tile
-      renderer to apps/web for placeholder pins.
+- [ ] **Shared map code.** apps/web now has its own maplibre map
+      (`components/map/InfraMap.jsx`), separate from GeoQuest's `MapView`, which
+      is wired into three zustand stores and could not be lifted as-is. Two map
+      stacks is the deliberate cost of shipping before the restructure; unify
+      them in `packages/shared` once the stores are decoupled.
+- [ ] **Basemap key.** `VITE_MAPTILER_KEY` is optional. Unset, `lib/basemap.js`
+      falls back to CARTO's keyless styles, which is what runs today. Set it on
+      the web service to match GeoQuest's tiles. GeoQuest's own fallback is
+      `demotiles.maplibre.org`, which renders country outlines only and shows
+      nothing at city zoom — worth changing there too.
 - [ ] **Verify & Check-In** opens GeoQuest in a new tab. Once the apps share a
       router it should deep-link to that asset's submission flow.
+- [ ] **React duplication.** `apps/web/vite.config.js` dedupes react/react-dom.
+      react-map-gl hoists to the workspace root where React is 18 (GeoQuest's),
+      while apps/web runs React 19 — without the dedupe every map hook throws
+      "Invalid hook call" in dev, and the production build silently shipped a
+      second React copy (the sheet chunk was 174KB; deduped it is 33KB). The
+      root cause is the two apps sitting on different React majors, which the
+      restructure should settle.
 - [ ] `PROGRAMME_TOTALS` (3,505 / 2,330 solar, 38 / 22 boreholes) are campaign
       headline figures hardcoded to match the mockups, not counts of the rows.
 

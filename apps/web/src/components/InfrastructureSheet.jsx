@@ -1,53 +1,30 @@
-import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Crosshair, Droplet, Navigation, Camera, Phone, User, Sun } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Camera, Crosshair, Droplet, Layers, Navigation, Phone, Search, Sun, User, X as XIcon } from 'lucide-react';
 import { T } from '../theme';
-import { DISTRICTS, OGUN_BOUNDS, PROGRAMME_TOTALS, loadAssets } from '../data/infrastructure';
+import { DISTRICTS, PROGRAMME_TOTALS, loadAssets } from '../data/infrastructure';
+import { InfraMap } from './map/InfraMap';
 
-// Light Up Ogun — infrastructure map with a peek-and-expand bottom sheet.
+// Light Up Ogun — real basemap with a draggable asset sheet over it.
 //
-// TEMPORARY, and deliberately self-contained so it can be deleted in one piece.
-// It draws its own schematic map rather than pulling in maplibre: the asset
-// records have no home in the database yet (see data/infrastructure.js), so
-// shipping ~800KB of tile renderer for placeholder pins is the wrong trade
-// before the restructure. Pin positions are projected from real coordinates,
-// so the geometry is honest; the backdrop is a graticule, not a coastline.
+// The sheet overlays the map rather than sharing a flex row with it, so dragging
+// never resizes the map canvas. Resizing maplibre on every pointer frame is
+// expensive and makes the gesture stutter on mid-range phones.
+//
+// Still placeholder data — see data/infrastructure.js and TODO 2e.
 
-const project = ({ lat, lng }) => ({
-    left: `${((lng - OGUN_BOUNDS.minLng) / (OGUN_BOUNDS.maxLng - OGUN_BOUNDS.minLng)) * 100}%`,
-    top: `${((OGUN_BOUNDS.maxLat - lat) / (OGUN_BOUNDS.maxLat - OGUN_BOUNDS.minLat)) * 100}%`,
-});
-
-const pctXY = ({ lat, lng }) => [
-    ((lng - OGUN_BOUNDS.minLng) / (OGUN_BOUNDS.maxLng - OGUN_BOUNDS.minLng)) * 100,
-    ((OGUN_BOUNDS.maxLat - lat) / (OGUN_BOUNDS.maxLat - OGUN_BOUNDS.minLat)) * 100,
-];
-
-// Decorative network: join each asset to its nearest neighbour. Not a real
-// route — it reads as a grid without inventing specific cable runs.
-const nearestNeighbourLinks = (assets) => {
-    const pts = assets.map(pctXY);
-    return pts.flatMap(([x1, y1], i) => {
-        let best = -1;
-        let bestD = Infinity;
-        pts.forEach(([x2, y2], j) => {
-            if (i === j) return;
-            const d = (x1 - x2) ** 2 + (y1 - y2) ** 2;
-            if (d < bestD) { bestD = d; best = j; }
-        });
-        return best > i ? [[x1, y1, pts[best][0], pts[best][1]]] : [];
-    });
+const SNAPS = [0.20, 0.48, 0.85];
+const nearestSnap = (h, velocity) => {
+    // A decisive flick wins over proximity, so a fast drag doesn't snap back.
+    const biased = h + velocity * 0.12;
+    return SNAPS.reduce((best, s) => (Math.abs(s - biased) < Math.abs(best - biased) ? s : best), SNAPS[0]);
 };
 
-const Graticule = () => (
-    <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }} aria-hidden="true">
-        {[20, 40, 60, 80].map(p => (
-            <line key={`v${p}`} x1={`${p}%`} y1="0" x2={`${p}%`} y2="100%" stroke="rgba(255,255,255,.045)" strokeWidth="1" />
-        ))}
-        {[25, 50, 75].map(p => (
-            <line key={`h${p}`} x1="0" y1={`${p}%`} x2="100%" y2={`${p}%`} stroke="rgba(255,255,255,.045)" strokeWidth="1" />
-        ))}
-    </svg>
-);
+const KIND_COLOR = { solar: T.gold, borehole: '#38bdf8' };
+const TYPE_FILTERS = [
+    { id: 'all', label: 'All types' },
+    { id: 'solar', label: 'Solar' },
+    { id: 'borehole', label: 'Boreholes' },
+];
 
 const StatusPill = ({ status }) => {
     const done = status === 'completed';
@@ -62,108 +39,201 @@ const StatusPill = ({ status }) => {
     );
 };
 
-const AssetCard = ({ asset, onVerify }) => (
-    <div style={{
-        borderRadius: 14, background: T.card,
-        border: `1px solid ${T.line}`, padding: 14,
-        display: 'flex', flexDirection: 'column', gap: 11,
-    }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25, color: T.text }}>{asset.name}</div>
-                <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: T.textDim }}>
-                    <Crosshair size={12} strokeWidth={2.2} /> {asset.lga} · {asset.district}
+const AssetCard = ({ asset, onVerify, onFocus }) => {
+    const color = KIND_COLOR[asset.kind];
+    const Icon = asset.kind === 'solar' ? Sun : Droplet;
+    return (
+        <div onClick={() => onFocus(asset)} style={{
+            borderRadius: 14, background: T.card,
+            border: `1px solid ${T.line}`, padding: 14, cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', gap: 11,
+        }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ minWidth: 0, display: 'flex', gap: 10 }}>
+                    <span style={{
+                        flex: 'none', width: 28, height: 28, borderRadius: 8, marginTop: 2,
+                        background: `${color}1f`, border: `1px solid ${color}66`, color,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                        <Icon size={14} strokeWidth={2.4} />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25, color: T.text }}>{asset.name}</div>
+                        <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: T.textDim }}>
+                            <Crosshair size={12} strokeWidth={2.2} /> {asset.lga} · {asset.district}
+                        </div>
+                    </div>
+                </div>
+                <div style={{ flex: 'none', textAlign: 'right' }}>
+                    <div style={{ fontSize: 21, fontWeight: 600, lineHeight: 1, color: T.text }}>{asset.allocated.toLocaleString()}</div>
+                    <div style={{ marginTop: 3, fontSize: 10, color: T.textMute }}>{asset.unit}</div>
                 </div>
             </div>
-            <div style={{ flex: 'none', textAlign: 'right' }}>
-                <div style={{ fontSize: 21, fontWeight: 600, lineHeight: 1, color: T.text }}>{asset.allocated.toLocaleString()}</div>
-                <div style={{ marginTop: 3, fontSize: 10, color: T.textMute }}>{asset.unit}</div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <span style={{ fontSize: 12, color: T.textDim }}>Status:</span>
+                <StatusPill status={asset.status} />
             </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-            <span style={{ fontSize: 12, color: T.textDim }}>Status:</span>
-            <StatusPill status={asset.status} />
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-            <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'rgba(255,255,255,.08)', overflow: 'hidden' }}>
-                <div style={{
-                    height: '100%', width: `${asset.pct}%`, borderRadius: 4,
-                    background: asset.pct === 100 ? T.accent : `linear-gradient(90deg, ${T.accentDark}, ${T.gold})`,
-                }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'rgba(255,255,255,.08)', overflow: 'hidden' }}>
+                    <div style={{
+                        height: '100%', width: `${asset.pct}%`, borderRadius: 4,
+                        background: asset.pct === 100 ? T.accent : `linear-gradient(90deg, ${T.accentDark}, ${T.gold})`,
+                    }} />
+                </div>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: T.textDim }}>{asset.pct}%</span>
             </div>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: T.textDim }}>{asset.pct}%</span>
-        </div>
 
-        <div style={{
-            display: 'flex', gap: 14, paddingTop: 10,
-            borderTop: `1px solid ${T.line}`, fontSize: 11.5,
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                <User size={13} color={T.textMute} strokeWidth={2.2} />
-                <span style={{ color: T.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{asset.contactName}</span>
+            <div style={{ display: 'flex', gap: 14, paddingTop: 10, borderTop: `1px solid ${T.line}`, fontSize: 11.5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                    <User size={13} color={T.textMute} strokeWidth={2.2} />
+                    <span style={{ color: T.textDim, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{asset.contactName}</span>
+                </div>
+                <a href={`tel:${asset.contactPhone}`} onClick={e => e.stopPropagation()}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.textDim, textDecoration: 'none' }}>
+                    <Phone size={13} color={T.textMute} strokeWidth={2.2} />
+                    {asset.contactPhone}
+                </a>
             </div>
-            <a href={`tel:${asset.contactPhone}`} style={{ display: 'flex', alignItems: 'center', gap: 6, color: T.textDim, textDecoration: 'none' }}>
-                <Phone size={13} color={T.textMute} strokeWidth={2.2} />
-                {asset.contactPhone}
-            </a>
-        </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-            <a className="yc-btn"
-                href={`https://www.google.com/maps/dir/?api=1&destination=${asset.lat},${asset.lng}`}
-                target="_blank" rel="noopener noreferrer"
-                style={{
-                    flex: 1, minHeight: 40, borderRadius: 999, background: T.gold, color: '#101a14',
-                    fontSize: 12, fontWeight: 700, textDecoration: 'none',
+            <div style={{ display: 'flex', gap: 8 }}>
+                <a className="yc-btn"
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${asset.lat},${asset.lng}`}
+                    target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+                    style={{
+                        flex: 1, minHeight: 40, borderRadius: 999, background: T.gold, color: '#101a14',
+                        fontSize: 12, fontWeight: 700, textDecoration: 'none',
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}>
+                    <Navigation size={13} strokeWidth={2.6} /> Navigate to Site
+                </a>
+                <button className="yc-btn" onClick={e => { e.stopPropagation(); onVerify(); }} style={{
+                    flex: 1, minHeight: 40, borderRadius: 999,
+                    border: `1px solid ${T.lineStrong}`, background: 'rgba(255,255,255,.05)', color: T.text,
+                    fontSize: 12, fontWeight: 600,
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 }}>
-                <Navigation size={13} strokeWidth={2.6} /> Navigate to Site
-            </a>
-            <button className="yc-btn" onClick={onVerify} style={{
-                flex: 1, minHeight: 40, borderRadius: 999,
-                border: `1px solid ${T.lineStrong}`, background: 'rgba(255,255,255,.05)', color: T.text,
-                fontSize: 12, fontWeight: 600,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            }}>
-                <Camera size={13} strokeWidth={2.4} /> Verify & Check-In
-            </button>
+                    <Camera size={13} strokeWidth={2.4} /> Verify & Check-In
+                </button>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export const InfrastructureSheet = ({ onClose, openGeoQuest }) => {
-    const [kind, setKind] = useState('solar');
-    const [filter, setFilter] = useState('All');
-    const [expanded, setExpanded] = useState(false);
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [placeFilter, setPlaceFilter] = useState('All');
     const [selected, setSelected] = useState(null);
+    const [basemap, setBasemap] = useState('dark');
+    const [query, setQuery] = useState('');
+    const [searchOpen, setSearchOpen] = useState(false);
 
-    const assets = useMemo(() => loadAssets(kind), [kind]);
-    const links = useMemo(() => (kind === 'solar' ? nearestNeighbourLinks(assets) : []), [kind, assets]);
-    const totals = PROGRAMME_TOTALS[kind];
+    const [height, setHeight] = useState(SNAPS[1]);
+    const [dragging, setDragging] = useState(false);
+    const mapAreaRef = useRef(null);
+    const dragState = useRef(null);
+    const heightRef = useRef(height);
+    heightRef.current = height;
 
-    const visible = useMemo(() => assets.filter(a => (
-        filter === 'All' ||
-        (DISTRICTS.includes(filter) && a.district === filter) ||
-        (filter === 'Completed' && a.status === 'completed') ||
-        (filter === 'Ongoing' && a.status === 'ongoing')
-    )), [assets, filter]);
+    const assets = useMemo(() => loadAssets(), []);
+
+    const byType = useMemo(
+        () => (typeFilter === 'all' ? assets : assets.filter(a => a.kind === typeFilter)),
+        [assets, typeFilter],
+    );
+
+    const visible = useMemo(() => {
+        const q = query.trim().toLowerCase();
+        return byType.filter(a => {
+            const placeOk =
+                placeFilter === 'All' ||
+                (DISTRICTS.includes(placeFilter) && a.district === placeFilter) ||
+                (placeFilter === 'Completed' && a.status === 'completed') ||
+                (placeFilter === 'Ongoing' && a.status === 'ongoing');
+            const queryOk = !q || a.name.toLowerCase().includes(q) || a.lga.toLowerCase().includes(q);
+            return placeOk && queryOk;
+        });
+    }, [byType, placeFilter, query]);
+
+    // A selection that gets filtered out should not keep the sheet pinned to it.
+    useEffect(() => {
+        if (selected && !visible.some(a => a.id === selected.id)) setSelected(null);
+    }, [visible, selected]);
+
+    const focusAsset = useCallback((asset) => {
+        setSelected(asset);
+        setHeight(h => (h > SNAPS[1] ? SNAPS[1] : h));
+    }, []);
+
+    // ── Sheet drag ──────────────────────────────────────────────────────────
+    // Listeners go on window rather than the handle. Pointer capture on the
+    // handle does not survive the re-render that the first setHeight triggers,
+    // so every move after the first one landed on the map and panned it
+    // instead of resizing the sheet.
+    const onPointerDown = (e) => {
+        const box = mapAreaRef.current?.getBoundingClientRect();
+        if (!box) return;
+        e.preventDefault();
+        dragState.current = {
+            startY: e.clientY, startH: heightRef.current, boxH: box.height,
+            lastY: e.clientY, lastT: performance.now(), v: 0,
+        };
+        setDragging(true);
+    };
+
+    useEffect(() => {
+        if (!dragging) return undefined;
+
+        const onMove = (e) => {
+            const d = dragState.current;
+            if (!d) return;
+            const now = performance.now();
+            const dt = now - d.lastT;
+            if (dt > 0) {
+                // Fraction of the container per second, upward positive.
+                d.v = ((d.lastY - e.clientY) / d.boxH) * (1000 / dt);
+                d.lastY = e.clientY;
+                d.lastT = now;
+            }
+            const next = d.startH + (d.startY - e.clientY) / d.boxH;
+            setHeight(Math.min(SNAPS[2], Math.max(0.12, next)));
+        };
+
+        const onUp = () => {
+            const d = dragState.current;
+            dragState.current = null;
+            setDragging(false);
+            setHeight(nearestSnap(heightRef.current, d ? d.v : 0));
+        };
+
+        window.addEventListener('pointermove', onMove, { passive: true });
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+        return () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+        };
+    }, [dragging]);
+
+    const totals = useMemo(() => {
+        const kinds = typeFilter === 'all' ? ['solar', 'borehole'] : [typeFilter];
+        return kinds.reduce((acc, k) => ({
+            completed: acc.completed + PROGRAMME_TOTALS[k].completed,
+            ongoing: acc.ongoing + PROGRAMME_TOTALS[k].ongoing,
+        }), { completed: 0, ongoing: 0 });
+    }, [typeFilter]);
+
+    const placeChips = ['All', ...DISTRICTS, 'Completed', 'Ongoing'];
+    const countFor = (chip) => (
+        chip === 'All' ? byType.length
+            : DISTRICTS.includes(chip) ? byType.filter(a => a.district === chip).length
+            : chip === 'Completed' ? byType.filter(a => a.status === 'completed').length
+            : byType.filter(a => a.status === 'ongoing').length
+    );
 
     const cards = selected ? [selected] : visible;
-    const accent = kind === 'solar' ? T.gold : T.accent;
-    const chips = [
-        'All',
-        ...DISTRICTS.map(d => `${d}`),
-        'Completed',
-        'Ongoing',
-    ];
-    const countFor = (chip) => (
-        chip === 'All' ? assets.length
-            : DISTRICTS.includes(chip) ? assets.filter(a => a.district === chip).length
-            : chip === 'Completed' ? assets.filter(a => a.status === 'completed').length
-            : assets.filter(a => a.status === 'ongoing').length
-    );
 
     return (
         <div style={{
@@ -178,174 +248,185 @@ export const InfrastructureSheet = ({ onClose, openGeoQuest }) => {
                 padding: '12px 14px', background: T.header, borderBottom: `1px solid ${T.line}`,
             }}>
                 <button className="yc-btn" onClick={onClose} aria-label="Back" style={{
-                    width: 36, height: 36, borderRadius: 8, border: 'none',
+                    flex: 'none', width: 36, height: 36, borderRadius: 8, border: 'none',
                     background: '#18271f', color: T.text,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                     <ArrowLeft size={16} strokeWidth={2.4} />
                 </button>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 10.5, letterSpacing: '.16em', color: T.gold, fontWeight: 600 }}>YAYI CONNECT</div>
-                    <div style={{ marginTop: 2, fontSize: 14, fontWeight: 600 }}>{totals.label}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 5, background: 'rgba(255,255,255,.05)', borderRadius: 999, padding: 3 }}>
-                    {[['solar', Sun], ['borehole', Droplet]].map(([k, Icon]) => (
-                        <button key={k} className="yc-btn"
-                            onClick={() => { setKind(k); setFilter('All'); setSelected(null); }}
-                            aria-label={k === 'solar' ? 'Solar lights' : 'Boreholes'}
-                            style={{
-                                width: 32, height: 28, borderRadius: 999, border: 'none',
-                                background: kind === k ? (k === 'solar' ? T.gold : T.accent) : 'transparent',
-                                color: kind === k ? '#101a14' : T.textMute,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}>
-                            <Icon size={14} strokeWidth={2.4} />
-                        </button>
-                    ))}
-                </div>
+
+                {searchOpen ? (
+                    <input
+                        autoFocus
+                        value={query}
+                        onChange={e => { setQuery(e.target.value); setSelected(null); }}
+                        placeholder="Search site or LGA…"
+                        style={{
+                            flex: 1, minWidth: 0, boxSizing: 'border-box',
+                            padding: '9px 12px', borderRadius: 999,
+                            background: 'rgba(255,255,255,.06)', border: `1px solid ${T.lineStrong}`,
+                            color: T.text, fontSize: 13, fontFamily: 'inherit', outline: 'none',
+                        }} />
+                ) : (
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 10.5, letterSpacing: '.16em', color: T.gold, fontWeight: 600 }}>YAYI CONNECT</div>
+                        <div style={{ marginTop: 2, fontSize: 14, fontWeight: 600 }}>Infrastructure Map</div>
+                    </div>
+                )}
+
+                <button className="yc-btn"
+                    onClick={() => { if (searchOpen) { setQuery(''); } setSearchOpen(o => !o); }}
+                    aria-label={searchOpen ? 'Close search' : 'Search sites'}
+                    style={{
+                        flex: 'none', width: 36, height: 36, borderRadius: 8, border: 'none',
+                        background: searchOpen ? T.gold : '#18271f', color: searchOpen ? '#101a14' : T.text,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                    {searchOpen ? <XIcon size={16} strokeWidth={2.6} /> : <Search size={16} strokeWidth={2.4} />}
+                </button>
             </div>
 
-            {/* Map panel */}
-            <div style={{
-                flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden',
-                background: kind === 'solar'
-                    ? 'radial-gradient(120% 90% at 50% 20%, #16243a 0%, #0d1526 60%, #080d18 100%)'
-                    : 'radial-gradient(120% 90% at 50% 20%, #13302a 0%, #0c1f1b 60%, #081411 100%)',
-            }}>
-                <Graticule />
+            {/* Map + sheet */}
+            <div ref={mapAreaRef} style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
+                <InfraMap
+                    assets={visible}
+                    selected={selected}
+                    onSelect={focusAsset}
+                    onClearSelection={() => setSelected(null)}
+                    basemap={basemap}
+                />
 
-                <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }} aria-hidden="true">
-                    {links.map(([x1, y1, x2, y2], i) => (
-                        <line key={i} x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`}
-                            stroke={accent} strokeWidth="2" strokeLinecap="round"
-                            opacity=".55" style={{ filter: `drop-shadow(0 0 4px ${accent})` }} />
-                    ))}
-                </svg>
-
-                {assets.map(a => {
-                    const dim = !visible.includes(a);
-                    const isSel = selected?.id === a.id;
-                    return (
-                        <button key={a.id} className="yc-btn"
-                            onClick={() => { setSelected(isSel ? null : a); setExpanded(false); }}
-                            aria-label={a.name}
-                            style={{
-                                position: 'absolute', ...project(a),
-                                transform: 'translate(-50%,-50%)',
-                                width: isSel ? 30 : 22, height: isSel ? 30 : 22,
-                                borderRadius: '50%', border: `2px solid ${accent}`,
-                                background: a.status === 'completed' ? accent : T.header,
-                                color: a.status === 'completed' ? '#0b1510' : accent,
-                                opacity: dim ? .25 : 1,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: isSel ? `0 0 0 4px ${accent}33, 0 0 14px ${accent}` : `0 0 8px ${accent}66`,
-                                transition: 'width .15s ease, height .15s ease, opacity .2s ease',
-                                padding: 0, cursor: 'pointer',
-                            }}>
-                            {kind === 'solar'
-                                ? <Sun size={isSel ? 15 : 11} strokeWidth={2.6} />
-                                : <Droplet size={isSel ? 15 : 11} strokeWidth={2.6} />}
-                        </button>
-                    );
-                })}
+                {/* Basemap toggle, stacked under maplibre's own controls */}
+                <button className="yc-btn"
+                    onClick={() => setBasemap(b => (b === 'dark' ? 'light' : 'dark'))}
+                    aria-label="Switch basemap"
+                    style={{
+                        position: 'absolute', top: 118, right: 10, zIndex: 3,
+                        width: 29, height: 29, borderRadius: 4, border: 'none',
+                        background: '#fff', color: '#333',
+                        boxShadow: '0 0 0 2px rgba(0,0,0,.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                    <Layers size={15} strokeWidth={2.2} />
+                </button>
 
                 {/* Headline counts */}
                 <div style={{
-                    position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
+                    position: 'absolute', top: 12, left: 12, zIndex: 3,
                     display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '8px 14px', borderRadius: 999,
-                    background: 'rgba(8,16,13,.82)', border: `1px solid ${accent}55`,
+                    padding: '8px 13px', borderRadius: 12,
+                    background: 'rgba(8,16,13,.84)', border: `1px solid ${T.lineStrong}`,
                     backdropFilter: 'blur(8px)', whiteSpace: 'nowrap',
                 }}>
-                    <span style={{
-                        width: 24, height: 24, borderRadius: '50%', background: accent,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0b1510',
-                    }}>
-                        {kind === 'solar' ? <Sun size={13} strokeWidth={2.6} /> : <Droplet size={13} strokeWidth={2.6} />}
-                    </span>
                     <span style={{ fontSize: 11.5, lineHeight: 1.35 }}>
                         <strong style={{ color: T.text }}>Completed: {totals.completed.toLocaleString()}</strong><br />
                         <span style={{ color: T.textDim }}>In Progress: {totals.ongoing.toLocaleString()}</span>
                     </span>
                 </div>
 
+                {/* Bottom sheet */}
                 <div style={{
-                    position: 'absolute', right: 12, bottom: 12,
-                    padding: '7px 12px', borderRadius: 999,
-                    background: 'rgba(8,16,13,.82)', border: `1px solid ${T.lineStrong}`,
-                    fontSize: 11, color: T.textDim, backdropFilter: 'blur(8px)',
+                    position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 4,
+                    height: `${height * 100}%`,
+                    background: T.header,
+                    borderTop: `1px solid ${T.lineStrong}`,
+                    borderRadius: '18px 18px 0 0',
+                    display: 'flex', flexDirection: 'column',
+                    transition: dragging ? 'none' : 'height .3s cubic-bezier(.4,0,.2,1)',
+                    boxShadow: '0 -8px 28px rgba(0,0,0,.5)',
+                    touchAction: 'none',
                 }}>
-                    Showing {visible.length} of {assets.length} sites
-                </div>
-            </div>
-
-            {/* Bottom sheet */}
-            <div style={{
-                flex: 'none',
-                height: expanded ? '62%' : '42%',
-                background: T.header,
-                borderTop: `1px solid ${T.lineStrong}`,
-                borderRadius: '18px 18px 0 0',
-                marginTop: -18, position: 'relative', zIndex: 2,
-                display: 'flex', flexDirection: 'column',
-                transition: 'height .28s cubic-bezier(.4,0,.2,1)',
-                boxShadow: '0 -8px 28px rgba(0,0,0,.45)',
-            }}>
-                <button className="yc-btn" onClick={() => setExpanded(e => !e)}
-                    aria-label={expanded ? 'Collapse list' : 'Expand list'}
-                    style={{
-                        flex: 'none', border: 'none', background: 'transparent',
-                        padding: '10px 0 6px', display: 'flex', justifyContent: 'center',
-                    }}>
-                    <span style={{ width: 38, height: 4, borderRadius: 999, background: 'rgba(255,255,255,.22)' }} />
-                </button>
-
-                {/* Filter chips */}
-                <div className="yc-hide-scroll" style={{
-                    flex: 'none', display: 'flex', gap: 8, overflowX: 'auto',
-                    padding: '2px 14px 10px',
-                }}>
-                    {chips.map(chip => {
-                        const on = filter === chip;
-                        return (
-                            <button key={chip} className="yc-btn"
-                                onClick={() => { setFilter(chip); setSelected(null); }}
-                                style={{
-                                    flex: 'none', padding: '7px 13px', borderRadius: 999,
-                                    fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
-                                    background: on ? `${accent}22` : 'rgba(255,255,255,.04)',
-                                    border: `1px solid ${on ? accent : T.line}`,
-                                    color: on ? accent : T.textDim,
-                                }}>
-                                {chip} <span style={{ opacity: .65 }}>({countFor(chip)})</span>
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {selected && (
-                    <div style={{ flex: 'none', padding: '0 14px 8px' }}>
-                        <button className="yc-btn" onClick={() => setSelected(null)} style={{
-                            border: 'none', background: 'transparent', padding: 0,
-                            color: T.textMute, fontSize: 11.5, fontWeight: 600,
-                        }}>← Back to all {visible.length} sites</button>
+                    <div
+                        onPointerDown={onPointerDown}
+                        role="separator"
+                        aria-label="Drag to resize the list"
+                        style={{
+                            flex: 'none', padding: '10px 0 8px', cursor: 'grab',
+                            display: 'flex', justifyContent: 'center', touchAction: 'none',
+                        }}>
+                        <span style={{ width: 38, height: 4, borderRadius: 999, background: 'rgba(255,255,255,.26)' }} />
                     </div>
-                )}
 
-                <div className="yc-scroll" style={{
-                    flex: 1, minHeight: 0, overflowY: 'auto',
-                    padding: '0 14px 18px', display: 'flex', flexDirection: 'column', gap: 10,
-                }}>
-                    {cards.length === 0 && (
-                        <div style={{ padding: '24px 0', textAlign: 'center', fontSize: 12.5, color: T.textMute }}>
-                            No sites match this filter yet.
-                        </div>
-                    )}
-                    {cards.map(a => (
-                        <AssetCard key={a.id} asset={a} onVerify={openGeoQuest} />
-                    ))}
+                    {/* Type filter */}
+                    <div style={{ flex: 'none', display: 'flex', gap: 6, padding: '0 14px 8px' }}>
+                        {TYPE_FILTERS.map(t => {
+                            const on = typeFilter === t.id;
+                            const tint = t.id === 'all' ? T.accent : KIND_COLOR[t.id];
+                            return (
+                                <button key={t.id} className="yc-btn"
+                                    onClick={() => { setTypeFilter(t.id); setPlaceFilter('All'); setSelected(null); }}
+                                    style={{
+                                        flex: 1, padding: '8px 4px', borderRadius: 9,
+                                        fontSize: 12, fontWeight: 600,
+                                        background: on ? `${tint}22` : 'rgba(255,255,255,.04)',
+                                        border: `1px solid ${on ? tint : T.line}`,
+                                        color: on ? tint : T.textDim,
+                                    }}>{t.label}</button>
+                            );
+                        })}
+                    </div>
+
+                    {/* District / status filter */}
+                    <div className="yc-hide-scroll" style={{
+                        flex: 'none', display: 'flex', gap: 8, overflowX: 'auto', padding: '0 14px 10px',
+                    }}>
+                        {placeChips.map(chip => {
+                            const on = placeFilter === chip;
+                            return (
+                                <button key={chip} className="yc-btn"
+                                    onClick={() => { setPlaceFilter(chip); setSelected(null); }}
+                                    style={{
+                                        flex: 'none', padding: '6px 12px', borderRadius: 999,
+                                        fontSize: 11.5, fontWeight: 600, whiteSpace: 'nowrap',
+                                        background: on ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.04)',
+                                        border: `1px solid ${on ? T.lineStrong : T.line}`,
+                                        color: on ? T.text : T.textDim,
+                                    }}>
+                                    {chip} <span style={{ opacity: .6 }}>({countFor(chip)})</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div style={{
+                        flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        gap: 10, padding: '0 14px 8px',
+                    }}>
+                        {selected ? (
+                            <button className="yc-btn" onClick={() => setSelected(null)} style={{
+                                border: 'none', background: 'transparent', padding: 0,
+                                color: T.textMute, fontSize: 11.5, fontWeight: 600,
+                            }}>← Back to all {visible.length} sites</button>
+                        ) : (
+                            <span style={{ fontSize: 11.5, color: T.textMute }}>
+                                Showing {visible.length} of {assets.length} sites
+                            </span>
+                        )}
+                        <span title="These records are placeholders, not delivery data" style={{
+                            flex: 'none', padding: '3px 8px', borderRadius: 999,
+                            fontSize: 9.5, fontWeight: 700, letterSpacing: '.08em',
+                            background: 'rgba(227,93,91,.14)', border: '1px solid rgba(227,93,91,.45)',
+                            color: '#f5a4a2',
+                        }}>SAMPLE DATA</span>
+                    </div>
+
+                    <div className="yc-scroll" style={{
+                        flex: 1, minHeight: 0, overflowY: 'auto',
+                        padding: '0 14px 18px', display: 'flex', flexDirection: 'column', gap: 10,
+                    }}>
+                        {cards.length === 0 && (
+                            <div style={{ padding: '24px 0', textAlign: 'center', fontSize: 12.5, color: T.textMute }}>
+                                No sites match this filter yet.
+                            </div>
+                        )}
+                        {cards.map(a => (
+                            <AssetCard key={a.id} asset={a} onVerify={openGeoQuest} onFocus={focusAsset} />
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
+
+export default InfrastructureSheet;

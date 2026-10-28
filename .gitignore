@@ -27,3 +27,6 @@ node_modules/
 .env
 # stale nested clone of gatewayBE; superseded by apps/payments-api
 server/
+
+# Playwright MCP scratch output
+.playwright-mcp/
