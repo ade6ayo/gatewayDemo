@@ -13,6 +13,7 @@
     "dev:geoquest": "npm run dev -w @gateway/geoquest",
     "dev:api": "npm run dev -w @gateway/payments-api",
     "build": "npm run build -w @gateway/web && npm run build -w @gateway/geoquest",
-    "lint": "npm run lint -w @gateway/web && npm run lint -w @gateway/geoquest"
+    "lint": "npm run lint -w @gateway/web && npm run lint -w @gateway/geoquest",
+    "deploy:pages": "npm run deploy -w @gateway/web"
   }
 }
